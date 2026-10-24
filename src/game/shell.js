@@ -219,13 +219,19 @@ export function runGame(mode) {
     else { game.state = 'menu'; show('menu'); }
   }
 
-  async function ensureInput() {
-    if (settings.input === 'camera' && kit.source !== 'camera') {
-      $('mStart').disabled = true;
-      try {
-        await kit.useCamera({ video: $('video'), onStatus: (s) => ($('mStatus').textContent = s) });
-      } finally { $('mStart').disabled = false; }
-    } else if (settings.input === 'keyboard' && kit.source !== 'keyboard') await kit.useKeyboard();
+  // start the chosen input source (once: a second call while the camera is starting waits for it)
+  let inputBusy = null;
+  function ensureInput() {
+    if (inputBusy) return inputBusy;
+    inputBusy = (async () => {
+      if (settings.input === 'camera' && kit.source !== 'camera') {
+        $('mStart').disabled = true;
+        const status = (t) => { $('mStatus').textContent = t; $('hStatus').textContent = t; };
+        try { await kit.useCamera({ video: $('video'), onStatus: status }); }
+        finally { $('mStart').disabled = false; }
+      } else if (settings.input === 'keyboard' && kit.source !== 'keyboard') await kit.useKeyboard();
+    })();
+    return inputBusy.finally(() => { inputBusy = null; });
   }
 
   function countdown(then) {
@@ -347,8 +353,11 @@ export function runGame(mode) {
   $('rAgain').onclick = startRace;
   $('rMenu').onclick = toMenu;
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
-  // keyboard simulation is live from the start, so "Enter (hold)" works on the menus too
-  if (settings.input === 'keyboard') kit.useKeyboard();
+  // the chosen input is live from the start, so raising both hands (or holding Enter) works on the
+  // how-to screen and the menu too; with the camera this asks for permission right away
+  ensureInput().catch((err) => {
+    $('hStatus').textContent = '⚠️ 鏡頭沒有啟動（' + (err.name === 'NotAllowedError' ? '沒有允許使用鏡頭' : err.name === 'NotFoundError' ? '找不到鏡頭' : err.message) + '），請按「我懂了」，再到選單改用鍵盤模擬或重新開始。';
+  });
 
   mode.newRace(game, settings.diff, settings);
   // the how-to screen opens first: nobody is there to explain the game
@@ -377,7 +386,11 @@ export function runGame(mode) {
         if (mode.done(game)) finish(false);
         else if (game.timeLeft <= 0) finish(true);
       }
-    } else if (game.state !== 'paused') mode.idle?.(game, dt, st, settings);
+    } else if (game.state === 'menu' || game.state === 'result' || (game.state === 'howto' && howtoReturn === 'menu')) {
+      // drifting idly behind the menus; a race that is paused, counting down or showing the
+      // how-to screen from the pause menu stays exactly where it was
+      mode.idle?.(game, dt, st, settings);
+    }
 
     game.frame(dt);
     audio.update();
