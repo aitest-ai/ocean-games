@@ -167,6 +167,26 @@ test('reel detector: hand circles count; single swings, paddles and small waves 
   assert.ok(swinging < 0.25, `swinging ${swinging}`);
 });
 
+test('reel detector: fast, sloppy circles at a low camera frame rate still reel', () => {
+  for (const [fps, turns, noise] of [[12, 2.5, 0.06], [15, 3, 0.08], [25, 3.5, 0.05], [10, 1.5, 0.05]]) {
+    for (const dir of [1, -1]) {
+      const det = new ReelDetector();
+      let seed = 7, max = 0;
+      const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296 - 0.5; };
+      for (let t = 0; t < 4000; t += 1000 / fps) {
+        const a = dir * (t / 1000) * turns * 2 * Math.PI, r = 0.35 + 0.15 * Math.sin(t / 300);
+        const v = det.update(t, { left: null, right: { x: 0.4 + r * Math.cos(a) + rnd() * noise, y: 0.6 + r * 0.8 * Math.sin(a) + rnd() * noise } });
+        if (t > 1500) max = Math.max(max, v);
+      }
+      assert.ok(max > 0.7, `fps ${fps} turns ${turns} dir ${dir}: ${max}`);
+    }
+  }
+  // tremble of a held hand never reels
+  const det = new ReelDetector(); let seed = 3, max = 0;
+  for (let t = 0; t < 4000; t += 66) { seed = (seed * 1664525 + 1013904223) >>> 0; const n = (seed / 4294967296 - 0.5) * 0.06; max = Math.max(max, det.update(t, { right: { x: 0.4 + n, y: 0.6 - n } })); }
+  assert.equal(max, 0);
+});
+
 test('tension zones are ordered', () => {
   assert.ok(TENSION.slack < TENSION.sweetLo && TENSION.sweetLo < TENSION.sweetHi && TENSION.sweetHi < TENSION.danger && TENSION.danger < TENSION.snap);
 });

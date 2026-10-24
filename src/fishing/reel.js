@@ -5,7 +5,7 @@
 // How: for each hand, the angle of the wrist around the centre of its recent movement; the signed
 // angle travelled per second is the cranking speed. Moving back and forth in a line (a wave) travels
 // ~0 signed angle; small trembles (radius under 0.1 shoulder widths) do not count. To START reeling
-// the hand must turn the same way for about 1.2 turns (a single swing or overhead stroke traces at
+// the hand must turn the same way for about 0.9 turn spread over the whole 1.2 s window (wild, fast, wide or sloppy circles count; the camera may only give 10-15 poses a second) (a single swing or overhead stroke traces at
 // most one loop, so it does not start the reel); once reeling, the last 0.7 s is enough to keep going,
 // so the reel answers quickly to speeding up, slowing down and stopping.
 
@@ -23,7 +23,7 @@ function turnsOf(H, minRadius, n) {
     if (prev !== null) {
       const d = Math.atan2(Math.sin(a - prev), Math.cos(a - prev));
       // a jump across the centre is a line, not a turn
-      if (Math.abs(d) < 1.2) { sum += d; parts[Math.min(Math.floor(((q.t - t0) / span) * n), n - 1)] += d; }
+      if (Math.abs(d) < 2.0) { sum += d; parts[Math.min(Math.floor(((q.t - t0) / span) * n), n - 1)] += d; }
     }
     prev = a;
   }
@@ -31,7 +31,7 @@ function turnsOf(H, minRadius, n) {
 }
 
 export class ReelDetector {
-  constructor({ window = 1600, keep = 700, minRadius = 0.1, fullSpeed = 1.1, startTurns = 1.2 } = {}) {
+  constructor({ window = 1200, keep = 900, minRadius = 0.08, fullSpeed = 0.8, startTurns = 0.9 } = {}) {
     Object.assign(this, { window, keep, minRadius, fullSpeed, startTurns }); // fullSpeed: turns per second for reel = 1
     this.h = { left: [], right: [] };
     this.value = 0; this.side = null; this.dir = 0;
@@ -51,15 +51,15 @@ export class ReelDetector {
       // keep reeling with the same hand while it keeps turning the same way
       const H = this.h[this.side].filter((q) => t - q.t <= this.keep);
       const r = H.length >= 6 ? turnsOf(H, this.minRadius, 2) : null;
-      if (r && Math.sign(r.turns) === this.dir && r.parts.every((x) => Math.sign(x) === this.dir) && Math.abs(r.turns) > 0.3) speed = Math.abs(r.turns) / r.seconds;
+      if (r && Math.sign(r.turns) === this.dir && r.parts.every((x) => Math.sign(x) === this.dir || Math.abs(x) < 0.03) && Math.abs(r.turns) > 0.12) speed = Math.abs(r.turns) / r.seconds;
       else { this.side = null; this.dir = 0; }
     }
     if (!this.side) {
       for (const s of ['left', 'right']) {
         const H = this.h[s];
-        if (H.length < 10) continue;
+        if (H.length < 6) continue;
         const r = turnsOf(H, this.minRadius, 4);
-        if (Math.abs(r.turns) >= this.startTurns && r.parts.every((x) => Math.sign(x) === Math.sign(r.turns) && Math.abs(x) > 0.08)) {
+        if (Math.abs(r.turns) >= this.startTurns && r.parts.every((x) => Math.sign(x) === Math.sign(r.turns) && Math.abs(x) > 0.1)) {
           this.side = s; this.dir = Math.sign(r.turns); speed = Math.abs(r.turns) / r.seconds;
           break;
         }
@@ -67,7 +67,7 @@ export class ReelDetector {
     }
     const target = Math.min(speed / this.fullSpeed, 1);
     // quick to start, a little slower to stop (the reel keeps spinning for a moment)
-    this.value += (target - this.value) * (target > this.value ? 0.5 : 0.2);
+    this.value += (target - this.value) * (target > this.value ? 0.6 : 0.2);
     if (this.value < 0.04) this.value = 0;
     return this.value;
   }
