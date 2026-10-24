@@ -69,7 +69,7 @@ export const batting = {
 
   howto(s) {
     const cards = [];
-    if (!s.autoSwing) cards.push({ move: 'bat', title: '雙手一起揮棒', text: '兩隻手<b>靠在一起</b>像握著球棒放在肩膀旁邊，<b>球快到本壘時，雙手一起往前揮過身體</b>。雙手揮過身體的那一下就是擊球的瞬間。<b>正面站、或像打者一樣側身站都可以</b>（側身時鏡頭在你的側面，身體和雙手都要在畫面裡）', seated: '坐著也行：只轉上半身揮', skip: '做不到可以改選「自動揮棒」' });
+    if (!s.autoSwing) cards.push({ move: 'bat', title: '雙手一起揮棒', text: '兩隻手<b>靠在一起</b>像握著球棒放在肩膀旁邊，<b>球快到本壘時，雙手一起往前揮過身體</b>。雙手揮過身體的那一下就是擊球的瞬間。<b>正面站、或像打者一樣側身站都可以</b>（鏡頭和畫面在你正前方：側身時臉轉向畫面看球，身體和雙手都要在鏡頭裡）', seated: '坐著也行：只轉上半身揮', skip: '做不到可以改選「自動揮棒」' });
     if (s.autoSwing) cards.push({ move: 'idle', title: '自動揮棒', text: '遊戲會自動揮棒。看球的位置，猜猜看是<b>好球</b>還是<b>壞球</b>！', seated: '坐著看就好' });
     cards.push({ move: 'raise-both', title: '雙手舉高 1 秒', text: '開始、暫停、繼續', seated: '坐著一樣做' });
     return cards;
