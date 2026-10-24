@@ -18,6 +18,7 @@ const HINTS = {
   tooFar: '太遠了，請往前一點',
   edge: '請移到畫面中間',
   hands: '請讓雙手也出現在畫面裡',
+  crowd: '鏡頭前有兩個人，請只留一位玩家',
 };
 const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
 
@@ -38,6 +39,7 @@ export class Recognizer {
     this.base = null;          // 校準基準：{ y: 兩肩中點高度, sw: 肩寬, roll: 平常肩膀角度 }
     this.stillSince = null;
     this.lastSeen = -1e9;
+    this.crowdSince = null;
     this.handsSeen = -1e9;
     this.tracking = 'lost';
     this.cool = {};
@@ -99,8 +101,11 @@ export class Recognizer {
     // 2. 追蹤品質提示
     const lw = p.leftWrist, rw = p.rightWrist;
     if (lw || rw) this.handsSeen = t;
+    // someone else in the picture for more than a second (the camera reports pose.others)
+    if (pose.others > 0) this.crowdSince ??= t; else this.crowdSince = null;
     let status = 'ok';
-    if (sw > 0.42) status = 'tooClose';
+    if (this.crowdSince !== null && t - this.crowdSince > 1000) status = 'crowd';
+    else if (sw > 0.42) status = 'tooClose';
     else if (sw < 0.08) status = 'tooFar';
     else if (S.x < 0.15 || S.x > 0.85) status = 'edge';
     else if (t - this.handsSeen > 1500) status = 'hands';

@@ -5,15 +5,17 @@
 | 位置 | 內容 |
 | --- | --- |
 | `index.html` | 首頁：連到遊戲、輸入層測試頁、企劃文件，並自動檢查裝置 |
-| `game/`、`src/game/` | 划舟浮標賽（可玩原型）：小艇浮在海面、鏡頭跟隨、HUD、遊戲迴圈、畫質分級 |
-| `packages/taikan-kit/` | 體感輸入層（可獨立抽出）：鏡頭姿態 → 動作事件；鍵盤／預錄模擬。說明見其 README |
+| `game/?g=kayak｜surf｜sail` | 三款可玩原型：划舟浮標賽、衝浪、帆船（同一個頁面，`g` 選遊戲） |
+| `src/game/shell.js` | 共用遊戲外殼：載具浮在海面、鏡頭跟隨、選單、怎麼玩動畫、HUD、暫停／結算、畫質分級 |
+| `src/game/kayak.js`、`surf.js`、`sail.js` | 各遊戲（外殼的 mode）；規則與物理在 `logic.js`、`surf-logic.js`、`sail-logic.js`（可在 node 測試） |
+| `packages/taikan-kit/` | 體感輸入層（可獨立抽出）：鏡頭姿態 → 動作事件；鍵盤／預錄模擬；姿態模型自架於 `vendor/mediapipe/`。說明見其 README |
 | `docs/` | 企劃文件（`plan.md`）、白話說明與自我測試結果（`status.md`），`docs/index.html` 排版顯示 |
 | `ocean.html`、`src/main.js` | 原本的 open-water 海洋展示（從 `index.html` 改名） |
 | `src/app.js` | 從 `main.js` 拆出的渲染器 `App`，展示與遊戲共用；新增 `low`／`mid` 畫質 |
 
 ```bash
 npm run dev                                   # http://localhost:5173/
-node --test tests/*.test.mjs                  # 遊戲規則與船隻物理
+node --test tests/*.test.mjs                  # 三款遊戲的規則與物理（模擬玩家）
 cd packages/taikan-kit && npm test            # 動作辨識
 ```
 
