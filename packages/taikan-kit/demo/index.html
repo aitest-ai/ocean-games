@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>體感輸入測試</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0b1a26; --panel: #12293a; --panel2: #183448; --line: #24465f; --text: #e8f1f7; --muted: #9bb4c6;
+    --accent: #ffb547; --ok: #5fd39a; --warn: #ff8a65; --blue: #63b8ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  a { color: var(--blue); }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 20px; margin: 0; }
+  header .back { margin-left: auto; font-size: 15px; }
+  main { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr); gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .card h2 { font-size: 16px; margin: 0 0 10px; color: var(--muted); font-weight: 600; }
+  .stage { position: relative; aspect-ratio: 4 / 3; background: #071119; border-radius: 10px; overflow: hidden; }
+  .stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .stage video { transform: scaleX(-1); opacity: 0.55; }
+  .stage .hint { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: rgba(255, 138, 101, 0.95); color: #1b0d07; padding: 6px 14px; border-radius: 999px; font-weight: 700; display: none; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }
+  .stage .hint.show { display: block; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .seg button, .btn { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; font: inherit; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #241400; border-color: var(--accent); font-weight: 700; }
+  .btn:active { transform: translateY(1px); }
+  .now { font-size: 34px; font-weight: 800; min-height: 52px; color: var(--accent); transition: opacity 0.4s; }
+  .now small { font-size: 16px; color: var(--muted); font-weight: 500; margin-left: 8px; }
+  .meters { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; margin-top: 8px; }
+  .bar { position: relative; height: 14px; background: #0a1822; border-radius: 7px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { position: absolute; top: 0; bottom: 0; background: var(--blue); }
+  .bar.center::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); }
+  .val { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 52px; text-align: right; }
+  .status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--panel2); font-size: 14px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); }
+  .dot.ok { background: var(--ok); }
+  ol.log { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow: auto; font-size: 14px; }
+  ol.log li { display: grid; grid-template-columns: 72px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid #1c3a50; }
+  ol.log code { color: var(--muted); font-size: 12px; word-break: break-all; }
+  ol.log time { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .keys button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font: inherit; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .keys button b { font-size: 14px; color: var(--accent); }
+  .keys button span { font-size: 14px; }
+  .keys button.on { border-color: var(--accent); background: #2a3a2a; }
+  .toggles label { display: inline-flex; align-items: center; gap: 6px; margin: 4px 12px 4px 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  .privacy { border-left: 4px solid var(--ok); padding: 8px 12px; background: #0f2a22; border-radius: 6px; font-size: 14px; }
+  .stack > * + * { margin-top: 12px; }
+  select { font: inherit; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>體感輸入層測試頁</h1>
+  <span class="status" id="status"><span class="dot"></span><span id="statusText">尚未開始</span></span>
+  <a class="back" href="../../../">← 回首頁</a>
+</header>
+<main>
+  <section class="stack">
+    <div class="card">
+      <div class="row" style="justify-content: space-between; margin-bottom: 10px">
+        <div class="seg row" id="sources">
+          <button data-src="keyboard" aria-pressed="true">⌨️ 鍵盤／滑鼠模擬</button>
+          <button data-src="camera" aria-pressed="false">📷 鏡頭</button>
+          <button data-src="replay" aria-pressed="false">▶️ 預錄姿態</button>
+        </div>
+        <select id="clip" hidden aria-label="預錄檔"></select>
+      </div>
+      <div class="stage">
+        <video id="video" muted playsinline></video>
+        <canvas id="skel"></canvas>
+        <div class="hint" id="hint"></div>
+      </div>
+      <p class="note" id="sourceNote">畫面裡是「模擬人偶」的骨架。用下方按鍵（或直接點按鈕）讓人偶做動作，辨識流程跟鏡頭模式完全相同。</p>
+      <div class="privacy" id="privacy" hidden>🔒 鏡頭畫面只在這台裝置上即時分析：不錄影、不存檔、不上傳。上面淡淡的畫面只顯示在你的螢幕上，對外只輸出骨架數字。</div>
+    </div>
+    <div class="card">
+      <h2>操作方式（按鍵，或用滑鼠／手指按住按鈕）</h2>
+      <div class="keys" id="keys"></div>
+    </div>
+  </section>
+  <section class="stack">
+    <div class="card">
+      <h2>目前偵測到</h2>
+      <div class="now" id="now">—</div>
+      <div class="meters">
+        <span>傾斜</span><div class="bar center"><i id="leanBar"></i></div><span class="val" id="leanVal">0</span>
+        <span>蹲低</span><div class="bar"><i id="crouchBar"></i></div><span class="val" id="crouchVal">0</span>
+        <span>舉手</span><div class="bar"><i id="armsBar"></i></div><span class="val" id="armsVal">0</span>
+      </div>
+      <p class="note" id="calib">先保持不動約 1 秒，系統會記住你平常的姿勢（自動校準）。</p>
+      <div class="row"><button class="btn" id="recal">重新校準</button><span class="note" id="perf"></span></div>
+    </div>
+    <div class="card">
+      <h2>事件紀錄（遊戲收到的就是這些）</h2>
+      <ol class="log" id="log"></ol>
+    </div>
+    <div class="card stack">
+      <h2>設定</h2>
+      <div class="row"><span>靈敏度</span>
+        <div class="seg row" id="sens">
+          <button data-s="low" aria-pressed="false">低（動作要大）</button>
+          <button data-s="normal" aria-pressed="true">中</button>
+          <button data-s="high" aria-pressed="false">高（小動作也算）</button>
+        </div>
+      </div>
+      <div class="toggles" id="toggles"><span>啟用的動作：</span></div>
+      <div class="row" id="recRow" hidden>
+        <button class="btn" id="recBtn">⏺ 錄製骨架 10 秒</button>
+        <span class="note">只錄骨架座標數字（不含影像），會下載成 .json，可放進 fixtures/ 當預錄測資。</span>
+      </div>
+    </div>
+  </section>
+</main>
+<script type="module">
+import { createTaikan, KEYMAP, ACTIONS, ACTION_NAMES, describe } from '../src/index.js';
+
+const kit = createTaikan();
+window.kit = kit;
+const $ = (id) => document.getElementById(id);
+const FIXTURES = ['paddle-alternate', 'lean-sway', 'raise-start', 'jump-crouch', 'swing-bat', 'idle-fidget'];
+const FIX_NAMES = { 'paddle-alternate': '左右交替划槳', 'lean-sway': '左右傾斜', 'raise-start': '雙手舉高', 'jump-crouch': '跳躍與蹲低', 'swing-bat': '揮臂（揮棒）', 'idle-fidget': '小幅亂動（不應觸發）' };
+
+// ── 按鍵說明 + 可點按鈕
+for (const k of KEYMAP) {
+  const b = document.createElement('button');
+  b.innerHTML = `<b>${k.label}</b><span>${k.text}</span>`;
+  const down = (e) => { e.preventDefault(); b.classList.add('on'); kit.keyboard?.press(k.hold || k.action, true); b.setPointerCapture?.(e.pointerId); };
+  const up = () => { b.classList.remove('on'); if (k.hold) kit.keyboard?.press(k.hold, false); };
+  b.addEventListener('pointerdown', down);
+  b.addEventListener('pointerup', up);
+  b.addEventListener('pointercancel', up);
+  b.dataset.codes = k.keys.join(' ');
+  $('keys').appendChild(b);
+}
+addEventListener('keydown', (e) => document.querySelectorAll(`#keys button[data-codes~="${e.code}"]`).forEach((b) => b.classList.add('on')));
+addEventListener('keyup', (e) => document.querySelectorAll(`#keys button[data-codes~="${e.code}"]`).forEach((b) => b.classList.remove('on')));
+
+// ── 動作開關
+for (const a of ACTIONS) {
+  const l = document.createElement('label');
+  l.innerHTML = `<input type="checkbox" checked data-a="${a}"> ${ACTION_NAMES[a]}`;
+  $('toggles').appendChild(l);
+}
+$('toggles').addEventListener('change', () => kit.setDisabled([...document.querySelectorAll('#toggles input:not(:checked)')].map((i) => i.dataset.a)));
+$('sens').addEventListener('click', (e) => {
+  const s = e.target.closest('button')?.dataset.s; if (!s) return;
+  kit.setSensitivity(s);
+  for (const b of $('sens').children) b.setAttribute('aria-pressed', b.dataset.s === s);
+});
+$('recal').onclick = () => kit.calibrate();
+
+// ── 事件
+let nowTimer;
+kit.on('action', (e) => {
+  $('now').innerHTML = `${describe(e)}${e.strength ? `<small>力道 ${Math.round(e.strength * 100)}%</small>` : ''}`;
+  $('now').style.opacity = 1;
+  clearTimeout(nowTimer); nowTimer = setTimeout(() => ($('now').style.opacity = 0.35), 1200);
+  log(e);
+});
+kit.on('status', (e) => {
+  if (e.calibrated) { $('calib').textContent = '✅ 已校準。現在可以做動作了。'; log(e, '已自動校準'); return; }
+  log(e);
+});
+function log(e, text = describe(e)) {
+  const li = document.createElement('li');
+  const { time, source, ...rest } = e;
+  li.innerHTML = `<time>${(time / 1000).toFixed(1)}s</time><div>${text}<br><code>${JSON.stringify(rest)}</code></div>`;
+  $('log').prepend(li);
+  while ($('log').children.length > 60) $('log').lastChild.remove();
+}
+
+// ── 來源切換
+async function useSource(src) {
+  for (const b of $('sources').children) b.setAttribute('aria-pressed', b.dataset.src === src);
+  $('clip').hidden = src !== 'replay';
+  $('privacy').hidden = src !== 'camera';
+  $('recRow').hidden = src !== 'camera';
+  $('calib').textContent = '先保持不動約 1 秒，系統會記住你平常的姿勢（自動校準）。';
+  const video = $('video');
+  video.style.display = src === 'camera' ? '' : 'none';
+  try {
+    if (src === 'keyboard') {
+      $('sourceNote').textContent = '畫面裡是「模擬人偶」的骨架。用按鍵（或直接點按鈕）讓人偶做動作，辨識流程跟鏡頭模式完全相同。';
+      await kit.useKeyboard();
+    } else if (src === 'replay') {
+      if (!$('clip').options.length) for (const f of FIXTURES) $('clip').add(new Option(FIX_NAMES[f], f));
+      $('sourceNote').textContent = '播放預先錄好的骨架數字檔（合成資料，循環播放）。可以用來檢查辨識結果是否穩定。';
+      const clip = await (await fetch(`../fixtures/${$('clip').value}.json`)).json();
+      await kit.useReplay(clip, { loop: true });
+    } else {
+      $('sourceNote').textContent = '平板橫放、鏡頭與胸口差不多高，人站（或坐）在 1.5～2.5 公尺外，上半身和雙手都要在畫面裡。';
+      await kit.useCamera({ video, onStatus: (s) => { $('statusText').textContent = s || '鏡頭運作中'; } });
+    }
+  } catch (err) {
+    console.error(err);
+    $('sourceNote').textContent = '⚠️ 無法啟動：' + (err.name === 'NotAllowedError' ? '鏡頭權限被拒絕，請在瀏覽器網址列允許使用鏡頭。' : err.name === 'NotFoundError' ? '這台裝置找不到鏡頭。' : err.message);
+  }
+}
+$('sources').addEventListener('click', (e) => { const s = e.target.closest('button')?.dataset.src; if (s) useSource(s); });
+$('clip').addEventListener('change', () => useSource('replay'));
+
+// ── 錄製骨架（只有數字）
+$('recBtn').onclick = () => {
+  kit.recorder.start();
+  $('recBtn').disabled = true;
+  let n = 10;
+  const tick = setInterval(() => {
+    $('recBtn').textContent = `⏺ 錄製中… ${--n}`;
+    if (n > 0) return;
+    clearInterval(tick);
+    const clip = kit.recorder.stop('camera-' + new Date().toISOString().slice(0, 19));
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([JSON.stringify(clip)], { type: 'application/json' })), download: clip.name + '.json' });
+    a.click();
+    $('recBtn').disabled = false; $('recBtn').textContent = '⏺ 錄製骨架 10 秒';
+  }, 1000);
+};
+
+// ── 骨架繪製 + 儀表
+const cv = $('skel'), ctx = cv.getContext('2d');
+const BONES = [['leftShoulder', 'rightShoulder'], ['leftShoulder', 'leftElbow'], ['leftElbow', 'leftWrist'], ['rightShoulder', 'rightElbow'], ['rightElbow', 'rightWrist'],
+  ['leftShoulder', 'leftHip'], ['rightShoulder', 'rightHip'], ['leftHip', 'rightHip'], ['leftHip', 'leftKnee'], ['leftKnee', 'leftAnkle'], ['rightHip', 'rightKnee'], ['rightKnee', 'rightAnkle']];
+function draw() {
+  requestAnimationFrame(draw);
+  const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  if (cv.width !== Math.round(r.width * dpr)) { cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); }
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  const p = kit.lastPose;
+  if (p && p.kp) {
+    const k = p.kp, P = (n) => k[n] && k[n].v > 0.4 ? [k[n].x * W, k[n].y * H] : null;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 6 * dpr; ctx.strokeStyle = '#63b8ff';
+    for (const [a, b] of BONES) { const A = P(a), B = P(b); if (A && B) { ctx.beginPath(); ctx.moveTo(...A); ctx.lineTo(...B); ctx.stroke(); } }
+    for (const n of ['leftWrist', 'rightWrist']) { const A = P(n); if (A) { ctx.fillStyle = '#ffb547'; ctx.beginPath(); ctx.arc(...A, 10 * dpr, 0, 7); ctx.fill(); } }
+    const N = P('nose'); if (N) { ctx.strokeStyle = '#e8f1f7'; ctx.lineWidth = 4 * dpr; ctx.beginPath(); ctx.arc(...N, 0.045 * W, 0, 7); ctx.stroke(); }
+    ctx.fillStyle = '#9bb4c6'; ctx.font = `${13 * dpr}px system-ui`;
+    const L = P('leftWrist'), R = P('rightWrist');
+    if (L) ctx.fillText('左手', L[0] - 30 * dpr, L[1] - 14 * dpr);
+    if (R) ctx.fillText('右手', R[0] + 8 * dpr, R[1] - 14 * dpr);
+  }
+  const s = kit.state;
+  $('leanBar').style.left = (s.lean < 0 ? 50 + s.lean * 50 : 50) + '%';
+  $('leanBar').style.width = Math.abs(s.lean) * 50 + '%';
+  $('leanVal').textContent = s.lean.toFixed(2);
+  $('crouchBar').style.width = s.crouch * 100 + '%'; $('crouchVal').textContent = s.crouch.toFixed(2);
+  $('armsBar').style.width = s.armsUp * 100 + '%'; $('armsVal').textContent = s.armsUp === 1 ? '雙手' : s.armsUp ? '單手' : '0';
+  const ok = s.tracking === 'ok';
+  $('status').querySelector('.dot').classList.toggle('ok', ok);
+  if (kit.source !== 'camera' || ok || s.hint) $('statusText').textContent = ok ? `追蹤正常（${{ keyboard: '鍵盤模擬', camera: '鏡頭', replay: '預錄' }[kit.source] || ''}）` : s.hint || '等待中';
+  $('hint').textContent = s.hint; $('hint').classList.toggle('show', !ok && !!s.hint);
+  const st = kit.stats;
+  $('perf').textContent = st ? `鏡頭 ${st.fps} 格/秒・每格運算 ${st.inferMs.toFixed(0)} 毫秒・${st.delegate}` : '';
+}
+draw();
+useSource('keyboard');
+</script>
+</body>
+</html>

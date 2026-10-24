@@ -7,7 +7,7 @@ const [query = '', out = 'shot.png', w = '1600', h = '900', warm = '6'] = proces
 const width = Number(w), height = Number(h);
 const browser = await launch({ width, height });
 try {
-  const page = await openApp(browser, `http://localhost:5173/?render&${query}`, { width, height });
+  const page = await openApp(browser, `http://localhost:5173/ocean.html?render&${query}`, { width, height });
   const info = await page.evaluate(async (warmSeconds) => {
     const dt = 1 / 30;
     const n = Math.round(warmSeconds / dt);

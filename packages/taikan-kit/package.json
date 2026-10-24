@@ -1,0 +1,16 @@
+{
+  "name": "taikan-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "體感工具組：把鏡頭姿態（或鍵盤模擬）轉成簡單的動作事件。不儲存、不上傳影像。",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "fixtures": "node tools/make-fixtures.mjs"
+  },
+  "license": "MIT"
+}

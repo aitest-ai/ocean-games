@@ -7,7 +7,7 @@ const [T = '24', pts = '0.5,0.4', extra = ''] = process.argv.slice(2);
 const width = 960, height = 540;
 const browser = await launch({ width, height });
 try {
-  const page = await openApp(browser, `http://localhost:5173/?render&q=high&scale=1&${extra}`, { width, height });
+  const page = await openApp(browser, `http://localhost:5173/ocean.html?render&q=high&scale=1&${extra}`, { width, height });
   const out = await page.evaluate(({ T, pts }) => {
     const dt = 1 / 30;
     for (let t = Math.max(T - 2, -2); t < T - dt / 2; t += dt) app.filmFrame(t, dt);

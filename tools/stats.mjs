@@ -4,7 +4,7 @@ import { launch, openApp } from './browser.mjs';
 const browser = await launch({ width: 320, height: 180 });
 try {
   for (const q of process.argv.slice(2)) {
-    const page = await openApp(browser, `http://localhost:5173/?render&${q}`, { width: 320, height: 180 });
+    const page = await openApp(browser, `http://localhost:5173/ocean.html?render&${q}`, { width: 320, height: 180 });
     const s = await page.evaluate(() => {
       for (let i = 0; i < 30; i++) app.frame(1 / 30);
       const st = app.ocean.stats;

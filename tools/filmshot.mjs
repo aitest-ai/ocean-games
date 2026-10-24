@@ -8,7 +8,7 @@ await mkdir(outDir, { recursive: true });
 const browser = await launch({ width, height });
 try {
   for (const T of times.split(',').map(Number)) {
-    const page = await openApp(browser, `http://localhost:5173/?render&q=${q}&scale=1&${extra}`, { width, height });
+    const page = await openApp(browser, `http://localhost:5173/ocean.html?render&q=${q}&scale=1&${extra}`, { width, height });
     const data = await page.evaluate(async (T) => {
       const dt = 1 / 30;
       // the sea under the frame's weather first: in the film, foam has built up since the act began

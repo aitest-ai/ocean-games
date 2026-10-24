@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>文件</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg: #f7f9fb; --text: #1b2733; --muted: #5b6b79; --line: #d9e2ea; --accent: #c46a00; --link: #0b63b6; --code: #eef3f7; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0b1824; --text: #e6eef5; --muted: #9db1c2; --line: #23394c; --accent: #ffb547; --link: #7cc4ff; --code: #13283a; } }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.75 system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  a { color: var(--link); }
+  nav { position: sticky; top: 0; background: var(--bg); border-bottom: 1px solid var(--line); z-index: 2; }
+  nav .in { max-width: 920px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  nav a.tab { text-decoration: none; padding: 6px 12px; border-radius: 999px; color: var(--text); border: 1px solid var(--line); font-size: 15px; }
+  nav a.tab[aria-current="page"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+  nav .home { margin-left: auto; font-size: 15px; }
+  article { max-width: 920px; margin: 0 auto; padding: 8px 16px 64px; }
+  h1 { font-size: 30px; line-height: 1.3; }
+  h2 { margin-top: 2em; padding-bottom: 4px; border-bottom: 2px solid var(--line); font-size: 24px; }
+  h3 { margin-top: 1.6em; font-size: 20px; }
+  table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; font-size: 15px; line-height: 1.55; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; vertical-align: top; text-align: left; }
+  th { background: var(--code); }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
+  pre { background: var(--code); padding: 12px; border-radius: 8px; overflow-x: auto; line-height: 1.5; }
+  pre code { padding: 0; background: none; }
+  blockquote { margin: 1em 0; padding: 4px 16px; border-left: 4px solid var(--accent); color: var(--muted); background: var(--code); border-radius: 0 8px 8px 0; }
+  li + li { margin-top: 2px; }
+  .toc { font-size: 15px; background: var(--code); border-radius: 10px; padding: 10px 16px; }
+  .toc ul { margin: 4px 0; padding-left: 18px; }
+  img { max-width: 100%; }
+</style>
+</head>
+<body>
+<nav><div class="in">
+  <a class="tab" data-doc="plan" href="?doc=plan">📄 企劃文件</a>
+  <a class="tab" data-doc="status" href="?doc=status">📋 白話說明與測試結果</a>
+  <a class="tab" data-doc="taikan" href="?doc=taikan">🧍 輸入層說明</a>
+  <a class="home" href="../">← 回首頁</a>
+</div></nav>
+<article id="doc">載入中…</article>
+<script type="module">
+const DOCS = { plan: 'plan.md', status: 'status.md', taikan: '../packages/taikan-kit/README.md' };
+const key = new URLSearchParams(location.search).get('doc') || 'plan';
+for (const a of document.querySelectorAll('nav a.tab')) if (a.dataset.doc === key) a.setAttribute('aria-current', 'page');
+const el = document.getElementById('doc');
+try {
+  const md = await (await fetch(DOCS[key] || DOCS.plan)).text();
+  try {
+    const { marked } = await import('https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.esm.js');
+    el.innerHTML = marked.parse(md);
+    // 文件內的相對連結（例如 ../../game/）以 .md 檔所在位置為準
+    const base = new URL(DOCS[key] || DOCS.plan, location.href);
+    for (const a of el.querySelectorAll('a[href]')) {
+      const h = a.getAttribute('href');
+      if (!/^(https?:|#|mailto:)/.test(h)) a.href = new URL(h, base).href;
+    }
+    // 目錄
+    const hs = [...el.querySelectorAll('h2')];
+    hs.forEach((h, i) => (h.id = 's' + i));
+    if (hs.length > 3) {
+      const toc = document.createElement('div');
+      toc.className = 'toc';
+      toc.innerHTML = '<b>目錄</b><ul>' + hs.map((h) => `<li><a href="#${h.id}">${h.textContent}</a></li>`).join('') + '</ul>';
+      el.querySelector('h1')?.after(toc);
+    }
+    document.title = el.querySelector('h1')?.textContent || document.title;
+  } catch {
+    // 排版程式載入失敗（例如學校網路擋 CDN）：直接顯示原文
+    el.innerHTML = '';
+    const pre = document.createElement('pre');
+    pre.style.whiteSpace = 'pre-wrap';
+    pre.textContent = md;
+    el.appendChild(pre);
+  }
+} catch (e) {
+  el.textContent = '文件載入失敗：' + e.message;
+}
+</script>
+</body>
+</html>

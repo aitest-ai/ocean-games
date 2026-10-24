@@ -1,0 +1,11 @@
+# 網站只需要靜態檔；影片母帶、除錯截圖、離線算圖與測試工具不上傳
+media/*.mp4
+seam_*.png
+render/
+tools/
+tests/
+packages/taikan-kit/test/
+packages/taikan-kit/tools/
+node_modules/
+out/
+frames/

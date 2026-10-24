@@ -3,7 +3,7 @@ import { launch, openApp } from './browser.mjs';
 const browser = await launch({ width: 400, height: 300 });
 try {
   for (const q of ['preset=breeze', 'preset=breeze&wind=15', 'preset=storm']) {
-    const page = await openApp(browser, `http://localhost:5173/?render&${q}`, { width: 400, height: 300 });
+    const page = await openApp(browser, `http://localhost:5173/ocean.html?render&${q}`, { width: 400, height: 300 });
     const r = await page.evaluate(() => {
       app.frame(1 / 30);
       const gl = app.gl;

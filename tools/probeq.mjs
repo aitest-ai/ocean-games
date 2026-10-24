@@ -6,7 +6,7 @@ const [q = 'preset=rain', pts = '0.5,0.1', warm = '6'] = process.argv.slice(2);
 const width = 640, height = 360;
 const browser = await launch({ width, height });
 try {
-  const page = await openApp(browser, `http://localhost:5173/?render&q=high&scale=1&${q}`, { width, height });
+  const page = await openApp(browser, `http://localhost:5173/ocean.html?render&q=high&scale=1&${q}`, { width, height });
   const out = await page.evaluate(({ pts, warm }) => {
     for (let i = 0; i < Math.round(warm * 30); i++) app.frame(1 / 30);
     const gl = app.gl;
