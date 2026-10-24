@@ -23,8 +23,12 @@ const HINTS = {
 const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
 
 export class Recognizer {
-  constructor({ sensitivity = 'normal', disabled = [], emit = () => {} } = {}) {
+  constructor({ sensitivity = 'normal', disabled = [], emit = () => {}, sideOk = false } = {}) {
     this.emit = emit;
+    // 側身站也算（打棒球的站姿）：兩肩在畫面上疊在一起、遠側的肩膀與手會被擋住。
+    // 開啟後：只要看得到一邊的肩膀就算「有人」，長度單位改用身體長度（肩到髖）推算，
+    // 單手腕被擋住時用另一隻手。正面站的人完全不受影響。
+    this.sideOk = sideOk;
     this.disabled = new Set(disabled);
     this.setSensitivity(sensitivity);
     this.reset();
@@ -32,6 +36,7 @@ export class Recognizer {
 
   setSensitivity(s) { this.sensitivity = s; this.k = SENSITIVITY[s] ?? 1; }
   setDisabled(list) { this.disabled = new Set(list); }
+  setSideOk(v) { this.sideOk = !!v; }
 
   reset() {
     this.filters = {};
@@ -72,7 +77,8 @@ export class Recognizer {
   // pose: { t, kp } 或 null（這一格沒有偵測到人）
   feed(pose, t = pose?.t ?? performance.now()) {
     const kp = pose?.kp;
-    if (!kp || !visible(kp.leftShoulder) || !visible(kp.rightShoulder)) {
+    const lsV = !!kp && visible(kp.leftShoulder), rsV = !!kp && visible(kp.rightShoulder);
+    if (!kp || !(lsV && rsV || (this.sideOk && (lsV || rsV)))) {
       if (t - this.lastSeen > 400) {
         this.setTracking('lost', t);
         // 人不見了：放掉所有「按住」類狀態，避免回來時誤觸
@@ -94,9 +100,17 @@ export class Recognizer {
       const f = (this.filters[name] ||= { x: new OneEuro(), y: new OneEuro() });
       p[name] = { x: f.x.filter(k.x, t), y: f.y.filter(k.y, t) };
     }
-    const L = p.leftShoulder, R = p.rightShoulder;
+    // 側身時只剩一邊的肩膀：兩邊都用那一個點
+    const L = p.leftShoulder || p.rightShoulder, R = p.rightShoulder || p.leftShoulder;
+    if (!L || !R) return; // 肩膀可信度在 0.4～0.5 之間（濾波前看得到、這格沒收）：這格略過
     const S = { x: (L.x + R.x) / 2, y: (L.y + R.y) / 2 };
-    const sw = Math.max(Math.hypot(R.x - L.x, R.y - L.y), 0.03);
+    let sw = Math.max(Math.hypot(R.x - L.x, R.y - L.y), 0.03);
+    if (this.sideOk) {
+      // 側身時肩寬縮成一點，改用「肩到髖」的長度 ÷ 1.5 當單位（正面站時兩者差不多）
+      const hip = (L === p.leftShoulder ? p.leftHip : p.rightHip) || p.leftHip || p.rightHip;
+      if (hip) { const u = Math.hypot(hip.x - S.x, hip.y - S.y) / 1.5; this.lastUnit = u; sw = Math.max(sw, u); }
+      else if (this.lastUnit && sw < this.lastUnit * 0.6) sw = this.lastUnit;
+    }
 
     // 2. 追蹤品質提示
     const lw = p.leftWrist, rw = p.rightWrist;
@@ -277,7 +291,7 @@ export class Recognizer {
   // 雙手揮棒：兩隻手腕靠在一起（握棒的樣子），一起快速水平揮過。比單手揮臂的門檻低一點、
   // 觸發早一點（打擊要抓時機）；送出 bat 之後 0.4 秒內不再算單手 swing，一次揮棒只算一個事件。
   detectBat(f) {
-    if (this.disabled.has('bat') || !f.hl || !f.hr) return;
+    if (this.disabled.has('bat') || !(this.sideOk ? f.mid : f.hl && f.hr)) return;
     const q = this.ago(80);
     if (!q.mid) return;
     const dt = Math.max((f.t - q.t) / 1000, 1e-3);
@@ -287,7 +301,7 @@ export class Recognizer {
     let hi = -1e9, lo = 1e9;
     for (let i = this.hist.length - 1; i >= 0 && f.t - this.hist[i].t <= 300; i--) {
       const h = this.hist[i], m = h.mid;
-      if (f.t - h.t <= 200 && (!h.hl || !h.hr || Math.hypot(h.hl.x - h.hr.x, h.hl.y - h.hr.y) > 0.6)) return;
+      if (f.t - h.t <= 200 && (this.sideOk ? !h.mid || (h.hl && h.hr && Math.hypot(h.hl.x - h.hr.x, h.hl.y - h.hr.y) > 0.6) : !h.hl || !h.hr || Math.hypot(h.hl.x - h.hr.x, h.hl.y - h.hr.y) > 0.6)) return;
       if (m) { hi = Math.max(hi, m.x); lo = Math.min(lo, m.x); }
     }
     const travel = vx < 0 ? f.mid.x - hi : f.mid.x - lo;

@@ -21,7 +21,7 @@ export { drawSkeleton } from './draw.js';
 
 export const ACTIONS = ['paddle', 'lean', 'raise', 'jump', 'swing', 'crouch', 'bat'];
 
-export function createTaikan({ sensitivity = 'normal', disabled = [] } = {}) {
+export function createTaikan({ sensitivity = 'normal', disabled = [], sideOk = false } = {}) {
   const bus = new Emitter();
   let source = null;
   const kit = {
@@ -36,6 +36,7 @@ export function createTaikan({ sensitivity = 'normal', disabled = [] } = {}) {
     calibrate: () => rec.calibrate(),
     setSensitivity: (s) => rec.setSensitivity(s),
     setDisabled: (list) => rec.setDisabled(list),
+    setSideOk: (v) => rec.setSideOk(v),
     get disabled() { return [...rec.disabled]; },
     get sensitivity() { return rec.sensitivity; },
     async use(src, onStatus) {
@@ -59,7 +60,7 @@ export function createTaikan({ sensitivity = 'normal', disabled = [] } = {}) {
     stop() { source?.stop(); source = null; kit.source = null; },
   };
   const rec = new Recognizer({
-    sensitivity, disabled,
+    sensitivity, disabled, sideOk,
     emit: (e) => {
       const ev = { ...e, time: Math.round(e.time), source: kit.source };
       if (e.type === 'status') bus.emit('status', ev);
