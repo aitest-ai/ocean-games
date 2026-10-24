@@ -100,3 +100,10 @@ test('預錄檔（fixtures）都能播放並得到預期動作', () => {
     assert.deepEqual(got, clip.expect, f);
   }
 });
+
+test('兩個人同時入鏡超過 1 秒 → status crowd；離開後恢復 ok', () => {
+  const poses = scriptPoses([], { durationMs: 4000 }).map((p) => ({ ...p, others: p.t > 1500 && p.t < 3000 ? 1 : 0 }));
+  const { status } = run(poses);
+  const seq = status.filter((e) => e.tracking).map((e) => e.tracking);
+  assert.deepEqual(seq.slice(-2), ['crowd', 'ok']);
+});

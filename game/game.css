@@ -68,3 +68,23 @@ select option { color: #000; }
 .camview { position: fixed; right: 10px; bottom: 64px; width: 160px; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #000; }
 .camview canvas { width: 100%; height: 100%; }
 @media (max-width: 700px) { .chip b { font-size: 18px; } .keys-help { display: none; } }
+.chips { display: contents; }
+#hExtra { position: absolute; left: 10px; top: 70px; pointer-events: none; }
+.camview { pointer-events: none; }
+.camview span { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 11px; color: var(--muted); }
+.other-games { font-size: 14px; color: var(--muted); }
+.other-games a { color: #8fcaff; margin-left: 4px; }
+.overlay[hidden] { display: none; }
+/* mode HUD widgets */
+.widget { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; font-size: 14px; color: var(--muted); width: max-content; max-width: 46vw; }
+.widget .bar { position: relative; width: min(200px, 34vw); height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); overflow: hidden; margin-top: 4px; }
+.widget .bar.center::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--muted); }
+.widget .bar i { position: absolute; top: 0; bottom: 0; left: 0; background: var(--accent); }
+.widget .bar .mark { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px; background: #fff; border-radius: 2px; }
+.widget b { color: var(--text); }
+@media (max-width: 700px) { #hExtra { top: 110px; } .widget { font-size: 12px; } }
+.arrow[hidden] { display: none; }
+.windw { display: flex; gap: 10px; align-items: center; }
+.windw .dial { width: 74px; height: 74px; }
+.windw .dial svg { width: 100%; height: 100%; }
+.widget small { display: block; font-size: 12px; margin-top: 2px; }

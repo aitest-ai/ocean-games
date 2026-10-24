@@ -23,6 +23,8 @@ const types = {
   '.m4a': 'audio/mp4',
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',
+  '.wasm': 'application/wasm',
+  '.task': 'application/octet-stream',
 };
 
 createServer(async (req, res) => {

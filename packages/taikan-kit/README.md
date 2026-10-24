@@ -4,7 +4,8 @@
 
 - **不儲存、不上傳鏡頭影像**：影像只在這台裝置的記憶體裡即時分析，算完就丟；對外只輸出骨架座標（數字）與動作事件。
 - **沒有鏡頭也能用**：鍵盤／滑鼠模擬、預錄骨架檔播放，走的都是跟鏡頭一樣的辨識流程。
-- **零相依、可抽離**：整個資料夾複製到別的專案就能用，不需要建置工具（瀏覽器原生 ES module）。只有「鏡頭模式」會在第一次使用時從 CDN 下載姿態模型。
+- **零相依、可抽離**：整個資料夾複製到別的專案就能用，不需要建置工具（瀏覽器原生 ES module）。
+- **不依賴外部網站**：姿態模型與執行檔放在本資料夾的 `vendor/mediapipe/`（約 24 MB，裝置第一次只下載其中約 15 MB，之後由瀏覽器快取）。本站載入失敗時才自動改從 CDN 下載。
 
 測試頁：`demo/index.html`（網站上的「輸入層測試頁」）。
 
@@ -69,6 +70,7 @@ const steer = kit.state.lean;            // -1（向左）~ +1（向右）
 | `tooClose` / `tooFar` | 太近／太遠 | 太近了，請往後退一步／太遠了，請往前一點 |
 | `edge` | 人在畫面邊緣 | 請移到畫面中間 |
 | `hands` | 1.5 秒看不到手 | 請讓雙手也出現在畫面裡 |
+| `crowd` | 鏡頭同時看到兩個人超過 1 秒（會追蹤比較靠近鏡頭的那位） | 鏡頭前有兩個人，請只留一位玩家 |
 
 自動校準完成時也會送一次 `{ type: 'status', calibrated: true }`。
 
@@ -88,6 +90,22 @@ const steer = kit.state.lean;            // -1（向左）~ +1（向右）
 - `createTaikan({ sensitivity, disabled })`、`kit.setSensitivity('low'|'normal'|'high')`、`kit.setDisabled(['jump', 'swing'])`
 - 被關閉的動作完全不會送出，遊戲要提供替代方式（例如自動前進）。
 - `kit.calibrate()`：重新校準（換人、換坐姿時）。開始後只要站好不動約 0.8 秒會自動校準，之後也會慢慢跟著玩家的位置調整。
+
+## 各遊戲怎麼用這些事件
+
+這一輪新增衝浪、帆船兩款，**不需要新的事件種類**，都用既有事件組合出來：
+
+| 遊戲 | 划槳 `paddle` | 傾斜 `lean` | 舉手 `raise` | 揮臂 `swing` | 蹲低 `crouch` | 跳躍 `jump` |
+|---|---|---|---|---|---|---|
+| 🛶 划舟 | 前進＋轉向 | 轉向（連續值） | 雙手＝開始／暫停 | — | — | — |
+| 🏄 衝浪 | — | 轉彎（連續值） | 單手＝花式動作；雙手＝暫停 | — | 加速（用連續值 `state.crouch`，坐姿＝身體前彎） | 預設關閉；開啟時跳過漂流木 |
+| ⛵ 帆船 | — | 轉舵（連續值） | 左手＝拉緊帆、右手＝放鬆帆；雙手＝暫停 | 換舷（船頭轉過風的另一邊） | 陣風時壓船（連續值） | — |
+
+每款遊戲用 `kit.setDisabled([...])` 關掉自己不用的動作（例如划舟關掉 `swing`），減少誤判；被玩家「跳過」的動作也一併關掉，遊戲改用自動替代（自動前進、自動調帆、自動閃避……）。
+
+## 畫骨架
+
+`drawSkeleton(ctx, pose, opts)`（`src/draw.js`）：在 2D canvas 上只畫骨架線條。測試頁、遊戲的「怎麼玩」動畫（用模擬人偶示範動作）、遊戲中右下角「鏡頭看到的你」小窗都用它，**不顯示任何鏡頭影像**。
 
 ## 鍵盤／滑鼠模擬
 
@@ -121,10 +139,10 @@ const steer = kit.state.lean;            // -1（向左）~ +1（向右）
 | 決定 | 理由 |
 |---|---|
 | **MediaPipe Pose Landmarker（lite 模型）**，在瀏覽器裡跑 | 免安裝、免伺服器，影像不離開裝置（符合不上傳的要求）；lite 模型約 5.5 MB，平板 GPU 上每格約 10～30 毫秒；有 33 個關節點與可信度。相較 TensorFlow.js MoveNet，MediaPipe 在 iPad Safari 的支援較完整，且同一套也有手部、臉部模型，野球之後要擴充比較容易。 |
-| 版本鎖定 `@mediapipe/tasks-vision@0.10.21` | CDN 更新不會突然改變行為。學校網路若擋 CDN，可把 wasm 和模型放到自己的網站，用 `useCamera({ bundleUrl, wasmBase, modelUrl })` 指定。 |
+| 版本鎖定 `@mediapipe/tasks-vision@0.10.21`，**檔案放在本站** `vendor/mediapipe/` | 學校網路常擋外部 CDN；放在本站就和網頁同一個來源。本站失敗才改用 CDN（`camera.stats.modelSource` 會顯示 `local` 或 `cdn`）。授權：程式 Apache-2.0、模型依官方模型卡為 Apache-2.0，詳見 `vendor/mediapipe/README.md`。也可以用 `useCamera({ bundleUrl, wasmBase, modelUrl })` 指定其他位置。 |
 | GPU 加速，失敗自動改 CPU | 舊平板或某些瀏覽器不支援 GPU 推論時仍可用（會比較慢）。 |
 | 鏡頭 640×480、最多每秒 30 格 | 姿態辨識不需要高解析度；降低解析度可以省下 GPU 給海面畫面。 |
-| 只辨識一個人（`numPoses: 1`） | 多人同框時只追一個人比較穩定；規範上一台平板前只站一人。 |
+| 最多偵測兩個人（`numPoses: 2`），只追蹤最靠近鏡頭的那位 | 規範上一台平板前只站一人；偵測到第二個人時送出 `crowd` 提示，而不是追錯人。 |
 | 只用上半身判斷（肩、肘、腕、鼻） | 坐在桌前時腰和腳常被桌子擋住；上半身動作坐著站著都能做。 |
 
 ## 延遲與誤判處理
@@ -153,7 +171,7 @@ const steer = kit.state.lean;            // -1（向左）~ +1（向右）
 
 ```bash
 cd packages/taikan-kit
-npm test          # 12 項：各動作的觸發次數、15 fps 低格率、抖動與亂動不誤判、關閉動作、追蹤丟失、預錄檔
+npm test          # 13 項：各動作的觸發次數、15 fps 低格率、抖動與亂動不誤判、關閉動作、追蹤丟失、兩人同框、預錄檔
 npm run fixtures  # 重新產生 fixtures/（改了辨識器後，記得確認 expect 的變化是預期的）
 ```
 
@@ -168,6 +186,8 @@ src/puppet.js       模擬人偶（鍵盤模擬與測試用）
 src/sources/        camera.js（鏡頭）、keyboard.js（鍵盤）、replay.js（預錄）
 src/recorder.js     骨架錄製（只有數字）
 src/labels.js       事件的中文說明
+src/draw.js         畫骨架（只有線條）
+vendor/mediapipe/   姿態模型與執行檔（本站自架，含授權說明）
 demo/               測試頁
 fixtures/           預錄骨架檔（合成）
 test/               自動測試

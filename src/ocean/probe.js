@@ -52,7 +52,8 @@ export class OceanProbe {
 
   // sync: blocking readback (deterministic offline rendering); otherwise 1-3 frames latency.
   // xz: one point [x, z], or a list of up to `points` of them (then read this.results).
-  run(ot, xz, footprint, sync = false) {
+  // tag: any value describing the request; this.resultTag is the tag of the request this.results came from.
+  run(ot, xz, footprint, sync = false, tag = null) {
     const gl = this.gl;
     const pts = Array.isArray(xz[0]) ? xz : [xz];
     const flat = new Float32Array(this.n * 2);
@@ -65,6 +66,7 @@ export class OceanProbe {
         gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, this.data);
         gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
         this.decode();
+        this.resultTag = this.pendingTag;
       }
     }
     if (this.fence && !sync) return this.result;
@@ -74,12 +76,14 @@ export class OceanProbe {
     if (sync) {
       gl.readPixels(0, 0, 2 * this.n, 1, gl.RGBA, gl.FLOAT, this.data);
       this.decode();
+      this.resultTag = tag;
       return this.result;
     }
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
     gl.readPixels(0, 0, 2 * this.n, 1, gl.RGBA, gl.FLOAT, 0);
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
     this.fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    this.pendingTag = tag;
     gl.flush();
     return this.result;
   }

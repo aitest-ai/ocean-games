@@ -17,6 +17,7 @@ export { KEYMAP, Recognizer, KeyboardSource, ReplaySource, CameraSource, PoseRec
 export { Puppet, scriptPoses } from './puppet.js';
 export { KEYPOINTS, packPose, unpackPose, fromMediaPipe } from './pose.js';
 export { describe, ACTION_NAMES } from './labels.js';
+export { drawSkeleton } from './draw.js';
 
 export const ACTIONS = ['paddle', 'lean', 'raise', 'jump', 'swing', 'crouch'];
 

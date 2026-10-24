@@ -33,6 +33,14 @@
   .ok { color: var(--ok); } .bad { color: var(--warn); } .mid { color: var(--accent); }
   ul.small { margin: 6px 0 0; padding-left: 20px; color: var(--muted); font-size: 15px; }
   .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .pick { font-size: 22px; margin: 8px 0 12px; }
+  .card.game { align-items: center; text-align: center; }
+  .card .mini { width: 120px; height: 120px; background: rgba(0, 0, 0, 0.25); border-radius: 14px; margin: 8px 0 10px; }
+  .tags { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .tags li { font-size: 13px; background: var(--panel2); border-radius: 999px; padding: 2px 10px; color: var(--muted); }
+  .hint { color: var(--muted); font-size: 15px; margin: 10px 0 24px; }
+  .net { margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+  .net button { font: inherit; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; cursor: pointer; }
   footer { color: var(--muted); font-size: 14px; margin-top: 28px; border-top: 1px solid var(--line); padding-top: 14px; }
 </style>
 </head>
@@ -43,13 +51,36 @@
   <p>國小高年級用平板（或電腦）的鏡頭做運動動作來玩的海洋遊戲。海面、天氣和浪都是即時算出來的；鏡頭畫面只在裝置上分析，不錄影、不上傳。</p>
 </div></div>
 <main>
-  <div class="cards">
-    <a class="card" href="game/">
+  <h2 class="pick">🎮 選一款遊戲</h2>
+  <div class="cards games">
+    <a class="card game" href="game/?g=kayak">
       <span class="ico">🛶</span>
-      <h2>玩遊戲：划舟浮標賽</h2>
-      <p>划槳前進、穿過紅綠浮標門。可用鏡頭體感，也可用鍵盤模擬（A／D 划槳、←→ 傾斜）。三種難度對應三種天氣。</p>
+      <h2>划舟浮標賽</h2>
+      <canvas class="mini" data-move="paddle-alt" width="200" height="200" aria-hidden="true"></canvas>
+      <p>在身體<b>左右兩邊往下划</b>，讓小艇穿過紅綠浮標門。</p>
+      <ul class="tags"><li>💪 強度：中</li><li>🪑 可坐著玩</li><li>⏱ 約 2.5～4 分鐘</li></ul>
       <span class="go">開始玩 →</span>
     </a>
+    <a class="card game" href="game/?g=surf">
+      <span class="ico">🏄</span>
+      <h2>衝浪</h2>
+      <canvas class="mini" data-move="lean" width="200" height="200" aria-hidden="true"></canvas>
+      <p><b>身體傾斜</b>轉彎、<b>蹲低</b>加速，閃開漂流木、撿起海上垃圾。</p>
+      <ul class="tags"><li>💪 強度：坐低／站中</li><li>🪑 可坐著玩</li><li>⏱ 90 秒</li></ul>
+      <span class="go">開始玩 →</span>
+    </a>
+    <a class="card game" href="game/?g=sail">
+      <span class="ico">⛵</span>
+      <h2>帆船</h2>
+      <canvas class="mini" data-move="swing" width="200" height="200" aria-hidden="true"></canvas>
+      <p>看風向、<b>傾斜轉舵</b>、<b>揮手換舷</b>，學會逆風要走「之字形」。</p>
+      <ul class="tags"><li>💪 強度：低</li><li>🪑 可坐著玩</li><li>⏱ 約 2～4 分鐘</li></ul>
+      <span class="go">開始玩 →</span>
+    </a>
+  </div>
+  <p class="hint">每款遊戲打開時會先出現「怎麼玩」動畫說明；做不到的動作都可以在選單裡關掉，遊戲一樣能玩完。</p>
+
+  <div class="cards">
     <a class="card" href="packages/taikan-kit/demo/">
       <span class="ico">🧍</span>
       <h2>輸入層測試頁</h2>
@@ -62,12 +93,22 @@
       <p>5 款運動型海洋遊戲的動作、規則、難度、天氣影響，場地與安全規範、坐著玩的方式，以及開發優先順序與建議。</p>
       <span class="go">閱讀企劃 →</span>
     </a>
+    <a class="card" href="docs/?doc=status">
+      <span class="ico">📋</span>
+      <h2>白話說明與測試結果</h2>
+      <p>這一輪做了什麼、我替您做的決定、自我測試結果，以及需要您用平板實測的項目。</p>
+      <span class="go">閱讀說明 →</span>
+    </a>
   </div>
 
   <section class="box">
     <h2>🔍 這台裝置能不能玩？（自動檢查）</h2>
     <div class="checks" id="checks"></div>
     <p style="margin:10px 0 0;font-size:15px;color:var(--muted)">這裡只檢查「瀏覽器有沒有這些功能」，順不順還是要實際打開遊戲看右下角的「格/秒」（25 以上就算順）。</p>
+    <div class="net">
+      <button id="netBtn">📶 測試學校網路（下載一次姿態模型，約 6 MB）</button>
+      <span id="netOut"></span>
+    </div>
   </section>
 
   <div class="two">
@@ -92,6 +133,27 @@
     以開源專案 <a href="https://github.com/Leonxlnx/open-water">open-water</a>（MIT 授權，© 2026 Leonxlnx）為底座。雷聲、雨聲錄音另依 CC 授權使用，詳見 CREDITS。
   </footer>
 </main>
+<script type="module">
+// 遊戲卡片上的小動畫：跟遊戲「怎麼玩」畫面同一個模擬人偶
+import { mountMini } from './src/game/howto.js';
+for (const cv of document.querySelectorAll('canvas.mini')) mountMini(cv, cv.dataset.move);
+
+// 學校網路檢查：從本站下載姿態模型一次，看要多久
+document.getElementById('netBtn').onclick = async () => {
+  const out = document.getElementById('netOut');
+  out.textContent = '下載中…';
+  const t0 = performance.now();
+  try {
+    const r = await fetch('packages/taikan-kit/vendor/mediapipe/pose_landmarker_lite.task', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const n = (await r.arrayBuffer()).byteLength;
+    const s = (performance.now() - t0) / 1000;
+    out.innerHTML = `<span class="s ok">✅ ${(n / 1048576).toFixed(1)} MB 花了 ${s.toFixed(1)} 秒（${(n * 8 / 1e6 / s).toFixed(1)} Mbps）。${s > 20 ? '有點慢，第一次開鏡頭要多等一下，之後會快取。' : '鏡頭模式可以正常載入。'}</span>`;
+  } catch (e) {
+    out.innerHTML = `<span class="s bad">❌ 下載失敗（${e.message}）。學校網路可能擋住了本網站的大檔案，請截圖回報。</span>`;
+  }
+};
+</script>
 <script>
 (function () {
   const items = [];

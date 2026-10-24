@@ -210,6 +210,9 @@ export class Props {
     this.queue = [];
   }
 
+  // register a game's own mesh (a MeshBuilder) under a name
+  define(name, builder) { this.meshes[name] = builder.build(this.gl); }
+
   // queue a draw for this frame: mesh name, model matrix, tint, glow
   add(mesh, model, tint = [1, 1, 1], glow = 0) { this.queue.push({ mesh, model, tint, glow }); }
 
@@ -245,4 +248,12 @@ export function modelMatrix(pos, yaw, pitch = 0, roll = 0, scale = 1) {
   return o;
 }
 
+// scale a model matrix along its own x / y / z axes (a crouching rider, a swelling sail)
+export function scaled(m, [sx, sy, sz]) {
+  const o = new Float32Array(m);
+  for (let i = 0; i < 3; i++) { o[i] *= sx; o[4 + i] *= sy; o[8 + i] *= sz; }
+  return o;
+}
+
+export { lin };
 export const COLORS = { red: lin(0xe5332a), green: lin(0x1fae55), yellow: lin(0xffc21a), grey: lin(0x8a8f96), white: [1, 1, 1] };
