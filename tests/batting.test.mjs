@@ -82,3 +82,13 @@ test('難度：時機比較不準（誤差 0.15 秒）的學生，簡單模式�
   const x = play(DIFFICULTY.easy, 0.15, 13);
   assert.ok(Math.min(...x.stars) >= 2, 'stars ' + x.stars);
 });
+
+test('球會飛過本壘板、到達捕手手套（不會在本壘前停住）', async () => {
+  const { makePitch, MITT_Z, PLATE_Z, DIFFICULTY } = await import('../src/game/batting-logic.js');
+  for (const k of Object.keys(DIFFICULTY)) {
+    const p = makePitch(DIFFICULTY[k], () => 0.5);
+    const tMitt = p.T + (MITT_Z - PLATE_Z) / p.vel(p.T)[2]; // 與 batting.js 的算法相同
+    assert.ok(tMitt > p.T, '手套時間要在本壘板之後');
+    assert.ok(p.pos(tMitt)[2] <= MITT_Z + 0.01, '球要到手套的位置');
+  }
+});

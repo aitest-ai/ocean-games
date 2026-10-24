@@ -8,9 +8,8 @@ import { DIFFICULTY, LABEL, SCORE, PLATE_Z, MITT_Z, makePitch, judgeSwing, flyBa
 
 const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
 // 各種輸入「動作開始 → 事件送出」的延遲（秒）。判定時把揮棒時間往前推這麼多。
-//   鍵盤／畫面按鈕：按下去後模擬人偶要 0.36 秒才揮到一半；鏡頭：事件在揮到一半時送出，再加拍攝運算約 0.1 秒；
-//   身體傾斜代替揮棒：傾斜要約 0.2 秒才判定
-const LATENCY = { keyboard: 0.36, camera: 0.1, replay: 0.1, lean: 0.28 };
+//   鍵盤／畫面按鈕：按下去後模擬人偶要 0.36 秒才揮到一半；鏡頭：事件在雙手揮到身體前面時送出，再加拍攝運算約 0.1 秒
+const LATENCY = { keyboard: 0.36, camera: 0.1, replay: 0.1 };
 const BATTER_X = FIELD.plateWidth / 2 + FIELD.boxGap + FIELD.box[0] / 2 + 0.05;
 
 // ── 人偶的關鍵姿勢（右打者；左打者整個鏡像） ──
@@ -41,8 +40,6 @@ export const batting = {
   difficulties: DIFFICULTY,
   soundLabel: '球場聲音（觀眾、擊球聲）',
   options: [
-    { key: 'oneHand', label: '單手揮也算（雙手握在一起不方便的同學）', default: true },
-    { key: 'leanSwing', label: '用「身體往左或右傾」代替揮棒（手臂不方便的同學）' },
     { key: 'autoSwing', label: '自動揮棒（只看球，練習分辨好球、壞球）' },
     { key: 'autoCalib', label: '自動校正揮棒時機（依你前幾球的快慢調整，建議開著）', default: true },
   ],
@@ -52,7 +49,7 @@ export const batting = {
     '平板放穩、離玩家 <b>2 公尺以上</b>，揮手時打不到平板。',
     '可以<b>坐在椅子上玩</b>（只轉上半身揮）；選沒有扶手的椅子，揮的時候手不會撞到。',
     '<b>不用很用力</b>：中等速度就會判定，太用力容易扭到肩膀或腰。每人連續玩不超過 5 分鐘。',
-    '做不到的動作可以在上面改成「單手揮」「身體傾斜」或「自動揮棒」。',
+    '做不到雙手揮的同學，可以在上面改選「自動揮棒」。',
     '看不到人時遊戲會自動暫停。🔒 鏡頭畫面只在這台平板上分析，不錄影、不上傳。',
   ],
   keysHelp: '空白鍵（或 K）揮棒　Enter（按住）雙手舉高＝暫停',
@@ -66,16 +63,15 @@ export const batting = {
 
   howto(s) {
     const cards = [];
-    if (!s.autoSwing && !s.leanSwing) cards.push({ move: 'bat', title: '雙手揮棒', text: '雙手像握著球棒放在肩膀旁邊，<b>球快到本壘時往前揮過身體</b>', seated: '坐著也行：只轉上半身揮', skip: '做不到可以改「單手揮」「身體傾斜」或「自動揮棒」' });
-    if (!s.autoSwing && !s.leanSwing && s.oneHand) cards.push({ move: 'swing-one', title: '單手揮也算', text: '一隻手快速橫著揮過身體，也算一次揮棒', seated: '坐著一樣做' });
-    if (!s.autoSwing && s.leanSwing) cards.push({ move: 'lean', title: '身體傾斜＝揮棒', text: '球快到的時候，上半身<b>往左或往右歪</b>一下就算揮棒', seated: '坐著一樣做' });
+    if (!s.autoSwing) cards.push({ move: 'bat', title: '雙手一起揮棒', text: '兩隻手<b>靠在一起</b>像握著球棒放在肩膀旁邊，<b>球快到本壘時，雙手一起往前揮過身體</b>。雙手揮過身體的那一下就是擊球的瞬間', seated: '坐著也行：只轉上半身揮', skip: '做不到可以改選「自動揮棒」' });
     if (s.autoSwing) cards.push({ move: 'idle', title: '自動揮棒', text: '遊戲會自動揮棒。看球的位置，猜猜看是<b>好球</b>還是<b>壞球</b>！', seated: '坐著看就好' });
     cards.push({ move: 'raise-both', title: '雙手舉高 1 秒', text: '開始、暫停、繼續', seated: '坐著一樣做' });
     return cards;
   },
 
   disabledActions(s) {
-    return ['paddle', 'jump', 'crouch', ...(s.oneHand && !s.leanSwing && !s.autoSwing ? [] : ['swing']), ...(s.leanSwing && !s.autoSwing ? [] : ['lean']), ...(s.leanSwing || s.autoSwing ? ['bat'] : [])];
+    // 只收「雙手一起揮」（bat）：單手揮臂、身體傾斜都不算
+    return ['paddle', 'jump', 'crouch', 'swing', 'lean', ...(s.autoSwing ? ['bat'] : [])];
   },
 
   // 選單多一區：時段、右打／左打
@@ -153,15 +149,11 @@ export const batting = {
   onAction(game, e, s) {
     const B = game.bat;
     if (s.autoSwing) return;
-    let kind = null;
-    if (e.type === 'bat') kind = 'bat';
-    else if (e.type === 'swing' && s.oneHand) kind = 'swing';
-    else if (e.type === 'lean' && s.leanSwing && e.side !== 'center') kind = 'lean';
-    if (!kind) return;
-    // 一次揮棒只算一次（雙手揮棒有時也會同時觸發單手揮臂）
+    // 只認雙手一起揮（bat）：事件送出的那一刻＝雙手揮過身體＝擊球瞬間
+    if (e.type !== 'bat') return;
     if (B.swing && game.clock - B.swing.at < 0.6) return;
     const delay = Math.max(0, (performance.now() - e.time) / 1000);
-    const lat = kind === 'lean' ? LATENCY.lean : (LATENCY[e.source] ?? 0.1);
+    const lat = LATENCY[e.source] ?? 0.1;
     startSwing(game, s, game.clock - delay - lat + (s.autoCalib ? game.calib : 0), e.strength ?? 0.7);
   },
 
@@ -195,8 +187,10 @@ export const batting = {
         if (p.strike) startSwing(game, s, game.clock, 0.7, true);
         B.autoAt = null;
       }
-      if (!B.hit) {
-        const pos = p.pos(Math.min(t, p.T + (MITT_Z - PLATE_Z) / -p.vel(p.T)[2]));
+      // 球一路飛到捕手手套（本壘後 1 公尺）。有擊中時，球飛到本壘板那一刻才換成擊出的球
+      if (!B.hit || !B.hit.shown) {
+        const tMitt = p.T + (MITT_Z - PLATE_Z) / p.vel(p.T)[2];
+        const pos = p.pos(Math.min(t, B.hit ? p.T : tMitt));
         B.ball.position.set(...pos);
         if (pos[2] <= MITT_Z + 0.01 && !B.inMitt) { B.inMitt = true; game.cue('mitt'); }
       }
@@ -210,7 +204,7 @@ export const batting = {
         B.ring.lookAt(game.camera.position);
       }
       // 擊球的畫面在揮棒動畫「碰到球」那一刻才出現
-      if (B.hit && !B.hit.shown && game.clock >= B.hit.showAt) {
+      if (B.hit && !B.hit.shown && (game.clock >= B.hit.showAt || t >= p.T)) {
         B.hit.shown = true; B.phase = 'batted'; B.phaseT = 0; B.ring.visible = false;
         game.cue('crack');
         if (B.hit.fly.result !== 'foul' || B.hit.fly.dist > 15) B.cam.mode = 'follow';
@@ -341,12 +335,15 @@ function placeBatter(game, s) {
 
 function startSwing(game, s, contactClock, strength, auto = false) {
   const B = game.bat, d = game.diff;
-  B.swing = { at: game.clock, anim: 0 };
+  // 揮棒動畫：事件送出時人已經揮到「碰到球」那一格；打到球的畫面對準球到本壘板那一刻
+  B.swing = { at: game.clock, anim: SWING_CONTACT };
   const p = B.pitch;
   if (!p || B.phase !== 'flight' || B.hit) { game.cue('whoosh'); return; } // 沒有球時揮棒：只是空揮練習
   const e = contactClock - (p.at + p.T);
   // 太早太多（球還沒出手就揮）不算這一球，讓學生再揮一次
   if (e < -0.6) { B.swing = null; game.bat.missToast = { text: '太早了，等球來再揮', kind: 'bad' }; return; }
+  const tPlate = p.at + p.T;
+  const wait = Math.max(0, tPlate - game.clock);   // 球還要多久才到本壘板
   const j = judgeSwing(e, d, { strength, lefty: !!s.lefty, pitch: p });
   B.lastE = e;
   timingWidget(e, d);
@@ -362,7 +359,9 @@ function startSwing(game, s, contactClock, strength, auto = false) {
   const from = [p.target[0], p.target[1], PLATE_Z];
   const fly = flyBall(j, d, from);
   game.session.record(fly.result, { e, dist: Math.round(fly.dist) });
-  B.hit = { j, fly, showAt: game.clock + SWING_CONTACT, shown: false, announced: false };
+  // 打到球：動畫往後延，讓「碰到球」那一格剛好在球到本壘板時
+  B.swing.anim = SWING_CONTACT - wait;
+  B.hit = { j, fly, showAt: game.clock + wait, shown: false, announced: false };
   const word = Math.abs(e) < d.window * 0.35 ? '剛好！' : e < 0 ? '有點早' : '有點晚';
   B.missToast = { text: word, kind: Math.abs(e) < d.window * 0.35 ? 'good' : '' };
 }
@@ -396,7 +395,7 @@ function animate(game, dt, s) {
   // 打者
   if (B.swing && B.swing.anim < SWING[SWING.length - 1][0]) {
     B.swing.anim += dt;
-    B.batter.set(samplePose(SWING, B.swing.anim));
+    B.batter.set(samplePose(SWING, Math.max(B.swing.anim, 0)));
   } else {
     const breath = Math.sin(game.time * 2.2) * 0.02;
     B.batter.set(mixPose(STANCE, { ...STANCE, torsoYaw: STANCE.torsoYaw - 0.06 }, 0.5 + breath * 10));
