@@ -130,6 +130,7 @@ export class Recognizer {
     this.detectLean(frame);
     this.detectPaddle(frame);
     this.detectRaise(frame);
+    this.detectBat(frame);
     this.detectSwing(frame);
     this.detectJumpCrouch(frame);
   }
@@ -270,6 +271,33 @@ export class Recognizer {
         R[s].fired = true; R.pending = null;
         this.fire({ type: 'raise', side: s }, t, 400, 'raise-' + s);
       }
+    }
+  }
+
+  // 雙手揮棒：兩隻手腕靠在一起（握棒的樣子），一起快速水平揮過。比單手揮臂的門檻低一點、
+  // 觸發早一點（打擊要抓時機）；送出 bat 之後 0.4 秒內不再算單手 swing，一次揮棒只算一個事件。
+  detectBat(f) {
+    if (this.disabled.has('bat') || !f.hl || !f.hr) return;
+    const q = this.ago(80);
+    if (!q.mid) return;
+    const dt = Math.max((f.t - q.t) / 1000, 1e-3);
+    const vx = (f.mid.x - q.mid.x) / dt, vy = (f.mid.y - q.mid.y) / dt;
+    // 位移從最近 0.3 秒內「往回拉最遠」的位置算起（揮棒前會先把手往後帶）
+    // 也要求最近 0.2 秒一直是雙手靠在一起（單手揮過另一隻手旁邊不算）
+    let hi = -1e9, lo = 1e9;
+    for (let i = this.hist.length - 1; i >= 0 && f.t - this.hist[i].t <= 300; i--) {
+      const h = this.hist[i], m = h.mid;
+      if (f.t - h.t <= 200 && (!h.hl || !h.hr || Math.hypot(h.hl.x - h.hr.x, h.hl.y - h.hr.y) > 0.6)) return;
+      if (m) { hi = Math.max(hi, m.x); lo = Math.min(lo, m.x); }
+    }
+    const travel = vx < 0 ? f.mid.x - hi : f.mid.x - lo;
+    this.debug.batVx = +vx.toFixed(2);
+    if (Math.abs(vx) >= 2.6 * this.k && Math.abs(travel) >= 0.6 * this.k && Math.abs(vx) > 1.3 * Math.abs(vy) && this.can('bat', f.t)) {
+      this.cool['swing-left'] = this.cool['swing-right'] = f.t + 400;
+      this.cool.swingBlock = f.t + 300;
+      // 揮棒高度：雙手中點相對兩肩（高於肩 = 高、到胸口 = 中、更低 = 低）
+      const height = f.mid.y < -0.1 ? 'high' : f.mid.y < 0.6 ? 'mid' : 'low';
+      this.fire({ type: 'bat', dir: vx < 0 ? 'left' : 'right', height, strength: +clamp(Math.abs(vx) / 7, 0.2, 1).toFixed(2) }, f.t, 600);
     }
   }
 

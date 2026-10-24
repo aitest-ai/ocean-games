@@ -1,21 +1,24 @@
-# 海洋系列體感遊戲（open-water fork）
+# 體感系列遊戲：海洋系列＋陸地系列（open-water fork）
 
-國小高年級用平板／電腦鏡頭做運動動作來玩的海洋遊戲。以 [open-water](https://github.com/Leonxlnx/open-water)（MIT）為底座。
+國小高年級用平板／電腦鏡頭做運動動作來玩的遊戲。海洋系列以 [open-water](https://github.com/Leonxlnx/open-water)（MIT）為底座；陸地系列（棒球場、打擊練習）用 [three.js](https://threejs.org/)（MIT，自架於 `vendor/three/`）。
 
 | 位置 | 內容 |
 | --- | --- |
 | `index.html` | 首頁：連到遊戲、輸入層測試頁、企劃文件，並自動檢查裝置 |
-| `game/?g=kayak｜surf｜sail` | 三款可玩原型：划舟浮標賽、衝浪、帆船（同一個頁面，`g` 選遊戲） |
-| `src/game/shell.js` | 共用遊戲外殼：載具浮在海面、鏡頭跟隨、選單、怎麼玩動畫、HUD、暫停／結算、畫質分級 |
+| `game/?g=kayak｜surf｜sail｜batting` | 可玩原型：划舟浮標賽、衝浪、帆船、⚾ 打擊練習（同一個頁面，`g` 選遊戲） |
+| `land/ballpark.html` | 棒球場展示：白天／黃昏／夜間、各視角、畫質切換 |
+| `src/land/` | 陸地系列：少棒球場場地底座（`ballpark.js`、尺寸 `dims.js`、程式生成貼圖 `textures.js`）、球員人偶 `figure.js`、three.js 世界 `world.js` |
+| `src/game/batting.js`、`batting-logic.js` | 打擊練習（規則可在 node 測試） |
+| `src/game/shell.js` | 共用遊戲外殼：選單、怎麼玩動畫、HUD、暫停／結算、畫質分級；海洋遊戲用海面（載具浮在海上、鏡頭跟隨），`world: 'land'` 的遊戲用棒球場 |
 | `src/game/kayak.js`、`surf.js`、`sail.js` | 各遊戲（外殼的 mode）；規則與物理在 `logic.js`、`surf-logic.js`、`sail-logic.js`（可在 node 測試） |
 | `packages/taikan-kit/` | 體感輸入層（可獨立抽出）：鏡頭姿態 → 動作事件；鍵盤／預錄模擬；姿態模型自架於 `vendor/mediapipe/`。說明見其 README |
-| `docs/` | 企劃文件（`plan.md`）、白話說明與自我測試結果（`status.md`），`docs/index.html` 排版顯示 |
+| `docs/` | 企劃文件（`plan.md`、陸地系列 `baseball-plan.md`）、白話說明與自我測試結果（`status.md`），`docs/index.html` 排版顯示 |
 | `ocean.html`、`src/main.js` | 原本的 open-water 海洋展示（從 `index.html` 改名） |
 | `src/app.js` | 從 `main.js` 拆出的渲染器 `App`，展示與遊戲共用；新增 `low`／`mid` 畫質 |
 
 ```bash
 npm run dev                                   # http://localhost:5173/
-node --test tests/*.test.mjs                  # 三款遊戲的規則與物理（模擬玩家）
+node --test tests/*.test.mjs                  # 四款遊戲的規則與物理（模擬玩家）
 cd packages/taikan-kit && npm test            # 動作辨識
 ```
 

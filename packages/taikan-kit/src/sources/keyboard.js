@@ -15,10 +15,14 @@ export const KEYMAP = [
   { keys: ['Enter'], label: 'Enter', hold: 'raiseBoth', text: '雙手舉高（按住）' },
   { keys: ['KeyJ'], label: 'J', action: 'swing-left', text: '右手往左揮' },
   { keys: ['KeyL'], label: 'L', action: 'swing-right', text: '左手往右揮' },
+  { keys: ['KeyK'], label: 'K', action: 'bat-left', text: '雙手揮棒（右打，往左揮）' },
+  { keys: ['KeyH'], label: 'H', action: 'bat-right', text: '雙手揮棒（左打，往右揮）' },
 ];
 
 export class KeyboardSource {
-  constructor({ target = window, fps = 30, jitter = 0.003 } = {}) {
+  // remap：遊戲自訂的額外按鍵，例如 { Space: 'bat-left' }（優先於 KEYMAP，打擊遊戲用空白鍵揮棒）
+  constructor({ target = window, fps = 30, jitter = 0.003, remap = {} } = {}) {
+    this.remap = remap;
     this.name = 'keyboard';
     this.target = target;
     this.fps = fps;
@@ -36,7 +40,8 @@ export class KeyboardSource {
 
   onKey(e) {
     const down = e.type === 'keydown';
-    const m = KEYMAP.find((k) => k.keys.includes(e.code));
+    const r = this.remap[e.code];
+    const m = r ? (r in this.puppet.hold || r === 'raiseBoth' ? { hold: r } : { action: r }) : KEYMAP.find((k) => k.keys.includes(e.code));
     if (!m) return;
     const tag = e.target && e.target.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;

@@ -1,7 +1,8 @@
-// Shared game shell: the open-water renderer with a floating vessel and chase camera, plus the menu,
-// how-to-play screen, HUD, pause / resume, results, sound and settings that every ocean game shares.
-// A game is a `mode` object (see kayak.js, surf.js, sail.js); gameplay input reaches it only as
-// taikan-kit action events and the kit's continuous values (lean, crouch).
+// Shared game shell: the menu, how-to-play screen, HUD, pause / resume, results, sound and settings
+// that every game shares, around a 3D world. Ocean games (kayak.js, surf.js, sail.js) run on the
+// open-water renderer with a floating vessel and chase camera (VesselGame); land games set
+// `mode.world = 'land'` and run on the three.js ballpark (src/land/world.js). Gameplay input reaches
+// a mode only as taikan-kit action events and the kit's continuous values (lean, crouch).
 import { createTaikan, describe, drawSkeleton } from '../../packages/taikan-kit/src/index.js';
 import { mountHowto, HOWTO_CSS } from './howto.js';
 
@@ -14,17 +15,20 @@ if (!TIERS.includes(params.get('q'))) {
   history.replaceState(null, '', '?' + params);
 }
 const TIER = params.get('q');
-const [{ App }, { OceanProbe }, { Props, modelMatrix }, { AudioEngine }] = await Promise.all([
-  import('../app.js'), import('../ocean/probe.js'), import('./props.js'), import('../audio/audio.js'),
-]);
-export { modelMatrix };
+// the ocean engine loads only for ocean games (land games never download it)
+let App, OceanProbe, Props, modelMatrix, AudioEngine;
+async function loadOcean() {
+  [{ App }, { OceanProbe }, { Props, modelMatrix }, { AudioEngine }] = await Promise.all([
+    import('../app.js'), import('../ocean/probe.js'), import('./props.js'), import('../audio/audio.js'),
+  ]);
+}
 
 const $ = (id) => document.getElementById(id);
 const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
 const MAX_PROBES = 8;  // sea samples besides the vessel (buoys, obstacles near the player)
 export const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-class VesselGame extends App {
+const makeVesselGame = () => class VesselGame extends App {
   constructor(canvas, mode) {
     super(canvas);
     this.mode = mode;
@@ -97,10 +101,10 @@ class VesselGame extends App {
     const w = M[3] * p[0] + M[7] * p[1] + M[11] * p[2] + M[15];
     return { x: (x / w * 0.5 + 0.5) * innerWidth, y: (0.5 - y / w * 0.5) * innerHeight, behind: w <= 0 };
   }
-}
+};
 
 // ── page markup ─────────────────────────────────────────────────────────────
-function buildPage(mode) {
+function buildPage(mode, games) {
   document.title = mode.title;
   const style = document.createElement('style');
   style.textContent = HOWTO_CSS;
@@ -114,12 +118,21 @@ function buildPage(mode) {
   $('mOptions').innerHTML = (mode.options || []).map((o) => `<label class="chk"><input type="checkbox" data-opt="${o.key}"> ${o.label}</label>`).join('');
   $('hTitle').textContent = `怎麼玩：${mode.title}`;
   $('hGoal').innerHTML = mode.goal;
-  for (const a of document.querySelectorAll('.other-games a')) if (a.dataset.g === mode.id) a.remove();
+  // other games of the same series
+  const sib = games.filter((g) => g.series === mode.series && g.id !== mode.id);
+  $('mOther').innerHTML = sib.length ? '其他遊戲：' + sib.map((g) => `<a href="./?g=${g.id}">${g.icon} ${g.title}</a>`).join(' ') : '';
+  if (mode.safety) $('mSafetyList').innerHTML = mode.safety.map((x) => `<li>${x}</li>`).join('');
+  if (mode.soundLabel) $('mSoundLabel').textContent = mode.soundLabel;
+  if (mode.diffTitle) $('mDiffTitle').textContent = mode.diffTitle;
+  if (mode.seatedLabel) $('mSeatedLabel').textContent = mode.seatedLabel;
+  if (mode.noTimer) $('hTime').parentElement.style.display = 'none';
+  $('hTouch').innerHTML = (mode.touchButtons || []).map((b, i) => `<button class="chip btn big" data-i="${i}">${b.label}</button>`).join('');
 }
 
 // ── run a game ──────────────────────────────────────────────────────────────
-export function runGame(mode) {
-  buildPage(mode);
+export async function runGame(mode, games = []) {
+  mode.series ??= 'ocean';
+  buildPage(mode, games);
   const KEY = `ocean-games.${mode.id}.settings`;
   const defaults = { diff: 'easy', input: 'keyboard', sens: 'normal', sound: false, seated: false, reduceMotion: false, ...Object.fromEntries((mode.options || []).map((o) => [o.key, !!o.default])) };
   const settings = (() => {
@@ -140,7 +153,16 @@ export function runGame(mode) {
   const canvas = $('c');
   let game;
   try {
-    game = new VesselGame(canvas, mode);
+    if (mode.world === 'land') {
+      const { LandWorld } = await import('../land/world.js');
+      if (params.get('t')) settings.time = params.get('t'); // ?t=day|dusk|night（測試、截圖用）
+      game = new LandWorld(canvas, { tier: TIER, time: settings.time || mode.defaultTime || 'day' });
+      mode.setup?.(game, settings);
+    } else {
+      await loadOcean();
+      const VesselGame = makeVesselGame();
+      game = new VesselGame(canvas, mode);
+    }
     window.game = game;
   } catch (e) {
     document.body.insertAdjacentHTML('beforeend', `<pre class="err">無法啟動 3D 畫面（這台裝置可能不支援 WebGL2）：\n${e.message}</pre>`);
@@ -153,20 +175,24 @@ export function runGame(mode) {
 
   const kit = createTaikan({ sensitivity: settings.sens });
   window.kit = kit;
-  const syncDisabled = () => kit.setDisabled(mode.disabledActions(settings));
+  // the two-handed bat swing only reaches games that ask for it (otherwise it would swallow `swing`)
+  const syncDisabled = () => kit.setDisabled([...mode.disabledActions(settings), ...(mode.usesBat ? [] : ['bat'])]);
   syncDisabled();
   game.kit = kit;
 
   // ── sound ──
   const audio = {
-    engine: new AudioEngine(), ctx: null,
+    engine: game.weather ? new AudioEngine() : null, ctx: null,
     async enable(on) {
-      if (on && !this.ctx) { this.ctx = new AudioContext({ latencyHint: 'playback' }); await this.engine.init(this.ctx); }
+      if (on && !this.ctx) {
+        this.ctx = new AudioContext({ latencyHint: 'playback' });
+        if (this.engine) await this.engine.init(this.ctx); else mode.ambience?.(this.ctx, game);
+      }
       if (!this.ctx) return;
       if (on) await this.ctx.resume(); else await this.ctx.suspend();
     },
     update() {
-      if (!this.ctx) return;
+      if (!this.ctx || !this.engine) return;
       const S = game.weather.state;
       this.engine.set({ wind: S.wind, rain: S.rain, hs: game.stats ? game.stats.hs : 1, tp: (2 * Math.PI * Math.max(S.wind, 1)) / (0.855 * 9.81), foam: Math.min(2 * 3.84e-6 * Math.pow(S.wind, 3.41), 0.4) });
       this.engine.tick();
@@ -174,6 +200,7 @@ export function runGame(mode) {
     cue(kind) {
       const c = this.ctx;
       if (!c || c.state !== 'running') return;
+      if (mode.cue?.(c, kind)) return; // mode-specific sounds (bat crack, crowd)
       const t = c.currentTime;
       const notes = { pass: [659, 880], finish: [523, 659, 784, 1047], bump: [140], pick: [880, 1175], trick: [523, 784, 1047], tick: [440] }[kind] || [440];
       notes.forEach((f, i) => {
@@ -229,7 +256,7 @@ export function runGame(mode) {
         const status = (t) => { $('mStatus').textContent = t; $('hStatus').textContent = t; };
         try { await kit.useCamera({ video: $('video'), onStatus: status }); }
         finally { $('mStart').disabled = false; }
-      } else if (settings.input === 'keyboard' && kit.source !== 'keyboard') await kit.useKeyboard();
+      } else if (settings.input === 'keyboard' && kit.source !== 'keyboard') await kit.useKeyboard(mode.keyboard);
     })();
     return inputBusy.finally(() => { inputBusy = null; });
   }
@@ -242,7 +269,7 @@ export function runGame(mode) {
     countdown.timer = setInterval(() => {
       n--;
       if (n > 0) { el.textContent = n; audio.cue('tick'); }
-      else if (n === 0) { el.textContent = '出發！'; then(); }
+      else if (n === 0) { el.textContent = mode.goWord || '出發！'; then(); }
       else { clearInterval(countdown.timer); el.hidden = true; }
     }, 900);
   }
@@ -343,6 +370,7 @@ export function runGame(mode) {
   $('mSens').value = settings.sens;
   $('mSens').onchange = (e) => { settings.sens = e.target.value; kit.setSensitivity(settings.sens); save(); };
   diffNote(); inputNote();
+  mode.menu?.({ grid: document.querySelector('#menu .grid'), game, settings, save });
   $('mStart').onclick = startRace;
   $('mHowto').onclick = () => openHowto('menu');
   $('hOk').onclick = closeHowto;
@@ -352,6 +380,11 @@ export function runGame(mode) {
   $('pQuit').onclick = toMenu;
   $('rAgain').onclick = startRace;
   $('rMenu').onclick = toMenu;
+  // big on-screen buttons (tablet without camera): they drive the simulated puppet like a key would
+  for (const b of $('hTouch').querySelectorAll('button')) {
+    const def = mode.touchButtons[b.dataset.i];
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); kit.keyboard?.press(def.press, true); });
+  }
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
   // the chosen input is live from the start, so raising both hands (or holding Enter) works on the
   // how-to screen and the menu too; with the camera this asks for permission right away
@@ -402,6 +435,7 @@ export function runGame(mode) {
       $('hTime').parentElement.classList.toggle('low', game.timeLeft < 15);
       mode.hudExtraUpdate?.(game, st, settings);
       $('hKeys').hidden = settings.input !== 'keyboard' || game.state !== 'play';
+      $('hTouch').hidden = settings.input !== 'keyboard' || game.state !== 'play';
       const arrow = $('hArrow');
       const tg = (game.state === 'play' || game.state === 'count') && mode.target?.(game);
       if (tg) {

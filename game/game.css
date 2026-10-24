@@ -88,3 +88,6 @@ select option { color: #000; }
 .windw .dial { width: 74px; height: 74px; }
 .windw .dial svg { width: 100%; height: 100%; }
 .widget small { display: block; font-size: 12px; margin-top: 2px; }
+.touch-btns { position: absolute; right: 14px; bottom: 120px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+.touch-btns[hidden] { display: none; }
+.chip.big { font-size: 22px; font-weight: 800; padding: 16px 22px; border-radius: 18px; background: rgba(255, 181, 71, 0.9); color: #241400; border-color: var(--accent); }

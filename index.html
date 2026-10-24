@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>海洋體感遊戲</title>
-<meta name="description" content="海洋系列體感遊戲：國小高年級用平板鏡頭做運動動作來玩的海洋遊戲（原型）。">
+<title>體感系列遊戲</title>
+<meta name="description" content="體感系列遊戲：國小高年級用平板鏡頭做運動動作來玩的海洋與陸地遊戲（原型）。">
 <link rel="icon" href="data:,">
 <style>
   :root { --bg: #071521; --panel: #0f2536; --panel2: #15324a; --line: #23465f; --text: #eaf3f9; --muted: #9fb7c9; --accent: #ffb547; --ok: #5fd39a; --warn: #ff8a65; --blue: #6fc0ff; }
@@ -41,17 +41,26 @@
   .hint { color: var(--muted); font-size: 15px; margin: 10px 0 24px; }
   .net { margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 15px; }
   .net button { font: inherit; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+  .jump a { color: #ffd38a; font-weight: 700; margin-right: 6px; }
+  .new { display: inline-block; font-size: 13px; background: var(--ok); color: #062014; border-radius: 999px; padding: 1px 9px; vertical-align: middle; }
+  .card.land { border-color: #3d5a2e; }
+  .card .thumb { width: 100%; max-width: 280px; height: auto; border-radius: 12px; margin: 8px 0 10px; }
+  .card.land:hover, .card.land:focus-visible { border-color: #8fd36a; }
+  .land-howto { --line: #2f4a5c; --accent: #ffb547; }
+  .safety-land { margin-top: 14px; background: rgba(255, 181, 71, 0.08); border: 1px solid rgba(255, 181, 71, 0.4); border-radius: 12px; padding: 10px 14px; font-size: 15px; }
+  .safety-land ul { margin: 6px 0 0; padding-left: 20px; line-height: 1.7; }
   footer { color: var(--muted); font-size: 14px; margin-top: 28px; border-top: 1px solid var(--line); padding-top: 14px; }
 </style>
 </head>
 <body>
 <div class="hero"><div class="in">
   <span class="tag">原型・預覽版</span>
-  <h1>🌊 海洋系列體感遊戲</h1>
-  <p>國小高年級用平板（或電腦）的鏡頭做運動動作來玩的海洋遊戲。海面、天氣和浪都是即時算出來的；鏡頭畫面只在裝置上分析，不錄影、不上傳。</p>
+  <h1>🎮 體感系列遊戲</h1>
+  <p>國小高年級用平板（或電腦）的鏡頭做運動動作來玩的遊戲：<b>海洋系列</b>（划舟、衝浪、帆船）與新的<b>陸地系列</b>（第一個場地：棒球場）。鏡頭畫面只在裝置上分析，不錄影、不上傳。</p>
+  <p class="jump"><a href="#ocean">🌊 海洋系列</a>　<a href="#land">⚾ 陸地系列</a></p>
 </div></div>
 <main>
-  <h2 class="pick">🎮 選一款遊戲</h2>
+  <h2 class="pick" id="ocean">🌊 海洋系列：選一款遊戲</h2>
   <div class="cards games">
     <a class="card game" href="game/?g=kayak">
       <span class="ico">🛶</span>
@@ -79,6 +88,50 @@
     </a>
   </div>
   <p class="hint">每款遊戲打開時會先出現「怎麼玩」動畫說明；做不到的動作都可以在選單裡關掉，遊戲一樣能玩完。</p>
+
+  <h2 class="pick" id="land">⚾ 陸地系列：棒球場 <span class="new">新</span></h2>
+  <p class="hint" style="margin-top:-6px">陸地系列的第一個場地是<b>少棒尺寸的棒球場</b>（壘間 18.29 公尺、投捕 14.02 公尺），之後會加上道場等其他場地，並發展成「體感野球」。</p>
+  <div class="cards games">
+    <a class="card game land" href="game/?g=batting">
+      <span class="ico">⚾</span>
+      <h2>打擊練習</h2>
+      <canvas class="mini" data-move="bat" width="200" height="200" aria-hidden="true"></canvas>
+      <p>投手投球過來，<b>雙手往前揮棒</b>，打出安打！太早、太晚會變界外。<b>空手揮，不拿球棒。</b></p>
+      <ul class="tags"><li>💪 強度：低～中</li><li>🪑 可坐著玩</li><li>⏱ 10 球約 1.5 分鐘</li></ul>
+      <span class="go">開始玩 →</span>
+    </a>
+    <a class="card game land" href="land/ballpark.html">
+      <span class="ico">🏟️</span>
+      <h2>棒球場展示</h2>
+      <img class="thumb" src="docs/img/land-thumb.jpg" alt="黃昏的少棒球場空拍（程式生成）" width="560" height="315" loading="lazy">
+      <p>不用鏡頭，直接看整座球場：切換<b>白天、黃昏、夜間</b>，從本壘後方、投手丘、空拍等角度看，畫面上也列出場地尺寸。</p>
+      <ul class="tags"><li>👀 只有看</li><li>⚙️ 可切換畫質</li></ul>
+      <span class="go">打開展示 →</span>
+    </a>
+    <a class="card game land" href="docs/?doc=baseball">
+      <span class="ico">📘</span>
+      <h2>體感野球企劃</h2>
+      <p>完整「體感野球」的建議玩法、分階段開發順序、場地規格出處、畫質取捨與我的建議。</p>
+      <ul class="tags"><li>📄 文件</li></ul>
+      <span class="go">閱讀企劃 →</span>
+    </a>
+  </div>
+
+  <section class="box land-howto">
+    <h2>⚾ 陸地系列怎麼玩（給學生看）</h2>
+    <div class="howto-grid" id="landHowto"></div>
+    <div class="safety-land">
+      <b>⚠️ 打棒球體感遊戲前，一定要做到：</b>
+      <ul>
+        <li>🚫 <b>空手</b>揮棒：不要拿真的球棒、掃把、雨傘、水壺或任何東西揮。</li>
+        <li>↔️ 玩家周圍至少 <b>1.5 公尺</b>淨空，<b>左右兩邊不能站人</b>（揮棒會甩到兩側）；安全員站在玩家正後方 2 公尺外。</li>
+        <li>📱 平板放穩、離玩家 2 公尺以上，揮手打不到平板。</li>
+        <li>🪑 可以<b>坐在椅子上玩</b>（只轉上半身）；選沒有扶手的椅子。</li>
+        <li>⏭️ 做不到的動作可以改成「單手揮」「身體傾斜」或「自動揮棒」，一樣能玩完。</li>
+        <li>💪 不用很用力，中等速度就會判定；每人連續玩不超過 5 分鐘。</li>
+      </ul>
+    </div>
+  </section>
 
   <div class="cards">
     <a class="card" href="packages/taikan-kit/demo/">
@@ -118,6 +171,7 @@
       <ul class="small">
         <li><a href="docs/?doc=status">白話說明與自我測試結果</a></li>
         <li><a href="docs/?doc=taikan">體感輸入層（taikan-kit）說明：事件格式、延遲與誤判處理</a></li>
+        <li><a href="docs/?doc=baseball">體感野球企劃（陸地系列）：玩法範圍、開發順序、場地規格出處</a></li>
       </ul>
     </section>
     <section class="box">
@@ -125,18 +179,29 @@
       <ul class="small">
         <li><a href="ocean.html">原始海洋展示（open-water）</a>：可以調天氣、看暴風雨</li>
         <li><a href="LICENSE">MIT 授權</a>・<a href="assets/audio/CREDITS.md">音效來源與授權（CREDITS）</a></li>
+        <li><a href="land/ballpark.html">棒球場展示</a>：白天／黃昏／夜間、各種視角</li>
       </ul>
     </section>
   </div>
 
   <footer>
-    以開源專案 <a href="https://github.com/Leonxlnx/open-water">open-water</a>（MIT 授權，© 2026 Leonxlnx）為底座。雷聲、雨聲錄音另依 CC 授權使用，詳見 CREDITS。
+    <b>海洋系列</b>以開源專案 <a href="https://github.com/Leonxlnx/open-water">open-water</a>（MIT 授權，© 2026 Leonxlnx）為底座；雷聲、雨聲錄音另依 CC 授權使用，詳見 <a href="assets/audio/CREDITS.md">CREDITS</a>。<br>
+    <b>陸地系列</b>的 3D 繪圖使用 <a href="vendor/three/LICENSE">three.js r180</a>（MIT 授權，© 2010-2025 three.js authors）；棒球場的草地、紅土、白線、看台、觀眾、燈塔、記分板與球員全部用程式生成，擊球聲、觀眾聲用程式合成，<b>沒有使用外部圖片、模型或錄音</b>。<br>
+    姿態辨識：Google MediaPipe Pose Landmarker（Apache-2.0）。
   </footer>
 </main>
 <script type="module">
 // 遊戲卡片上的小動畫：跟遊戲「怎麼玩」畫面同一個模擬人偶
-import { mountMini } from './src/game/howto.js';
+import { mountMini, mountHowto, HOWTO_CSS } from './src/game/howto.js';
 for (const cv of document.querySelectorAll('canvas.mini')) mountMini(cv, cv.dataset.move);
+// 陸地系列的操作說明：跟遊戲裡「怎麼玩」同一套動畫卡片
+const st = document.createElement('style'); st.textContent = HOWTO_CSS; document.head.appendChild(st);
+mountHowto(document.getElementById('landHowto'), [
+  { move: 'bat', title: '雙手揮棒', text: '雙手像握著球棒放在肩膀旁邊，<b>球快到本壘時往前揮過身體</b>', seated: '坐著也行：只轉上半身', skip: '做不到可以改其他方式' },
+  { move: 'swing-one', title: '單手揮也算', text: '一隻手快速橫著揮過身體，也算揮棒', seated: '坐著一樣做' },
+  { move: 'lean', title: '身體傾斜（替代）', text: '手臂不方便的同學：球快到時上半身往左或右歪', seated: '坐著一樣做' },
+  { move: 'raise-both', title: '雙手舉高 1 秒', text: '開始、暫停、繼續', seated: '坐著一樣做' },
+]);
 
 // 學校網路檢查：從本站下載姿態模型一次，看要多久
 document.getElementById('netBtn').onclick = async () => {

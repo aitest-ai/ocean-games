@@ -16,6 +16,9 @@ export const MOVES = {
   'raise-one': { loop: 3200, script: [[200, 'hold:raiseL:on'], [1100, 'hold:raiseL:off'], [1700, 'hold:raiseR:on'], [2600, 'hold:raiseR:off']] },
   'swing': { loop: 1800, script: [[300, 'swing-left'], [1100, 'swing-right']] },
   'jump': { loop: 1600, script: [[400, 'jump']] },
+  'bat': { loop: 1700, script: [[350, 'bat-left']] },
+  'swing-one': { loop: 1500, script: [[300, 'swing-left']] },
+  'idle': { loop: 2000, script: [] },
 };
 
 // cards: [{ move, title, text, seated?, skip? }] → fills `root` with animated cards; returns stop()

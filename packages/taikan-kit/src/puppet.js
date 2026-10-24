@@ -21,6 +21,9 @@ const ANIMS = {
   'paddle-both': { ms: 560, keys: [[0, REST.l, REST.r], [0.3, { x: -0.85, y: -0.1 }, { x: 0.85, y: -0.1 }], [0.7, { x: -0.85, y: 1.25 }, { x: 0.85, y: 1.25 }], [1, REST.l, REST.r]] },
   'swing-left': { ms: 520, keys: [[0, REST.l, REST.r], [0.35, REST.l, { x: 1.0, y: 0.35 }], [0.7, REST.l, { x: -1.0, y: 0.45 }], [1, REST.l, REST.r]] },
   'swing-right': { ms: 520, keys: [[0, REST.l, REST.r], [0.35, { x: -1.0, y: 0.35 }, REST.r], [0.7, { x: 1.0, y: 0.45 }, REST.r], [1, REST.l, REST.r]] },
+  // 雙手握在一起揮棒：右打者從自己右肩揮向左邊（bat-left），左打者相反
+  'bat-left': { ms: 560, keys: [[0, REST.l, REST.r], [0.35, { x: 0.62, y: -0.05 }, { x: 0.78, y: 0.0 }], [0.75, { x: -0.95, y: 0.4 }, { x: -0.8, y: 0.45 }], [1, REST.l, REST.r]] },
+  'bat-right': { ms: 560, keys: [[0, REST.l, REST.r], [0.35, { x: -0.78, y: 0.0 }, { x: -0.62, y: -0.05 }], [0.75, { x: 0.8, y: 0.45 }, { x: 0.95, y: 0.4 }], [1, REST.l, REST.r]] },
   'wave': { ms: 900, keys: [[0, REST.l, REST.r], [0.5, { x: -0.5, y: 0.2 }, { x: 0.5, y: 0.25 }], [1, REST.l, REST.r]] }, // 小幅亂動：不該觸發任何事件
 };
 
@@ -35,7 +38,7 @@ export class Puppet {
     this.t = 0;
   }
 
-  // 觸發一次性的動作：paddle-left / paddle-right / paddle-both / swing-left / swing-right / jump / wave
+  // 觸發一次性的動作：paddle-left / paddle-right / paddle-both / swing-left / swing-right / bat-left / bat-right / jump / wave
   trigger(name, t = this.t) {
     if (name === 'jump') { this.jumpAt = t; return; }
     if (ANIMS[name]) this.anim = { name, at: t };
