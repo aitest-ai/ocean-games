@@ -69,6 +69,25 @@ test('揮臂：往左、往右', () => {
   assert.equal(count(actions, 'paddle'), 0);
 });
 
+test('雙手揮棒：往左、往右各一次，不會多算成單手揮臂或划槳', () => {
+  const { actions } = run(scriptPoses([[WARM, 'bat-left'], [WARM + 1000, 'bat-right']], { durationMs: WARM + 2000 }));
+  const bats = actions.filter((e) => e.type === 'bat');
+  assert.deepEqual(bats.map((e) => e.dir), ['left', 'right']);
+  assert.ok(bats.every((e) => ['high', 'mid', 'low'].includes(e.height)));
+  assert.equal(count(actions, 'swing'), 0);
+  assert.equal(count(actions, 'paddle'), 0);
+  // 人偶前 0.2 秒是往後拉，往前揮到一半（開始後約 0.4 秒內）就要送出（打擊要抓時機）
+  assert.ok(bats[0].time - WARM < 400, 'latency ' + (bats[0].time - WARM));
+});
+
+test('單手揮臂不算雙手揮棒；關閉 bat 時雙手揮棒退回成單手揮臂', () => {
+  const one = run(scriptPoses([[WARM, 'swing-left']], { durationMs: WARM + 900 }));
+  assert.equal(count(one.actions, 'bat'), 0);
+  const off = run(scriptPoses([[WARM, 'bat-left']], { durationMs: WARM + 900 }), { disabled: ['bat'] });
+  assert.equal(count(off.actions, 'bat'), 0);
+  assert.ok(count(off.actions, 'swing') >= 1);
+});
+
 test('誤判：站著小幅亂動 + 大量抖動，不應觸發任何動作', () => {
   const s = [];
   for (let i = 0; i < 8; i++) s.push([WARM + i * 1000, 'wave']);

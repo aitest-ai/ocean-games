@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>棒球場展示</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --panel: rgba(9, 22, 33, 0.86); --line: rgba(160, 200, 230, 0.25); --text: #eef5fa; --muted: #a9c0d0; --accent: #ffb547; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05070a; color: var(--text); font: 15px/1.5 system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  .bar { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 10px; right: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; pointer-events: none; }
+  .grp { pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 8px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .grp span { color: var(--muted); font-size: 13px; margin-right: 4px; }
+  button { font: inherit; background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 6px 11px; cursor: pointer; }
+  button[aria-pressed="true"] { background: var(--accent); color: #241400; border-color: var(--accent); font-weight: 700; }
+  a { color: #8fcaff; }
+  .info { position: fixed; left: 10px; bottom: max(10px, env(safe-area-inset-bottom)); width: min(420px, calc(100vw - 20px)); max-height: 46vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+  .info h1 { font-size: 19px; margin: 0 0 6px; }
+  .info table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  .info td { padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; }
+  .info td:first-child { color: var(--muted); white-space: nowrap; }
+  .info p { margin: 6px 0; color: var(--muted); font-size: 13px; }
+  .info.min table, .info.min p { display: none; }
+  .perf { position: fixed; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); background: var(--panel); border-radius: 8px; padding: 4px 8px; font-size: 12px; color: var(--muted); }
+  @media (max-width: 700px) { .info { max-height: 34vh; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar">
+  <div class="grp"><a href="../">← 回首頁</a></div>
+  <div class="grp" id="gTime"><span>時段</span><button data-v="day">☀️ 白天</button><button data-v="dusk">🌇 黃昏</button><button data-v="night">🌙 夜間</button></div>
+  <div class="grp" id="gCam"><span>視角</span><button data-v="tour">🔄 自動繞場</button><button data-v="catcher">本壘後方</button><button data-v="batter">打者視角</button><button data-v="mound">投手丘</button><button data-v="aerial">空拍</button><button data-v="stand">三壘看台</button><button data-v="outfield">外野草坡</button></div>
+  <div class="grp" id="gQ"><span>畫質</span><button data-v="low">低（平板）</button><button data-v="mid">中</button><button data-v="rt">高（電腦）</button></div>
+</div>
+<div class="info" id="info">
+  <h1>⚾ 少棒球場（程式生成）<button id="infoToggle" style="float:right;padding:2px 8px">收起</button></h1>
+  <table>
+    <tr><td>壘間距離</td><td>60 呎（18.29 公尺）</td></tr>
+    <tr><td>投手板到本壘</td><td>46 呎（14.02 公尺）</td></tr>
+    <tr><td>投手丘</td><td>直徑 18 呎（5.49 公尺）、高 6 吋（15 公分）</td></tr>
+    <tr><td>內野紅土弧</td><td>以投手板為圓心半徑 50 呎（15.24 公尺）</td></tr>
+    <tr><td>本壘到後擋網</td><td>25 呎（7.62 公尺）</td></tr>
+    <tr><td>全壘打牆</td><td>左右外野 200 呎（60.96 公尺）、中外野 215 呎（65.5 公尺）</td></tr>
+    <tr><td>本壘板</td><td>寬 17 吋（43.2 公分）</td></tr>
+    <tr><td>打擊區</td><td>3 × 6 呎（0.91 × 1.83 公尺）</td></tr>
+  </table>
+  <p>採用台灣世界少棒聯盟（Little League，12 歲以下）的 60 呎場地規格；詳細出處與取捨見 <a href="../docs/?doc=baseball">體感野球企劃</a>。</p>
+  <p>素材：場地、看台、觀眾、燈塔、記分板全部用程式生成，<b>沒有使用外部圖片或模型</b>。3D 程式庫 <a href="../vendor/three/LICENSE">three.js</a>（MIT 授權）。</p>
+  <p id="stat"></p>
+</div>
+<div class="perf" id="perf"></div>
+<script type="module">
+import { LandWorld, pickTier } from '../src/land/world.js';
+import { TIMES } from '../src/land/ballpark.js';
+
+const params = new URLSearchParams(location.search);
+const tier = pickTier(params);
+const time = TIMES[params.get('t')] ? params.get('t') : 'day';
+const w = new LandWorld(document.getElementById('c'), { tier, time });
+window.world = w;
+w.scale = params.has('scale') ? Number(params.get('scale')) : tier === 'low' ? Math.min(devicePixelRatio || 1, 0.8) : tier === 'mid' ? Math.min(devicePixelRatio || 1, 1) : Math.min(devicePixelRatio || 1, 1.5);
+w.resize();
+addEventListener('resize', () => w.resize());
+
+// 視角：[鏡頭位置, 看的點]
+const CAMS = {
+  catcher: [[0, 2.1, -5.2], [0, 0.8, 20]],
+  batter: [[0.9, 1.35, -1.6], [0, 1.2, 14]],
+  mound: [[0.4, 1.6, 15.8], [0, 0.6, 0]],
+  aerial: [[-28, 46, -36], [0, 0, 30]],
+  stand: [[22, 7.5, 0], [-6, 0, 22]],
+  outfield: [[-6, 6.5, 74], [0, 1, 5]],
+};
+let cam = params.get('cam') || 'tour', tourT = 0;
+const cur = { pos: [...CAMS.catcher[0]], look: [...CAMS.catcher[1]] };
+function seg(id, val, pick) {
+  const el = document.getElementById(id);
+  const sync = (v) => { for (const b of el.querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.v === v); };
+  sync(val);
+  el.addEventListener('click', (e) => { const v = e.target.closest('button')?.dataset.v; if (v) { sync(v); pick(v); } });
+}
+seg('gTime', time, (v) => { w.setTime(v); params.set('t', v); history.replaceState(null, '', '?' + params); });
+seg('gCam', cam, (v) => { cam = v; params.set('cam', v); history.replaceState(null, '', '?' + params); });
+seg('gQ', tier, (v) => { if (v !== tier) { params.set('q', v); location.search = params; } });
+document.getElementById('infoToggle').onclick = (e) => { const i = document.getElementById('info'); i.classList.toggle('min'); e.target.textContent = i.classList.contains('min') ? '展開' : '收起'; };
+document.getElementById('stat').textContent = `畫質「${{ low: '低', mid: '中', rt: '高' }[tier]}」：觀眾 ${w.park.crowd.count} 人・樹 ${w.park.T.trees} 棵・陰影 ${w.park.T.shadows ? w.park.T.shadows + ' 像素' : '關閉'}・場地貼圖 ${w.park.T.fieldTex} 像素`;
+
+w.onFrame = (dt) => {
+  let pos, look;
+  if (cam === 'tour') {
+    tourT += dt * 0.06;
+    const a = Math.PI + Math.sin(tourT) * 1.3, r = 34 + 14 * Math.sin(tourT * 0.7);
+    pos = [Math.sin(a) * r, 13 + 5 * Math.sin(tourT * 0.5), Math.cos(a) * r + 22];
+    look = [0, 0, 24];
+  } else [pos, look] = CAMS[cam];
+  const k = 1 - Math.exp(-dt * 3);
+  for (let i = 0; i < 3; i++) { cur.pos[i] += (pos[i] - cur.pos[i]) * k; cur.look[i] += (look[i] - cur.look[i]) * k; }
+  w.camera.position.set(...cur.pos);
+  w.camera.lookAt(...cur.look);
+};
+let last = performance.now(), avg = 1 / 60;
+function loop(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  avg += (dt - avg) * 0.05;
+  w.frame(dt);
+  document.getElementById('perf').textContent = `${Math.round(1 / avg)} 格/秒・解析度 ${Math.round(w.scale * 100)}%`;
+  requestAnimationFrame(loop);
+}
+// 第一次先對齊鏡頭，不要從預設位置滑過去
+if (cam !== 'tour') { cur.pos = [...CAMS[cam][0]]; cur.look = [...CAMS[cam][1]]; }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
