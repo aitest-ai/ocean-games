@@ -1,5 +1,6 @@
 // Samples the ocean surface under the camera (height, mean slope over a boat-sized footprint,
 // horizontal orbital displacement) and reads it back without stalling (PBO + fence).
+// Several points can be probed at once (a game's boat and buoys): new OceanProbe(gl, n), run(ot, [[x, z], ...]).
 import { Program, Texture, Target, fullscreen, FULLSCREEN_VS } from '../gl.js';
 
 const PROBE_FS = `
@@ -7,7 +8,7 @@ uniform sampler2D uDisp[3];
 uniform sampler2D uSlope[3];
 uniform float uSize[4];
 uniform float uTexel[4];
-uniform vec2 uXZ;
+uniform vec2 uXZ[MAX_POINTS];
 uniform float uFootprint;   // metres: waves shorter than this barely move the boat
 out vec4 o;
 vec3 disp(vec2 xz) {
@@ -18,10 +19,11 @@ vec3 disp(vec2 xz) {
   return D;
 }
 void main() {
-  int i = int(gl_FragCoord.x);
+  int i = int(gl_FragCoord.x) & 1;
+  vec2 xz = uXZ[int(gl_FragCoord.x) >> 1];
   // invert the horizontal (choppy) displacement: find x0 with x0 + D(x0) = x
-  vec2 x0 = uXZ;
-  for (int k = 0; k < 4; k++) x0 = uXZ - disp(x0).xz;
+  vec2 x0 = xz;
+  for (int k = 0; k < 4; k++) x0 = xz - disp(x0).xz;
   vec3 D = disp(x0);
   if (i == 0) { o = vec4(D, 1.0); return; }
   float l = log2(uFootprint * 1.5);
@@ -32,23 +34,29 @@ void main() {
 }`;
 
 export class OceanProbe {
-  constructor(gl) {
+  constructor(gl, points = 1) {
     this.gl = gl;
-    this.prog = new Program(gl, FULLSCREEN_VS, PROBE_FS, { label: 'probe' });
-    this.tex = new Texture(gl, { w: 2, h: 1, format: 'rgba32f', filter: 'nearest' });
+    this.n = points;
+    this.prog = new Program(gl, FULLSCREEN_VS, PROBE_FS, { label: 'probe', defines: { MAX_POINTS: points } });
+    this.tex = new Texture(gl, { w: 2 * points, h: 1, format: 'rgba32f', filter: 'nearest' });
     this.target = new Target(gl, [this.tex]);
     this.pbo = gl.createBuffer();
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
-    gl.bufferData(gl.PIXEL_PACK_BUFFER, 32, gl.STREAM_READ);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, 32 * points, gl.STREAM_READ);
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
-    this.data = new Float32Array(8);
+    this.data = new Float32Array(8 * points);
     this.result = { height: 0, dx: 0, dz: 0, sx: 0, sz: 0 };
+    this.results = Array.from({ length: points }, () => this.result);
     this.fence = null;
   }
 
   // sync: blocking readback (deterministic offline rendering); otherwise 1-3 frames latency.
+  // xz: one point [x, z], or a list of up to `points` of them (then read this.results).
   run(ot, xz, footprint, sync = false) {
     const gl = this.gl;
+    const pts = Array.isArray(xz[0]) ? xz : [xz];
+    const flat = new Float32Array(this.n * 2);
+    pts.slice(0, this.n).forEach((p, i) => { flat[i * 2] = p[0]; flat[i * 2 + 1] = p[1]; });
     if (this.fence && !sync) {
       if (gl.clientWaitSync(this.fence, 0, 0) !== gl.TIMEOUT_EXPIRED) {
         gl.deleteSync(this.fence);
@@ -61,15 +69,15 @@ export class OceanProbe {
     }
     if (this.fence && !sync) return this.result;
     fullscreen(gl, this.prog, {
-      uDisp: ot.disp.slice(0, 3), uSlope: ot.slope.slice(0, 3), uSize: ot.sizes, uTexel: ot.texels, uXZ: xz, uFootprint: footprint,
+      uDisp: ot.disp.slice(0, 3), uSlope: ot.slope.slice(0, 3), uSize: ot.sizes, uTexel: ot.texels, uXZ: flat, uFootprint: footprint,
     }, this.target);
     if (sync) {
-      gl.readPixels(0, 0, 2, 1, gl.RGBA, gl.FLOAT, this.data);
+      gl.readPixels(0, 0, 2 * this.n, 1, gl.RGBA, gl.FLOAT, this.data);
       this.decode();
       return this.result;
     }
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this.pbo);
-    gl.readPixels(0, 0, 2, 1, gl.RGBA, gl.FLOAT, 0);
+    gl.readPixels(0, 0, 2 * this.n, 1, gl.RGBA, gl.FLOAT, 0);
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
     this.fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
     gl.flush();
@@ -78,6 +86,7 @@ export class OceanProbe {
 
   decode() {
     const d = this.data;
-    this.result = { dx: d[0], height: d[1], dz: d[2], sx: d[4], sz: d[5] };
+    this.results = Array.from({ length: this.n }, (_, i) => ({ dx: d[i * 8], height: d[i * 8 + 1], dz: d[i * 8 + 2], sx: d[i * 8 + 4], sz: d[i * 8 + 5] }));
+    this.result = this.results[0];
   }
 }

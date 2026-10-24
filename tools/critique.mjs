@@ -28,8 +28,8 @@ async function renderScene(s) {
   const browser = await launch({ width, height });
   try {
     const url = s.film !== undefined
-      ? `http://localhost:5173/?render&q=high&scale=1`
-      : `http://localhost:5173/?render&q=high&scale=1&${s.q}`;
+      ? `http://localhost:5173/ocean.html?render&q=high&scale=1`
+      : `http://localhost:5173/ocean.html?render&q=high&scale=1&${s.q}`;
     const page = await openApp(browser, url, { width, height });
     return await page.evaluate(async (film) => {
       const dt = 1 / 30;

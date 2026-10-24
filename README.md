@@ -1,3 +1,26 @@
+# 海洋系列體感遊戲（open-water fork）
+
+國小高年級用平板／電腦鏡頭做運動動作來玩的海洋遊戲。以 [open-water](https://github.com/Leonxlnx/open-water)（MIT）為底座。
+
+| 位置 | 內容 |
+| --- | --- |
+| `index.html` | 首頁：連到遊戲、輸入層測試頁、企劃文件，並自動檢查裝置 |
+| `game/`、`src/game/` | 划舟浮標賽（可玩原型）：小艇浮在海面、鏡頭跟隨、HUD、遊戲迴圈、畫質分級 |
+| `packages/taikan-kit/` | 體感輸入層（可獨立抽出）：鏡頭姿態 → 動作事件；鍵盤／預錄模擬。說明見其 README |
+| `docs/` | 企劃文件（`plan.md`）、白話說明與自我測試結果（`status.md`），`docs/index.html` 排版顯示 |
+| `ocean.html`、`src/main.js` | 原本的 open-water 海洋展示（從 `index.html` 改名） |
+| `src/app.js` | 從 `main.js` 拆出的渲染器 `App`，展示與遊戲共用；新增 `low`／`mid` 畫質 |
+
+```bash
+npm run dev                                   # http://localhost:5173/
+node --test tests/*.test.mjs                  # 遊戲規則與船隻物理
+cd packages/taikan-kit && npm test            # 動作辨識
+```
+
+以下為 open-water 原本的說明。
+
+---
+
 # Open Water
 
 A real-time, physically based ocean in pure WebGL2, with weather you can steer: calm golden
@@ -189,7 +212,7 @@ URL parameters: `?preset=storm`, any weather key (for example `?wind=14&rain=0.4
 npm run dev
 ```
 
-Then open http://localhost:5173. No build step and no runtime dependencies. You need a browser
+Then open http://localhost:5173/ocean.html (in this fork `/` is the games hub). No build step and no runtime dependencies. You need a browser
 with WebGL2 and `EXT_color_buffer_float`, which covers every current desktop browser. The
 default quality tier targets integrated GPUs; add `?q=high` for the film settings.
 

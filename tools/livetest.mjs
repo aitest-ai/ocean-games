@@ -5,7 +5,7 @@ import { launch, openApp } from './browser.mjs';
 const browser = await launch({ width: 1280, height: 720 });
 const errors = [];
 try {
-  const page = await openApp(browser, 'http://localhost:5173/', { width: 1280, height: 720 });
+  const page = await openApp(browser, 'http://localhost:5173/ocean.html', { width: 1280, height: 720 });
   page.on('pageerror', (e) => errors.push(e.message));
   const t = async () => page.evaluate(() => app.time);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));

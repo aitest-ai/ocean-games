@@ -22,7 +22,7 @@ let browser, page;
 // black. Such a frame is detected and the render resumes from it in a fresh browser.
 async function openPage() {
   browser = await launch({ width: W, height: H });
-  page = await openApp(browser, `http://localhost:5173/?render&q=${quality}&scale=1`, { width: W, height: H });
+  page = await openApp(browser, `http://localhost:5173/ocean.html?render&q=${quality}&scale=1`, { width: W, height: H });
   await page.evaluate(() => { window.__lost = false; app.gl.canvas.addEventListener('webglcontextlost', () => { window.__lost = true; }); });
 }
 await openPage();

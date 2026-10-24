@@ -6,7 +6,7 @@ const [query = 'preset=breeze', w = '1920', h = '1080'] = process.argv.slice(2);
 const width = Number(w), height = Number(h);
 const browser = await launch({ width, height });
 try {
-  const page = await openApp(browser, `http://localhost:5173/?render&profile&${query}`, { width, height });
+  const page = await openApp(browser, `http://localhost:5173/ocean.html?render&profile&${query}`, { width, height });
   const r = await page.evaluate(async () => {
     const wall = [];
     for (let i = 0; i < 150; i++) {
