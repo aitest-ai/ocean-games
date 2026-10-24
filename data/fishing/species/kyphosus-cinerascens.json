@@ -1,0 +1,307 @@
+{
+  "format": "ocean-fish/1",
+  "id": "kyphosus-cinerascens",
+  "kind": "fish",
+  "names": {
+    "zh": {
+      "value": "天竺舵魚",
+      "src": [
+        "taicol",
+        "taibif-kyphosus"
+      ],
+      "status": "partial"
+    },
+    "aliases": {
+      "value": [
+        "白毛",
+        "開旗"
+      ],
+      "src": [
+        "anglers"
+      ],
+      "status": "partial",
+      "note": "俗名各地叫法不同"
+    },
+    "scientific": {
+      "value": "Kyphosus cinerascens",
+      "src": [
+        "taicol"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "鮀科 Kyphosidae",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "en": {
+      "value": "Blue sea chub",
+      "src": [
+        "project"
+      ],
+      "status": "partial"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          11,
+          12,
+          1,
+          2,
+          3,
+          4
+        ],
+        "src": [
+          "R27"
+        ],
+        "status": "partial",
+        "note": "「白毛」被列為東北角冬季磯釣代表魚；白毛是否就是本種待確認"
+      },
+      "peakMonths": {
+        "value": [
+          12,
+          1,
+          2
+        ],
+        "src": [
+          "R27"
+        ],
+        "status": "illustrative"
+      }
+    }
+  },
+  "habitat": {
+    "value": "浪大的岩礁區、海藻多的礁石邊",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "depth": {
+    "value": "約 1～20 公尺",
+    "src": [
+      "project"
+    ],
+    "status": "illustrative"
+  },
+  "diet": {
+    "value": "以海藻為主",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "成群在浪區活動，常和黑毛一起出現；比黑毛大膽一點",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "fightNote": {
+    "value": "力氣大、衝得快，會往外海或礁石邊衝",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "length": {
+    "type": {
+      "value": "TL",
+      "src": [
+        "project"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 30,
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "p95": {
+        "value": 42,
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      }
+    },
+    "min": {
+      "value": 18,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxCommon": {
+      "value": 50,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxRecorded": null
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.02,
+      "src": [
+        "R21"
+      ],
+      "status": "illustrative",
+      "note": "沒有找到一手資料，依 b≈3 的一般原則示意"
+    },
+    "b": {
+      "value": 3,
+      "src": [
+        "R21"
+      ],
+      "status": "illustrative"
+    },
+    "lengthType": "TL",
+    "unit": "g, cm"
+  },
+  "maturity": {
+    "L50": {
+      "value": null,
+      "license": "—",
+      "status": "illustrative",
+      "note": "未找到"
+    }
+  },
+  "intro": {
+    "value": "東北角冬天磯釣常和黑毛一起被提到的「白毛」。身體灰色帶銀光、側扁，嘴小，吃海藻長大。牠們喜歡在浪打得很兇的礁石邊成群游動，被釣到時力氣很大。注意：「白毛」在不同地方可能指不同的魚，這裡先用天竺舵魚當代表。",
+    "src": [
+      "R27",
+      "taibif-kyphosus"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "未確認",
+      "license": "—",
+      "status": "illustrative"
+    },
+    "taiwan": {
+      "value": "無（不是保育類）",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "查了保育類名錄與新北市公告，沒有找到休閒垂釣的限制；「查無」不等於「確定沒有」"
+    },
+    "legalMinSize": {
+      "value": "查無休閒垂釣的法定最小尺寸",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "「查無」不等於「確定沒有」，請專業人士確認"
+    },
+    "release": {
+      "mode": {
+        "value": "none",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      },
+      "basis": {
+        "value": "none",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      }
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 1,
+      "sand": 0.3,
+      "open": 0.3
+    },
+    "abundance": {
+      "value": 0.7,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "difficulty": {
+      "value": 4,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "cautious",
+      "speed": 0.9,
+      "tailHz": 2.4,
+      "wiggle": 0.12
+    },
+    "bite": {
+      "nibbles": [
+        1,
+        4
+      ],
+      "window": 1,
+      "type": "run"
+    },
+    "fight": {
+      "power": 0.75,
+      "stamina": 11,
+      "surgeEvery": [
+        2.5,
+        5
+      ],
+      "surgeLen": 1.5,
+      "surgeMul": 1.75
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/kyphosus-cinerascens.png",
+    "facing": "left",
+    "placeholder": {
+      "depth": 0.38,
+      "peak": 0.4,
+      "tailFork": 0.55,
+      "dorsal": {
+        "spiny": [
+          0.3,
+          0.52
+        ],
+        "soft": [
+          0.52,
+          0.78
+        ],
+        "softH": 0.22
+      },
+      "colors": {
+        "back": "#56646e",
+        "side": "#8b98a1",
+        "belly": "#cfd6da",
+        "fin": "#4b565e"
+      },
+      "pattern": {
+        "type": "stripes",
+        "count": 9,
+        "width": 2,
+        "tilt": 0,
+        "color": "rgba(60,75,85,0.35)"
+      }
+    },
+    "idFeatures": [
+      "長橢圓形、側扁；灰色帶銀光，腹部較白",
+      "身上有很多條細細的、顏色稍深的縱線（沿著鱗片排列）",
+      "背鰭連續，後半段軟鰭比前段硬棘高；尾鰭明顯分叉",
+      "嘴小、頭圓鈍"
+    ]
+  }
+}

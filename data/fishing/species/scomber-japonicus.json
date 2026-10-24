@@ -1,0 +1,342 @@
+{
+  "format": "ocean-fish/1",
+  "id": "scomber-japonicus",
+  "kind": "fish",
+  "names": {
+    "zh": {
+      "value": "白腹鯖",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "aliases": {
+      "value": [
+        "鯖魚",
+        "青輝"
+      ],
+      "src": [
+        "anglers"
+      ],
+      "status": "partial",
+      "note": "俗名各地叫法不同"
+    },
+    "scientific": {
+      "value": "Scomber japonicus",
+      "src": [
+        "taicol"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "鯖科 Scombridae",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "en": {
+      "value": "Chub mackerel",
+      "src": [
+        "project"
+      ],
+      "status": "partial"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          9,
+          10,
+          11,
+          12,
+          1,
+          2,
+          3
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative",
+        "note": "漁船禁漁期為 6/1～6/30 與農曆年前後（只適用漁船）"
+      },
+      "peakMonths": {
+        "value": [
+          11,
+          12,
+          1
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      }
+    }
+  },
+  "habitat": {
+    "value": "表層到中層成群游動，會跟著小魚靠近漁港和堤防",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "depth": {
+    "value": "表層到約 300 公尺",
+    "src": [
+      "project"
+    ],
+    "status": "illustrative"
+  },
+  "diet": {
+    "value": "浮游動物（橈足類、磷蝦）、小魚",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "大群搶食，咬餌又快又猛",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "fightNote": {
+    "value": "速度快、左右亂竄，衝刺次數多但不久",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "length": {
+    "type": {
+      "value": "FL",
+      "src": [
+        "R29"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 26,
+        "src": [
+          "R29"
+        ],
+        "status": "partial",
+        "note": "商業漁獲平均：禁漁前 23～26 公分，後來 26～30 公分"
+      },
+      "p95": {
+        "value": 33,
+        "src": [
+          "R29"
+        ],
+        "status": "partial"
+      }
+    },
+    "min": {
+      "value": 15,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxCommon": {
+      "value": 40,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxRecorded": {
+      "value": 50,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    }
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.00418,
+      "src": [
+        "R8"
+      ],
+      "status": "partial",
+      "note": "浙江 n=1606；韓國另一研究 a=0.0025、b=3.47，兩式在 30 公分相差約 13%"
+    },
+    "b": {
+      "value": 3.28,
+      "src": [
+        "R8",
+        "R7"
+      ],
+      "status": "partial"
+    },
+    "lengthType": "FL",
+    "unit": "g, cm"
+  },
+  "maturity": {
+    "L50": {
+      "value": 29,
+      "src": [
+        "R6",
+        "R7"
+      ],
+      "status": "partial",
+      "note": "韓國約 29 公分；各地研究 19～32 公分，差很多"
+    }
+  },
+  "intro": {
+    "value": "餐桌上很常見的鯖魚。背部藍綠色、有波浪狀的黑色斜紋，肚子銀白色、沒有斑點（另一種「花腹鯖」肚子有灰色小點）。牠們成群在海裡快速游動，第二背鰭和臀鰭後面各有一排小小的「離鰭」。鯖魚離水後要馬上冰起來，不然容易壞。",
+    "src": [
+      "project"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "safety": {
+    "value": "沒有毒棘。鯖魚離水後要馬上冰存，放久了會產生讓人過敏、中毒的物質（組織胺）。",
+    "src": [
+      "project"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "無危（LC）",
+      "license": "—",
+      "status": "partial",
+      "note": "依記憶，未能開啟 IUCN 確認"
+    },
+    "taiwan": {
+      "value": "不是保育類；《鯖鰺漁業管理辦法》規定鯖鰺漁船的漁獲要 20 公分以上（或每公斤 10 尾以下），並有禁漁期——只適用漁船，不適用岸釣",
+      "src": [
+        "R12"
+      ],
+      "status": "partial",
+      "note": "條文經搜尋摘錄讀到，請人工核對現行條文"
+    },
+    "legalMinSize": {
+      "value": "漁船：尾叉長 20 公分（休閒岸釣查無規定）",
+      "src": [
+        "R12"
+      ],
+      "status": "partial"
+    },
+    "release": {
+      "mode": {
+        "value": "belowSize",
+        "src": [
+          "R12"
+        ],
+        "status": "partial"
+      },
+      "sizeCm": {
+        "value": 20,
+        "src": [
+          "R12"
+        ],
+        "status": "partial"
+      },
+      "basis": {
+        "value": "law-reference",
+        "src": [
+          "R12"
+        ],
+        "status": "game-design"
+      },
+      "reason": "比照漁船的規定：未滿 20 公分的小鯖魚放回海裡（休閒釣法規沒有要求，這是本遊戲的規則）"
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 0.1,
+      "sand": 0.3,
+      "open": 1
+    },
+    "abundance": {
+      "value": 0.9,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "difficulty": {
+      "value": 2,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "dart",
+      "speed": 1.6,
+      "tailHz": 4,
+      "wiggle": 0.08
+    },
+    "bite": {
+      "nibbles": [
+        0,
+        1
+      ],
+      "window": 1,
+      "type": "run"
+    },
+    "fight": {
+      "power": 0.55,
+      "stamina": 6,
+      "surgeEvery": [
+        1.5,
+        3
+      ],
+      "surgeLen": 1,
+      "surgeMul": 1.7
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/scomber-japonicus.png",
+    "facing": "left",
+    "placeholder": {
+      "depth": 0.2,
+      "peak": 0.42,
+      "snout": 0.75,
+      "tailFork": 0.95,
+      "tailSpread": 0.9,
+      "peduncle": 0.12,
+      "dorsal": {
+        "spiny": [
+          0.28,
+          0.42
+        ],
+        "soft": [
+          0.56,
+          0.64
+        ],
+        "spinyH": 0.4,
+        "softH": 0.3,
+        "finlets": 5
+      },
+      "anal": [
+        0.58,
+        0.66
+      ],
+      "analH": 0.3,
+      "colors": {
+        "back": "#1f5f6e",
+        "side": "#4d8a92",
+        "belly": "#e8eef0",
+        "fin": "#5f7a80"
+      },
+      "pattern": {
+        "type": "mackerel",
+        "count": 13,
+        "width": 4,
+        "color": "rgba(10,25,30,0.85)"
+      }
+    },
+    "idFeatures": [
+      "紡錘形、尾柄很細",
+      "背部藍綠色，有波浪狀黑色斜紋；腹部銀白色、沒有斑點",
+      "兩個背鰭明顯分開；第二背鰭和臀鰭後面各有約 5 個小離鰭；尾鰭深分叉",
+      "眼睛大"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "format": "ocean-fish/1",
+  "regions": [
+    "regions/tw-northeast.json"
+  ],
+  "sources": "sources.json",
+  "junk": "junk.json",
+  "species": [
+    "species/girella-punctata.json",
+    "species/kyphosus-cinerascens.json",
+    "species/siganus-fuscescens.json",
+    "species/acanthopagrus-schlegelii.json",
+    "species/oplegnathus-fasciatus.json",
+    "species/sebastiscus-marmoratus.json",
+    "species/microcanthus-strigatus.json",
+    "species/scomber-japonicus.json",
+    "species/trachurus-japonicus.json",
+    "species/chelonia-mydas.json"
+  ]
+}

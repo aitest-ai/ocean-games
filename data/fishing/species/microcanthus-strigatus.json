@@ -1,0 +1,329 @@
+{
+  "format": "ocean-fish/1",
+  "id": "microcanthus-strigatus",
+  "kind": "fish",
+  "names": {
+    "zh": {
+      "value": "細刺魚",
+      "src": [
+        "taicol",
+        "R1"
+      ],
+      "status": "partial"
+    },
+    "aliases": {
+      "value": [
+        "（俗名待查證）"
+      ],
+      "src": [
+        "anglers"
+      ],
+      "status": "partial",
+      "note": "俗名各地叫法不同"
+    },
+    "scientific": {
+      "value": "Microcanthus strigatus",
+      "src": [
+        "taicol"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "細刺魚科 Microcanthidae（舊分類放在鮀科）",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "en": {
+      "value": "Stripey",
+      "src": [
+        "project"
+      ],
+      "status": "partial"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "peakMonths": {
+        "value": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      }
+    }
+  },
+  "habitat": {
+    "value": "漁港、堤防、潮池、淺礁，成群活動",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "depth": {
+    "value": "岸邊到約 20 公尺",
+    "src": [
+      "project"
+    ],
+    "status": "illustrative"
+  },
+  "diet": {
+    "value": "雜食：小型無脊椎動物、藻類",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "好奇、愛偷吃餌，成群在堤防邊游來游去",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "fightNote": {
+    "value": "體型小、力氣小，是新手最常釣到的「入門魚」",
+    "src": [
+      "project"
+    ],
+    "status": "illustrative"
+  },
+  "length": {
+    "type": {
+      "value": "FL",
+      "src": [
+        "R1"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 11,
+        "src": [
+          "R1"
+        ],
+        "status": "partial"
+      },
+      "p95": {
+        "value": 15,
+        "src": [
+          "R1"
+        ],
+        "status": "partial"
+      }
+    },
+    "min": {
+      "value": 6,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxCommon": {
+      "value": 16,
+      "src": [
+        "R1"
+      ],
+      "status": "partial",
+      "note": "日本三重樣本最大 16.2 公分尾叉長"
+    },
+    "maxRecorded": null
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.012,
+      "src": [
+        "R1"
+      ],
+      "status": "partial",
+      "note": "n=37，尾叉長 3.7～16.2 公分；樣本少、可信區間很寬"
+    },
+    "b": {
+      "value": 3.125,
+      "src": [
+        "R1"
+      ],
+      "status": "partial"
+    },
+    "lengthType": "FL",
+    "unit": "g, cm"
+  },
+  "maturity": {
+    "L50": {
+      "value": null,
+      "license": "—",
+      "status": "illustrative",
+      "note": "未找到"
+    }
+  },
+  "intro": {
+    "value": "漁港裡最容易看到的小魚之一。亮黃色的身體上有 5 條斜斜的黑色帶子，像穿了條紋衣服，所以也常被養在水族箱裡。牠們成群在堤防邊游來游去，很好奇，常常把小魚鉤上的餌偷吃掉。",
+    "src": [
+      "project"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "safety": {
+    "value": "背鰭硬棘細又尖，沒有毒棘的紀錄，但還是小心刺手。",
+    "src": [
+      "project"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "無危（LC）",
+      "license": "—",
+      "status": "partial",
+      "note": "依記憶，未能開啟 IUCN 確認"
+    },
+    "taiwan": {
+      "value": "無（不是保育類）",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "查了保育類名錄與新北市公告，沒有找到休閒垂釣的限制；「查無」不等於「確定沒有」"
+    },
+    "legalMinSize": {
+      "value": "查無休閒垂釣的法定最小尺寸",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "「查無」不等於「確定沒有」，請專業人士確認"
+    },
+    "release": {
+      "mode": {
+        "value": "none",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      },
+      "basis": {
+        "value": "none",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      }
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 0.7,
+      "sand": 0.8,
+      "open": 0
+    },
+    "abundance": {
+      "value": 0.9,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "difficulty": {
+      "value": 1,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "graze",
+      "speed": 0.5,
+      "tailHz": 3,
+      "wiggle": 0.15
+    },
+    "bite": {
+      "nibbles": [
+        3,
+        6
+      ],
+      "window": 1,
+      "type": "sink"
+    },
+    "fight": {
+      "power": 0.25,
+      "stamina": 3,
+      "surgeEvery": [
+        3,
+        5
+      ],
+      "surgeLen": 0.7,
+      "surgeMul": 1.4
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/microcanthus-strigatus.png",
+    "facing": "left",
+    "placeholder": {
+      "depth": 0.6,
+      "peak": 0.42,
+      "snout": 0.85,
+      "tailFork": 0.1,
+      "dorsal": {
+        "spiny": [
+          0.3,
+          0.55
+        ],
+        "soft": [
+          0.55,
+          0.8
+        ],
+        "softH": 0.26
+      },
+      "anal": [
+        0.55,
+        0.8
+      ],
+      "analH": 0.24,
+      "colors": {
+        "back": "#e0b51c",
+        "side": "#f2d23c",
+        "belly": "#f6e48a",
+        "fin": "#d9ad1d"
+      },
+      "pattern": {
+        "type": "stripes",
+        "count": 5,
+        "width": 11,
+        "tilt": 0.3,
+        "color": "#1f1f1a"
+      }
+    },
+    "idFeatures": [
+      "身體高、非常側扁，接近圓盤形",
+      "亮黃色底，5 條斜向的黑色縱帶（從頭部斜向後上方）",
+      "背鰭連續，前段細硬棘、後段軟鰭高而圓",
+      "嘴小、吻略尖"
+    ]
+  }
+}

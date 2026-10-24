@@ -1,0 +1,387 @@
+{
+  "format": "ocean-fish/1",
+  "items": [
+    {
+      "id": "pet-bottle",
+      "names": {
+        "zh": {
+          "value": "寶特瓶",
+          "src": [
+            "project"
+          ],
+          "status": "verified"
+        }
+      },
+      "intro": {
+        "value": "塑膠瓶在海裡不會消失，只會被陽光和海浪慢慢弄碎，變成很小的塑膠碎片（塑膠微粒），被小魚吃進肚子，最後可能回到我們的餐桌。",
+        "src": [
+          "project"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "partial"
+      },
+      "fact": {
+        "value": "荒野保護協會的淨灘統計：2024 年撿到 47,606 個寶特瓶，從 2016 年起寶特瓶或瓶蓋一直是數量前兩名。",
+        "src": [
+          "R19"
+        ],
+        "status": "partial"
+      },
+      "disposal": {
+        "value": "倒乾淨、壓扁放進回收。出門自備水壺，就能少用一個寶特瓶。",
+        "src": [
+          "project"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "verified"
+      },
+      "size": {
+        "lengthCm": 22,
+        "weightG": 30
+      },
+      "game": {
+        "zones": {
+          "reef": 0.5,
+          "sand": 1,
+          "open": 0.7
+        },
+        "abundance": {
+          "value": 0.14,
+          "status": "game-design",
+          "license": "本專案遊戲設定"
+        },
+        "swim": {
+          "style": "drift"
+        },
+        "bite": {
+          "nibbles": [
+            0,
+            0
+          ],
+          "window": 1.5,
+          "type": "sink"
+        },
+        "fight": {
+          "power": 0.32
+        }
+      },
+      "art": {
+        "file": "assets/fishing/junk/pet-bottle.png",
+        "facing": "left",
+        "placeholder": {
+          "shape": "bottle"
+        },
+        "idFeatures": [
+          "透明塑膠瓶，橫放，瓶口朝右",
+          "藍色瓶蓋；標籤褪色、沒有任何文字或商標",
+          "表面有刮痕和一點海藻"
+        ]
+      }
+    },
+    {
+      "id": "plastic-bag",
+      "names": {
+        "zh": {
+          "value": "塑膠袋",
+          "src": [
+            "project"
+          ],
+          "status": "verified"
+        }
+      },
+      "intro": {
+        "value": "漂在水裡的塑膠袋看起來很像水母，海龜可能會把它當成食物吞下去，塞住肚子。",
+        "src": [
+          "project"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "partial",
+        "note": "「海龜誤食」為多方報導的一般知識"
+      },
+      "fact": {
+        "value": "塑膠提袋和食品包裝袋都是淨灘常見的垃圾種類。",
+        "src": [
+          "R19"
+        ],
+        "status": "partial"
+      },
+      "disposal": {
+        "value": "乾淨的塑膠袋可以回收或重複使用；買東西自備購物袋。",
+        "src": [
+          "project"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "verified"
+      },
+      "size": {
+        "lengthCm": 35,
+        "weightG": 15
+      },
+      "game": {
+        "zones": {
+          "reef": 0.5,
+          "sand": 1,
+          "open": 0.7
+        },
+        "abundance": {
+          "value": 0.13,
+          "status": "game-design",
+          "license": "本專案遊戲設定"
+        },
+        "swim": {
+          "style": "drift"
+        },
+        "bite": {
+          "nibbles": [
+            0,
+            0
+          ],
+          "window": 1.5,
+          "type": "sink"
+        },
+        "fight": {
+          "power": 0.32
+        }
+      },
+      "art": {
+        "file": "assets/fishing/junk/plastic-bag.png",
+        "facing": "left",
+        "placeholder": {
+          "shape": "bag"
+        },
+        "idFeatures": [
+          "白色半透明塑膠提袋，皺皺的、鼓著水",
+          "兩個提把",
+          "沒有任何文字或商標"
+        ]
+      }
+    },
+    {
+      "id": "ghost-net",
+      "names": {
+        "zh": {
+          "value": "廢棄漁網和釣線",
+          "src": [
+            "project"
+          ],
+          "status": "verified"
+        }
+      },
+      "intro": {
+        "value": "被丟掉或斷掉的漁網、釣線叫做「幽靈漁具」：它們在海裡繼續纏住魚、海龜和海鳥，好幾年都不會停。",
+        "src": [
+          "R20"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "partial"
+      },
+      "fact": {
+        "value": "海洋保育署的海洋廢棄物統計裡，有一類專門記錄「廢漁具漁網」。",
+        "src": [
+          "R20"
+        ],
+        "status": "verified"
+      },
+      "disposal": {
+        "value": "釣魚斷掉的線和用過的魚鉤一定要帶走；看到海邊的廢網可以通報清除。",
+        "src": [
+          "R15"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "partial"
+      },
+      "size": {
+        "lengthCm": 60,
+        "weightG": 400
+      },
+      "game": {
+        "zones": {
+          "reef": 0.5,
+          "sand": 1,
+          "open": 0.7
+        },
+        "abundance": {
+          "value": 0.1,
+          "status": "game-design",
+          "license": "本專案遊戲設定"
+        },
+        "swim": {
+          "style": "drift"
+        },
+        "bite": {
+          "nibbles": [
+            0,
+            0
+          ],
+          "window": 1.5,
+          "type": "sink"
+        },
+        "fight": {
+          "power": 0.32
+        }
+      },
+      "art": {
+        "file": "assets/fishing/junk/ghost-net.png",
+        "facing": "left",
+        "placeholder": {
+          "shape": "net"
+        },
+        "idFeatures": [
+          "一團綠色的尼龍漁網，糾結在一起",
+          "纏著一小段釣線和一個橘色小浮球",
+          "沒有任何文字"
+        ]
+      }
+    },
+    {
+      "id": "flip-flop",
+      "names": {
+        "zh": {
+          "value": "夾腳拖鞋",
+          "src": [
+            "project"
+          ],
+          "status": "verified"
+        }
+      },
+      "intro": {
+        "value": "拖鞋會跟著海流漂很遠，東北角的岩岸常常可以撿到。泡沫橡膠在海裡會慢慢碎掉。",
+        "src": [
+          "project"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "illustrative",
+        "note": "沒有找到臺灣的拖鞋計數統計"
+      },
+      "disposal": {
+        "value": "壞掉的拖鞋丟一般垃圾；到海邊玩要把自己的東西帶回家。",
+        "src": [
+          "project"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "verified"
+      },
+      "size": {
+        "lengthCm": 26,
+        "weightG": 120
+      },
+      "game": {
+        "zones": {
+          "reef": 0.5,
+          "sand": 1,
+          "open": 0.7
+        },
+        "abundance": {
+          "value": 0.08,
+          "status": "game-design",
+          "license": "本專案遊戲設定"
+        },
+        "swim": {
+          "style": "drift"
+        },
+        "bite": {
+          "nibbles": [
+            0,
+            0
+          ],
+          "window": 1.5,
+          "type": "sink"
+        },
+        "fight": {
+          "power": 0.32
+        }
+      },
+      "art": {
+        "file": "assets/fishing/junk/flip-flop.png",
+        "facing": "left",
+        "placeholder": {
+          "shape": "slipper",
+          "colors": {}
+        },
+        "idFeatures": [
+          "藍色夾腳拖鞋，側面看",
+          "白色鞋底、白色夾帶",
+          "沒有任何文字或商標"
+        ]
+      }
+    },
+    {
+      "id": "drink-can",
+      "names": {
+        "zh": {
+          "value": "鐵鋁罐",
+          "src": [
+            "project"
+          ],
+          "status": "verified"
+        }
+      },
+      "intro": {
+        "value": "飲料罐在海裡會生鏽、破掉，破口很利，會割傷動物，也會割傷在海邊玩的人。",
+        "src": [
+          "project"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "partial"
+      },
+      "fact": {
+        "value": "鐵鋁罐是淨灘紀錄裡的常見項目，海保署統計也有「鐵罐」這一類。",
+        "src": [
+          "R19",
+          "R20"
+        ],
+        "status": "partial"
+      },
+      "disposal": {
+        "value": "喝完沖一下、壓扁放進回收。",
+        "src": [
+          "project"
+        ],
+        "license": "本專案自寫文字（可自由使用）",
+        "status": "verified"
+      },
+      "size": {
+        "lengthCm": 12,
+        "weightG": 15
+      },
+      "game": {
+        "zones": {
+          "reef": 0.5,
+          "sand": 1,
+          "open": 0.7
+        },
+        "abundance": {
+          "value": 0.1,
+          "status": "game-design",
+          "license": "本專案遊戲設定"
+        },
+        "swim": {
+          "style": "drift"
+        },
+        "bite": {
+          "nibbles": [
+            0,
+            0
+          ],
+          "window": 1.5,
+          "type": "sink"
+        },
+        "fight": {
+          "power": 0.32
+        }
+      },
+      "art": {
+        "file": "assets/fishing/junk/drink-can.png",
+        "facing": "left",
+        "placeholder": {
+          "shape": "can"
+        },
+        "idFeatures": [
+          "紅色鋁罐，橫放，有一點壓扁和鏽斑",
+          "銀色的罐頂和罐底",
+          "沒有任何文字、商標或圖案"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,334 @@
+{
+  "format": "ocean-fish/1",
+  "id": "girella-punctata",
+  "kind": "fish",
+  "names": {
+    "zh": {
+      "value": "瓜子鱲",
+      "src": [
+        "R11",
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "aliases": {
+      "value": [
+        "黑毛",
+        "粗鱗黑毛",
+        "菜毛"
+      ],
+      "src": [
+        "anglers"
+      ],
+      "status": "partial",
+      "note": "俗名各地叫法不同"
+    },
+    "scientific": {
+      "value": "Girella punctata",
+      "src": [
+        "taicol"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "鮀科 Kyphosidae（也有分類放在鱾科 Girellidae）",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "en": {
+      "value": "Largescale blackfish",
+      "src": [
+        "project"
+      ],
+      "status": "partial"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          11,
+          12,
+          1,
+          2,
+          3,
+          4
+        ],
+        "src": [
+          "R11",
+          "R27"
+        ],
+        "status": "partial",
+        "note": "冬季為盛產期有兩個來源；確切月份是示意"
+      },
+      "peakMonths": {
+        "value": [
+          12,
+          1,
+          2
+        ],
+        "src": [
+          "R11",
+          "R27"
+        ],
+        "status": "verified"
+      }
+    }
+  },
+  "habitat": {
+    "value": "浪大的岩礁區、礁石縫、海藻多的地方",
+    "src": [
+      "R11"
+    ],
+    "status": "partial"
+  },
+  "depth": {
+    "value": "約 1～30 公尺",
+    "src": [
+      "R11"
+    ],
+    "status": "partial"
+  },
+  "diet": {
+    "value": "雜食偏草食：海藻為主，也吃小蝦、小蟹",
+    "src": [
+      "R10"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "成群在白色浪花和礁石邊覓食，很警覺；咬餌輕，會先試探",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "fightNote": {
+    "value": "中鉤後往礁石洞、海藻叢裡鑽，容易磨斷線，拉力強",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "length": {
+    "type": {
+      "value": "TL",
+      "src": [
+        "project"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 30,
+        "src": [
+          "anglers"
+        ],
+        "status": "illustrative"
+      },
+      "p95": {
+        "value": 40,
+        "src": [
+          "anglers"
+        ],
+        "status": "illustrative"
+      }
+    },
+    "min": {
+      "value": 18,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxCommon": {
+      "value": 48,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxRecorded": {
+      "value": 60,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative",
+      "note": "各來源 50～60 公分不一；常見數字多出自 FishBase，未採用"
+    }
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.018,
+      "src": [
+        "R21"
+      ],
+      "status": "illustrative",
+      "note": "沒找到成魚的一手體長體重論文；依 b≈3 的一般原則，讓 30 公分約 490 公克"
+    },
+    "b": {
+      "value": 3,
+      "src": [
+        "R21"
+      ],
+      "status": "illustrative"
+    },
+    "lengthType": "TL",
+    "unit": "g, cm"
+  },
+  "maturity": {
+    "L50": {
+      "value": 22,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative",
+      "note": "未找到，示意值 20～25 公分"
+    }
+  },
+  "intro": {
+    "value": "東北角冬天磯釣最有名的魚，釣友叫牠「黑毛」。身體黑灰色、側扁，嘴巴小，牙齒尖端分成三叉，很會啃礁石上的海藻。牠非常怕生，風浪越大、浪花越白，反而越敢靠近岸邊吃東西。臺灣已經有學校研究出人工繁殖的方法。",
+    "src": [
+      "R11",
+      "R10"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "safety": {
+    "value": "背鰭硬棘會刺手。東北角磯釣最大的危險是「瘋狗浪」：真實釣魚一定要有大人陪、穿救生衣、不站在濕滑的礁石邊。",
+    "src": [
+      "project"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "未確認",
+      "license": "—",
+      "status": "illustrative",
+      "note": "無法開啟 IUCN 網站確認"
+    },
+    "taiwan": {
+      "value": "無（不是保育類）",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "查了保育類名錄與新北市公告，沒有找到休閒垂釣的限制；「查無」不等於「確定沒有」"
+    },
+    "legalMinSize": {
+      "value": "查無休閒垂釣的法定最小尺寸",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "「查無」不等於「確定沒有」，請專業人士確認"
+    },
+    "release": {
+      "mode": {
+        "value": "belowSize",
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "sizeCm": {
+        "value": 22,
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "basis": {
+        "value": "maturity-suggestion",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      },
+      "reason": "還沒長到可以繁殖的大小（遊戲規則，示意值），放牠回去長大"
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 1,
+      "sand": 0.2,
+      "open": 0.1
+    },
+    "abundance": {
+      "value": 1,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "difficulty": {
+      "value": 4,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "cautious",
+      "speed": 0.7,
+      "tailHz": 2.2,
+      "wiggle": 0.12
+    },
+    "bite": {
+      "nibbles": [
+        2,
+        5
+      ],
+      "window": 0.9,
+      "type": "sink"
+    },
+    "fight": {
+      "power": 0.65,
+      "stamina": 11,
+      "surgeEvery": [
+        2.5,
+        5
+      ],
+      "surgeLen": 1.4,
+      "surgeMul": 1.7
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/girella-punctata.png",
+    "facing": "left",
+    "placeholder": {
+      "depth": 0.42,
+      "peak": 0.42,
+      "tailFork": 0.25,
+      "dorsal": {
+        "spiny": [
+          0.3,
+          0.55
+        ],
+        "soft": [
+          0.55,
+          0.8
+        ]
+      },
+      "colors": {
+        "back": "#1c2326",
+        "side": "#3a4549",
+        "belly": "#6c777d",
+        "fin": "#1d2427"
+      },
+      "pattern": {
+        "type": "spots",
+        "count": 110,
+        "size": 2.5,
+        "color": "rgba(0,0,0,0.4)"
+      }
+    },
+    "idFeatures": [
+      "橢圓形、側扁，身體高度中等；全身暗灰黑到黑褐色",
+      "鱗片比較大，每片鱗的基部有一個小暗點（遠看像一排排細點）",
+      "背鰭只有一個、連續的：前半段是硬棘、後半段是軟鰭；尾鰭只有微微內凹",
+      "嘴小、吻短；鰓蓋後緣常帶黑色"
+    ]
+  }
+}

@@ -1,0 +1,347 @@
+{
+  "format": "ocean-fish/1",
+  "id": "siganus-fuscescens",
+  "kind": "fish",
+  "names": {
+    "zh": {
+      "value": "褐臭肚魚",
+      "src": [
+        "taicol",
+        "R25"
+      ],
+      "status": "partial"
+    },
+    "aliases": {
+      "value": [
+        "臭肚",
+        "象魚"
+      ],
+      "src": [
+        "anglers"
+      ],
+      "status": "partial",
+      "note": "俗名各地叫法不同"
+    },
+    "scientific": {
+      "value": "Siganus fuscescens",
+      "src": [
+        "taicol"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "臭肚魚科 Siganidae",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "en": {
+      "value": "Mottled spinefoot",
+      "src": [
+        "project"
+      ],
+      "status": "partial"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "src": [
+          "R27"
+        ],
+        "status": "partial",
+        "note": "冬季磯釣與夏季漁港都常見；夏季部分是示意"
+      },
+      "peakMonths": {
+        "value": [
+          12,
+          1,
+          2,
+          7,
+          8
+        ],
+        "src": [
+          "R27"
+        ],
+        "status": "illustrative"
+      }
+    }
+  },
+  "habitat": {
+    "value": "淺海礁岩、海藻和海草多的地方、漁港內，常成群",
+    "src": [
+      "R25"
+    ],
+    "status": "partial"
+  },
+  "depth": {
+    "value": "岸邊到約 20 公尺",
+    "src": [
+      "project"
+    ],
+    "status": "illustrative"
+  },
+  "diet": {
+    "value": "草食為主：海藻、海草",
+    "src": [
+      "R25"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "成群搶食，咬餌快，會一口一口地啄",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "fightNote": {
+    "value": "以體型來說拉力強，會側身左右甩",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "length": {
+    "type": {
+      "value": "FL",
+      "src": [
+        "R1"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 21,
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "p95": {
+        "value": 29,
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      }
+    },
+    "min": {
+      "value": 13,
+      "src": [
+        "R1"
+      ],
+      "status": "partial"
+    },
+    "maxCommon": {
+      "value": 35,
+      "src": [
+        "R1"
+      ],
+      "status": "partial"
+    },
+    "maxRecorded": {
+      "value": 38.6,
+      "src": [
+        "R1"
+      ],
+      "status": "partial",
+      "note": "日本三重樣本中最大的一尾"
+    }
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.008,
+      "src": [
+        "R1"
+      ],
+      "status": "partial",
+      "note": "n=119，尾叉長 13.3～38.6 公分，日本三重；只讀到摘要"
+    },
+    "b": {
+      "value": 3.239,
+      "src": [
+        "R1"
+      ],
+      "status": "partial"
+    },
+    "lengthType": "FL",
+    "unit": "g, cm"
+  },
+  "maturity": {
+    "L50": {
+      "value": 15,
+      "src": [
+        "R31"
+      ],
+      "status": "partial",
+      "note": "菲律賓的大學部論文，約 14.5～15.5 公分全長；地區不同"
+    }
+  },
+  "intro": {
+    "value": "漁港和礁石邊很常見的「臭肚」。名字的由來是牠吃海藻，內臟味道比較重。身上有很多淡色小斑點，受到驚嚇時顏色會變暗、出現花紋。牠的背鰭有 13 根尖刺，而且有毒，是釣魚時一定要認得的魚。",
+    "src": [
+      "R25"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "safety": {
+    "value": "背鰭、臀鰭、腹鰭的硬棘有毒，被刺到會非常痛、腫起來。用毛巾或魚夾拿，不要空手抓；萬一被刺，請大人幫忙用清水沖、泡在不會燙傷的熱水裡，痛一直不退就要看醫生。",
+    "src": [
+      "R25",
+      "R26"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial",
+    "note": "有毒棘：已查證；處理方式來自澳洲衛教，請臺灣醫師確認"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "無危（LC）",
+      "license": "—",
+      "status": "partial",
+      "note": "依記憶，未能開啟 IUCN 確認"
+    },
+    "taiwan": {
+      "value": "無（不是保育類）",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "查了保育類名錄與新北市公告，沒有找到休閒垂釣的限制；「查無」不等於「確定沒有」"
+    },
+    "legalMinSize": {
+      "value": "查無休閒垂釣的法定最小尺寸",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "「查無」不等於「確定沒有」，請專業人士確認"
+    },
+    "release": {
+      "mode": {
+        "value": "belowSize",
+        "src": [
+          "R31"
+        ],
+        "status": "partial"
+      },
+      "sizeCm": {
+        "value": 15,
+        "src": [
+          "R31"
+        ],
+        "status": "partial"
+      },
+      "basis": {
+        "value": "maturity-suggestion",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      },
+      "reason": "還沒長到可以繁殖的大小，放牠回去長大"
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 0.8,
+      "sand": 0.8,
+      "open": 0.1
+    },
+    "abundance": {
+      "value": 1,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "difficulty": {
+      "value": 2,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "graze",
+      "speed": 0.6,
+      "tailHz": 2.6,
+      "wiggle": 0.14
+    },
+    "bite": {
+      "nibbles": [
+        3,
+        7
+      ],
+      "window": 0.8,
+      "type": "sink"
+    },
+    "fight": {
+      "power": 0.45,
+      "stamina": 7,
+      "surgeEvery": [
+        3,
+        6
+      ],
+      "surgeLen": 1,
+      "surgeMul": 1.5
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/siganus-fuscescens.png",
+    "facing": "left",
+    "placeholder": {
+      "depth": 0.4,
+      "peak": 0.42,
+      "tailFork": 0.15,
+      "snout": 0.9,
+      "spines": true,
+      "dorsal": {
+        "spiny": [
+          0.24,
+          0.62
+        ],
+        "soft": [
+          0.62,
+          0.8
+        ],
+        "spinyH": 0.18
+      },
+      "anal": [
+        0.5,
+        0.8
+      ],
+      "colors": {
+        "back": "#4f5a3c",
+        "side": "#7b7a58",
+        "belly": "#c9c6a6",
+        "fin": "#6a6448"
+      },
+      "pattern": {
+        "type": "spots",
+        "count": 140,
+        "size": 3,
+        "color": "rgba(235,235,200,0.7)"
+      }
+    },
+    "idFeatures": [
+      "橢圓形、非常側扁；褐綠到灰褐色，全身滿是淡白或淡黃色的小斑點",
+      "背鰭連續很長，前段 13 根尖硬棘；臀鰭 7 根硬棘；腹鰭前後各一根棘",
+      "嘴很小、吻略尖（像兔子的嘴）",
+      "尾鰭微微內凹"
+    ]
+  }
+}

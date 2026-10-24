@@ -1,0 +1,274 @@
+{
+  "format": "ocean-fish/1",
+  "sources": [
+    {
+      "id": "project",
+      "title": "本專案依一般知識整理、改寫",
+      "short": "本專案整理",
+      "license": "本專案自寫（可自由使用）",
+      "type": "project"
+    },
+    {
+      "id": "anglers",
+      "title": "釣友經驗（多個釣魚網站與報導的共同說法，本專案改寫）",
+      "short": "釣友經驗",
+      "license": "一般知識，本專案改寫",
+      "type": "lore"
+    },
+    {
+      "id": "taicol",
+      "title": "臺灣物種名錄 TaiCOL（原 TaiBNET），中研院",
+      "short": "TaiCOL",
+      "url": "https://taicol.tw/",
+      "license": "CC BY 4.0",
+      "type": "database"
+    },
+    {
+      "id": "R1",
+      "title": "Kato, Kawano & Kanaiwa (2024) Length–weight relations of underutilized nine fish species from set-net fishery, Mie, Japan. Acta Ichthyologica et Piscatoria 54: 203–208",
+      "short": "Kato et al. 2024",
+      "url": "https://doi.org/10.3897/aiep.54.127385",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）；期刊開放取用（應為 CC BY 4.0，待確認）",
+      "type": "paper"
+    },
+    {
+      "id": "R2",
+      "title": "Lu, Chen & Cheng (2013) Age and growth study of the jack mackerel (Trachurus japonicus) in the northeastern waters off Taiwan. Journal of Marine Science and Technology 21(7)",
+      "short": "Lu et al. 2013（臺灣東北部）",
+      "url": "https://doi.org/10.6119/JMST-013-1220-1",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "R4",
+      "title": "Lauden et al. (2025) Population dynamics and seasonal variation in biological characteristics of black sea bream in Zhanjiang coastal waters. Frontiers in Marine Science 11: 1515753",
+      "short": "Lauden et al. 2025",
+      "url": "https://doi.org/10.3389/fmars.2024.1515753",
+      "license": "CC BY 4.0（Frontiers）",
+      "type": "paper"
+    },
+    {
+      "id": "R5",
+      "title": "Kwon et al. (2009) Maturation and spawning of black seabream Acanthopagrus schlegeli in the southern sea of Korea",
+      "short": "Kwon et al. 2009（韓國）",
+      "url": "https://koreascience.or.kr/article/JAKO200910102404958.pub",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "R6",
+      "title": "Hwang, Kim & Lee (2008) Age, growth, and maturity of chub mackerel off Korea. North American Journal of Fisheries Management 28: 1414–1425",
+      "short": "Hwang et al. 2008（韓國）",
+      "url": "https://doi.org/10.1577/M07-063.1",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "R7",
+      "title": "（作者待補）2020，韓國近海白腹鯖成熟與產卵研究，Korean Journal of Fisheries and Aquatic Sciences",
+      "short": "KJFAS 2020（韓國）",
+      "url": "https://koreascience.kr/article/JAKO202012941166498.page",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）；書目待補",
+      "type": "paper"
+    },
+    {
+      "id": "R8",
+      "title": "（作者待補）2023，以資料有限方法估計 Scomber japonicus 生活史特徵與資源狀況，應用生態學報",
+      "short": "應用生態學報 2023（浙江）",
+      "url": "https://doi.org/10.13287/j.1001-9332.202308.029",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）；書目待補",
+      "type": "paper"
+    },
+    {
+      "id": "R9",
+      "title": "Bae & Chung (1999) Age and growth of the marbled rockfish Sebastiscus marmoratus from the coastal waters of Cheju Island. J. Korean Fish. Soc. 32(4): 432–437",
+      "short": "Bae & Chung 1999（濟州）",
+      "url": "https://koreascience.or.kr/article/JAKO199923607611994.page",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "R10",
+      "title": "Lin et al. (2024) Captive spawning, early development, and larviculture of largescale blackfish, Girella punctata. Aquaculture Reports 38: 102349",
+      "short": "Lin et al. 2024（臺灣）",
+      "url": "https://doi.org/10.1016/j.aqrep.2024.102349",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）；開放取用",
+      "type": "paper"
+    },
+    {
+      "id": "R11",
+      "title": "海洋委員會海洋保育署《臺灣百種海洋動物圖鑑》瓜子鱲",
+      "short": "海保署圖鑑",
+      "url": "https://www.oca.gov.tw/ch/home.jsp?id=289&parentpath=0%2C5&mcustomize=ocamaritime_view.jsp&dataserno=202104140014",
+      "license": "政府網站／公告，只引用事實",
+      "type": "government"
+    },
+    {
+      "id": "R12",
+      "title": "鯖鰺漁業管理辦法（全國法規資料庫）",
+      "short": "鯖鰺漁業管理辦法",
+      "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=M0050046",
+      "license": "法令（著作權法第 9 條，不受著作權保護）",
+      "type": "law"
+    },
+    {
+      "id": "R13",
+      "title": "農業部漁業署：新北市水產動植物繁殖保育區；新北市政府新聞稿",
+      "short": "漁業署／新北市保育區",
+      "url": "https://www.fa.gov.tw/view.php?theme=web_structure&id=428",
+      "license": "政府網站／公告，只引用事實",
+      "type": "government"
+    },
+    {
+      "id": "R15",
+      "title": "海洋保育署新聞「意外捕獲海洋保育類野生動物 有通報不違法」(2021-01-12)；海保署「友善賞龜」頁",
+      "short": "海保署",
+      "url": "https://www.oca.gov.tw/ch/home.jsp?id=374&parentpath=0%2C296%2C370",
+      "license": "政府網站／公告，只引用事實",
+      "type": "government"
+    },
+    {
+      "id": "R16",
+      "title": "環境資訊中心「通報撥打118然後呢？海龜救援快問快答」",
+      "short": "環境資訊中心",
+      "url": "https://e-info.org.tw/node/236980",
+      "license": "新聞報導，只引用事實",
+      "type": "news"
+    },
+    {
+      "id": "R17",
+      "title": "臺灣屏東地方法院 111 年度原簡字第 120 號判決（綠蠵龜為 108 年 1 月 9 日公告之瀕臨絕種海洋保育類）",
+      "short": "屏東地院判決",
+      "url": "https://judgment.judicial.gov.tw/FILES/PTDM/111%2c%e5%8e%9f%e7%b0%a1%2c120%2c20230131%2c1.pdf",
+      "license": "判決書（不受著作權保護）",
+      "type": "law"
+    },
+    {
+      "id": "R18",
+      "title": "IUCN 2025 年 10 月綠蠵龜全球評估由 EN 調為 LC（Popular Science、IOSEA 報導）",
+      "short": "IUCN 2025（報導）",
+      "url": "https://iosea-turtles.cms.int/es/node/49708",
+      "license": "只引用分類等級事實",
+      "type": "news"
+    },
+    {
+      "id": "R19",
+      "title": "荒野保護協會「海洋守護行動｜垃圾哪裡來」2024、2025",
+      "short": "荒野保護協會",
+      "url": "https://www.sow.org.tw/2025_oceananalysis",
+      "license": "協會網站（未見開放授權），只引用統計數字並註明出處",
+      "type": "ngo"
+    },
+    {
+      "id": "R20",
+      "title": "海洋保育署「海洋廢棄物清理狀況統計」政府資料開放平臺",
+      "short": "海保署開放資料",
+      "url": "https://data.gov.tw/dataset/172912",
+      "license": "政府資料開放授權條款第 1 版（可商用，須標示出處）",
+      "type": "opendata"
+    },
+    {
+      "id": "R21",
+      "title": "Froese (2006) Cube law, condition factor and weight–length relationships. J. Appl. Ichthyol. 22: 241–253（只用「b 通常約為 3」的一般原則）",
+      "short": "Froese 2006（一般原則）",
+      "url": "https://doi.org/10.1111/j.1439-0426.2006.00805.x",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "R22",
+      "title": "南韓南岸條石鯛病例報告（Development & Reproduction 2021，n=448，TL 27.5±6.8 cm，W 522.9±385.6 g）",
+      "short": "Dev. Reprod. 2021（韓國）",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34950816/",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "R23",
+      "title": "近畿大學 1979 イシダイ（人工孵化魚）成熟研究；三重縣資源評價",
+      "short": "日本石鯛研究",
+      "url": "https://kindai.repo.nii.ac.jp/record/5113/files/AN00064044-19790315-0035.pdf",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "R24",
+      "title": "114°E HK Reef Fish – Marbled rockfish",
+      "short": "香港礁魚圖鑑",
+      "url": "https://www.114ehkreeffish.org/reef-fish/false-kelpfish/?lang=en",
+      "license": "NGO 網站，只引用事實",
+      "type": "ngo"
+    },
+    {
+      "id": "R25",
+      "title": "FAO 物種鑑定指南 Siganidae（Woodland）",
+      "short": "FAO 鑑定指南",
+      "url": "https://www.fao.org/4/y0870e/y0870e27.pdf",
+      "license": "FAO 版權，只引用形態事實",
+      "type": "reference"
+    },
+    {
+      "id": "R26",
+      "title": "NSW Poisons Information Centre – Venomous fish（澳洲衛教）",
+      "short": "NSW 毒物中心",
+      "url": "https://www.poisonsinfo.nsw.gov.au/bites-and-stings/venomous-fish",
+      "license": "政府衛教，只引用事實",
+      "type": "government"
+    },
+    {
+      "id": "R27",
+      "title": "台灣環境資訊 1997「東北角海岸之旅—釣魚篇」（冬季磯釣代表魚：黑毛、白毛、臭肚）",
+      "short": "東北角釣魚篇 1997",
+      "url": "https://www.taiwanwatch.org.tw/issue/nuclear/news/travel06.htm",
+      "license": "媒體，只引用事實",
+      "type": "news"
+    },
+    {
+      "id": "R28",
+      "title": "台灣英文新聞 2026-02-02 東北角漁獲（石鯛利齒咬斷釣線）",
+      "short": "台灣英文新聞 2026",
+      "url": "https://www.taiwannews.com.tw/zh/topic/東北角",
+      "license": "新聞報導，只引用事實",
+      "type": "news"
+    },
+    {
+      "id": "R29",
+      "title": "中央社 2021-06-29「禁漁守護鯖鰺有成 體長恢復8年前規格」",
+      "short": "中央社 2021",
+      "url": "https://www.cna.com.tw/news/ahel/202106290281.aspx",
+      "license": "新聞報導，只引用事實",
+      "type": "news"
+    },
+    {
+      "id": "R31",
+      "title": "菲律賓 Bolinao 臭肚魚產卵週期與初次性成熟（UPLB 大學部論文）",
+      "short": "UPLB 論文",
+      "url": "https://www.ukdr.uplb.edu.ph/etd-undergrad/11236",
+      "license": "學位論文，只引用事實",
+      "type": "thesis"
+    },
+    {
+      "id": "R34",
+      "title": "Wu et al. (2010) General and Comparative Endocrinology 167: 417–421（黑鯛性轉變）",
+      "short": "Wu et al. 2010",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "R36",
+      "title": "東海竹筴魚食性研究（PubMed 24175535）；韓國統營褐菖鮋食性研究（KJFAS 2011）",
+      "short": "食性研究",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/24175535/",
+      "license": "論文數值（事實不受著作權保護；引用並註明出處）",
+      "type": "paper"
+    },
+    {
+      "id": "taibif-kyphosus",
+      "title": "TaiBIF 知識庫：天竺舵魚（俗名白毛、開旗）",
+      "short": "TaiBIF",
+      "url": "https://knowledge.taibif.tw/node/970",
+      "license": "只引用俗名事實",
+      "type": "database"
+    }
+  ]
+}
