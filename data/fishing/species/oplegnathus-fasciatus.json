@@ -1,0 +1,339 @@
+{
+  "format": "ocean-fish/1",
+  "id": "oplegnathus-fasciatus",
+  "kind": "fish",
+  "names": {
+    "zh": {
+      "value": "條石鯛",
+      "src": [
+        "taicol",
+        "R28"
+      ],
+      "status": "partial"
+    },
+    "aliases": {
+      "value": [
+        "石鯛",
+        "黑嘴"
+      ],
+      "src": [
+        "anglers"
+      ],
+      "status": "partial",
+      "note": "俗名各地叫法不同"
+    },
+    "scientific": {
+      "value": "Oplegnathus fasciatus",
+      "src": [
+        "taicol"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "石鯛科 Oplegnathidae",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "en": {
+      "value": "Barred knifejaw",
+      "src": [
+        "project"
+      ],
+      "status": "partial"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "src": [
+          "R28",
+          "R23"
+        ],
+        "status": "partial",
+        "note": "水溫高時較活躍；月份是推估"
+      },
+      "peakMonths": {
+        "value": [
+          6,
+          7,
+          8
+        ],
+        "src": [
+          "R23"
+        ],
+        "status": "illustrative"
+      }
+    }
+  },
+  "habitat": {
+    "value": "地形複雜的礁岩區；小魚會躲在漂流海藻下或港內",
+    "src": [
+      "R28"
+    ],
+    "status": "partial"
+  },
+  "depth": {
+    "value": "約 1～20 公尺",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "diet": {
+    "value": "藤壺、螃蟹、貝類、海膽，也吃海藻",
+    "src": [
+      "R23"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "用鳥嘴般的牙齒咬碎硬殼；咬餌時先「叩叩」敲幾下，再一口拖走",
+    "src": [
+      "anglers",
+      "R28"
+    ],
+    "status": "illustrative"
+  },
+  "fightNote": {
+    "value": "力氣非常大，中鉤後往礁石下猛衝，常咬斷釣線",
+    "src": [
+      "R28"
+    ],
+    "status": "partial"
+  },
+  "length": {
+    "type": {
+      "value": "TL",
+      "src": [
+        "R22"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 28,
+        "src": [
+          "R22"
+        ],
+        "status": "partial",
+        "note": "韓國南岸樣本平均 27.5 公分（標準差 6.8）"
+      },
+      "p95": {
+        "value": 40,
+        "src": [
+          "R22"
+        ],
+        "status": "partial"
+      }
+    },
+    "min": {
+      "value": 12,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxCommon": {
+      "value": 55,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxRecorded": {
+      "value": 80,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative",
+      "note": "圖鑑常見數字，但沒有取得非 FishBase 的來源"
+    }
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.025,
+      "src": [
+        "R22",
+        "R21"
+      ],
+      "status": "illustrative",
+      "note": "用韓國樣本的平均長度和平均體重粗算，只能當示意"
+    },
+    "b": {
+      "value": 3,
+      "src": [
+        "R21"
+      ],
+      "status": "illustrative"
+    },
+    "lengthType": "TL",
+    "unit": "g, cm"
+  },
+  "maturity": {
+    "L50": {
+      "value": 20,
+      "src": [
+        "R23"
+      ],
+      "status": "illustrative",
+      "note": "只有人工孵化魚的資料（雄魚 1 歲、雌魚 2 歲部分成熟）；20 公分是示意"
+    }
+  },
+  "intro": {
+    "value": "東北角最具代表性的「夢幻魚」之一。小時候身上有 7 條黑色橫帶，第一條剛好穿過眼睛；長大的雄魚條紋會變淡、嘴巴變黑，所以也叫「黑嘴」。牠的牙齒長在一起變成像鸚鵡一樣的嘴，連海膽、螃蟹的硬殼都咬得碎。",
+    "src": [
+      "R23",
+      "R28"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "safety": {
+    "value": "鳥嘴狀的牙齒咬力非常大，手指不要靠近嘴巴；背鰭硬棘也很尖。",
+    "src": [
+      "R28"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "未確認",
+      "license": "—",
+      "status": "illustrative"
+    },
+    "taiwan": {
+      "value": "無（不是保育類）",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "查了保育類名錄與新北市公告，沒有找到休閒垂釣的限制；「查無」不等於「確定沒有」"
+    },
+    "legalMinSize": {
+      "value": "查無休閒垂釣的法定最小尺寸",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "「查無」不等於「確定沒有」，請專業人士確認"
+    },
+    "release": {
+      "mode": {
+        "value": "belowSize",
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "sizeCm": {
+        "value": 20,
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "basis": {
+        "value": "maturity-suggestion",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      },
+      "reason": "港邊常見的小石鯛還沒長大（遊戲規則，示意值），放牠回去長大"
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 1,
+      "sand": 0.1,
+      "open": 0.1
+    },
+    "abundance": {
+      "value": 0.35,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "difficulty": {
+      "value": 5,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "circle",
+      "speed": 0.8,
+      "tailHz": 2,
+      "wiggle": 0.1
+    },
+    "bite": {
+      "nibbles": [
+        3,
+        6
+      ],
+      "window": 0.8,
+      "type": "run"
+    },
+    "fight": {
+      "power": 0.95,
+      "stamina": 13,
+      "surgeEvery": [
+        2,
+        4
+      ],
+      "surgeLen": 1.8,
+      "surgeMul": 1.85
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/oplegnathus-fasciatus.png",
+    "facing": "left",
+    "placeholder": {
+      "depth": 0.5,
+      "peak": 0.38,
+      "tailFork": 0.1,
+      "snout": 0.6,
+      "dorsal": {
+        "spiny": [
+          0.26,
+          0.5
+        ],
+        "soft": [
+          0.5,
+          0.8
+        ],
+        "softH": 0.24
+      },
+      "colors": {
+        "back": "#9d9a84",
+        "side": "#cfcbb2",
+        "belly": "#e7e3cf",
+        "fin": "#3a3a33",
+        "eye": "#d8cfa0"
+      },
+      "pattern": {
+        "type": "bars",
+        "count": 7,
+        "from": 0.06,
+        "to": 1,
+        "width": 0.45,
+        "color": "#1d1d1a"
+      }
+    },
+    "idFeatures": [
+      "身體高、側扁，接近卵圓形",
+      "淡灰白到黃灰色底，身上 7 條黑色橫帶，第一條穿過眼睛（大的雄魚條紋變淡、嘴巴變黑）",
+      "背鰭連續，前段硬棘、後段軟鰭比較高；尾鰭幾乎不分叉",
+      "牙齒癒合成鳥喙狀（像鸚鵡嘴）"
+    ]
+  }
+}

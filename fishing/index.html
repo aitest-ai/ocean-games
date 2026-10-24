@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>釣魚・海洋體感遊戲</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../game/game.css">
+<link rel="stylesheet" href="./fishing.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="floading" id="fLoading">🎣 載入魚類資料與圖鑑圖…</div>
+
+<!-- 遊戲中 HUD -->
+<div id="hud" hidden>
+  <div class="hud-top">
+    <div id="hChips" class="chips"></div>
+    <div class="chip time"><span class="lbl">剩餘時間</span><b id="hTime">0:00</b></div>
+    <button class="chip btn" id="hPause" title="暫停（雙手舉高也可以）">⏸ 暫停</button>
+  </div>
+  <div id="hExtra"></div>
+  <div class="arrow" id="hArrow" hidden><div class="tri"></div><span id="hDist"></span></div>
+  <div class="toast" id="hToast"></div>
+  <div class="hud-bottom">
+    <div class="input-chip">
+      <span id="hSource">⌨️ 鍵盤模擬</span>
+      <span class="dot" id="hDot"></span>
+      <span id="hAction">—</span>
+    </div>
+    <div class="perf" id="hPerf"></div>
+  </div>
+  <div class="keys-help" id="hKeys"></div>
+</div>
+<div class="camview" id="camview" hidden title="鏡頭看到的骨架（不顯示影像）"><canvas width="240" height="180"></canvas><span>鏡頭看到的你</span></div>
+
+<!-- 怎麼玩（每次打開遊戲會先出現） -->
+<div class="overlay" id="howto" hidden>
+  <div class="panel">
+    <h1 id="hTitle">怎麼玩</h1>
+    <p class="sub" id="hGoal"></p>
+    <div class="howto-grid" id="hCards"></div>
+    <p class="note">🖐️ 空手做動作就好，<b>不要真的拿釣竿、棍子或任何東西揮</b>，揮手前先確認旁邊沒有人。</p>
+    <p class="note">👀 畫面像照鏡子：你舉左手，人偶也舉畫面左邊的手。🪑 坐在椅子上也能玩。</p>
+    <p class="note" id="hStatus"></p>
+    <div class="actions">
+      <button class="primary" id="hOk">我懂了（或雙手舉高）</button>
+    </div>
+  </div>
+</div>
+
+<!-- 選單 -->
+<div class="overlay" id="menu" hidden>
+  <div class="panel">
+    <h1 id="mTitle"></h1>
+    <p class="sub" id="mIntro"></p>
+    <div class="grid">
+      <section>
+        <h2>難度（天氣）</h2>
+        <div class="seg" id="mDiff"></div>
+        <p class="note" id="mDiffNote"></p>
+      </section>
+      <section>
+        <h2>操作方式</h2>
+        <div class="seg" id="mInput">
+          <button data-v="keyboard">⌨️ 鍵盤／滑鼠模擬</button>
+          <button data-v="camera">📷 鏡頭體感</button>
+        </div>
+        <p class="note" id="mInputNote"></p>
+      </section>
+      <section>
+        <h2>動作調整（做不到的動作可以跳過）</h2>
+        <div id="mOptions"></div>
+        <div id="mCommon">
+          <label class="chk"><input type="checkbox" data-opt="seated"> 🪑 坐著玩（關閉跳躍，蹲低改成身體往前彎）</label>
+        </div>
+        <div class="row"><span>靈敏度</span>
+          <select id="mSens"><option value="low">低（動作要大）</option><option value="normal">中</option><option value="high">高（小動作也算）</option></select>
+        </div>
+      </section>
+      <section>
+        <h2>畫面與聲音</h2>
+        <div class="seg" id="mQuality">
+          <button data-v="low">低（平板）</button><button data-v="mid">中</button><button data-v="rt">高（電腦）</button>
+        </div>
+        <p class="note">換畫質會重新載入頁面。畫面卡頓時請選「低」。</p>
+        <div id="mCommon2">
+          <label class="chk"><input type="checkbox" data-opt="reduceMotion"> 減少晃動（容易暈的同學請勾）</label>
+          <label class="chk"><input type="checkbox" data-opt="sound"> 海浪與風聲</label>
+        </div>
+      </section>
+    </div>
+    <details class="safety" id="mSafety">
+      <summary>⚠️ 開始前安全檢查（用鏡頭時必看）</summary>
+      <ul>
+        <li>平板<b>橫放</b>、固定在桌上或支架上，鏡頭大約在胸口高度。</li>
+        <li>玩家離平板 <b>1.5～2.5 公尺</b>，張開雙臂轉一圈碰不到人、桌角、牆。</li>
+        <li>一台平板前面只站（坐）<b>一個人</b>，其他同學在旁邊排隊、不要入鏡。</li>
+        <li>每款都可以<b>坐在椅子上玩</b>；頭暈、手痠就停下來休息。每人連續玩不超過 5 分鐘。</li>
+        <li>🎣 釣魚是<b>空手</b>做動作：不要拿釣竿、掃把、尺或任何東西揮。</li>
+        <li>看不到人時遊戲會自動暫停。</li>
+        <li>🔒 鏡頭畫面只在這台平板上即時分析，不錄影、不上傳。</li>
+      </ul>
+    </details>
+    <div class="actions">
+      <button class="primary" id="mStart">開始（或雙手舉高）</button>
+      <button id="mHowto">❓ 怎麼玩</button>
+      <button data-open-fridge>🧊 冰箱與圖鑑</button>
+      <a class="link" href="../">回首頁</a>
+      <span class="other-games">其他遊戲：<a data-g="kayak" href="../game/?g=kayak">🛶 划舟</a> <a data-g="surf" href="../game/?g=surf">🏄 衝浪</a> <a data-g="sail" href="../game/?g=sail">⛵ 帆船</a></span>
+    </div>
+    <p class="note" id="mStatus"></p>
+  </div>
+</div>
+
+<!-- 釣到東西時的圖鑑卡（文字與數字全部由程式排版） -->
+<div class="overlay" id="catch" hidden>
+  <div class="panel card-panel">
+    <div id="catchBody"></div>
+    <div class="actions" id="catchBtns"></div>
+  </div>
+</div>
+
+<!-- 冰箱與圖鑑 -->
+<div class="overlay" id="fridge" hidden>
+  <div class="panel card-panel">
+    <div id="fridgeBody"></div>
+    <div class="actions"><button class="primary" id="frClose">關閉</button><button id="frClear">清空紀錄</button>
+      <a class="link" href="../docs/fishing.md" target="_blank">資料來源與說明</a></div>
+  </div>
+</div>
+
+<div class="overlay" id="pause" hidden>
+  <div class="panel small">
+    <h1 id="pTitle">暫停</h1>
+    <p class="sub" id="pText">雙手舉高，或按「繼續」。</p>
+    <div class="actions">
+      <button class="primary" id="pResume">繼續</button>
+      <button id="pHowto">❓ 怎麼玩</button>
+      <button data-open-fridge>🧊 冰箱</button>
+      <button id="pQuit">回選單</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="result" hidden>
+  <div class="panel small">
+    <h1 id="rTitle">完成！</h1>
+    <div class="stars" id="rStars"></div>
+    <p class="sub" id="rText"></p>
+    <div class="actions">
+      <button class="primary" id="rAgain">再玩一次（或雙手舉高）</button>
+      <button id="rMenu">回選單</button>
+    </div>
+  </div>
+</div>
+
+<div class="countdown" id="count" hidden></div>
+<video id="video" muted playsinline hidden></video>
+<script type="module" src="../src/fishing/main.js"></script>
+</body>
+</html>

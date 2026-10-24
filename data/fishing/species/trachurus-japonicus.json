@@ -1,0 +1,340 @@
+{
+  "format": "ocean-fish/1",
+  "id": "trachurus-japonicus",
+  "kind": "fish",
+  "names": {
+    "zh": {
+      "value": "真鰺",
+      "src": [
+        "taicol",
+        "R2"
+      ],
+      "status": "partial"
+    },
+    "aliases": {
+      "value": [
+        "竹筴魚",
+        "巴攏",
+        "硬尾仔"
+      ],
+      "src": [
+        "anglers"
+      ],
+      "status": "partial",
+      "note": "俗名各地叫法不同"
+    },
+    "scientific": {
+      "value": "Trachurus japonicus",
+      "src": [
+        "taicol"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "鰺科 Carangidae",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "en": {
+      "value": "Japanese jack mackerel",
+      "src": [
+        "project"
+      ],
+      "status": "partial"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative",
+        "note": "漁船禁漁期同鯖類（只適用漁船）"
+      },
+      "peakMonths": {
+        "value": [
+          6,
+          7,
+          8,
+          9
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      }
+    }
+  },
+  "habitat": {
+    "value": "表層到近底層成群游動；晚上會被漁港燈光吸引",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "depth": {
+    "value": "沿岸到大陸棚",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "diet": {
+    "value": "浮游動物（橈足類、磷蝦）、小魚",
+    "src": [
+      "R36"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "成群在燈下游動，咬餌乾脆",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "fightNote": {
+    "value": "嘴巴薄，拉太用力容易「破嘴」脫鉤",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "length": {
+    "type": {
+      "value": "FL",
+      "src": [
+        "R2"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 17,
+        "src": [
+          "R2"
+        ],
+        "status": "partial",
+        "note": "臺灣東北部漁獲以 0～1 歲魚為主"
+      },
+      "p95": {
+        "value": 24,
+        "src": [
+          "R2"
+        ],
+        "status": "partial"
+      }
+    },
+    "min": {
+      "value": 10,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxCommon": {
+      "value": 30,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxRecorded": {
+      "value": 40.4,
+      "src": [
+        "R2"
+      ],
+      "status": "partial",
+      "note": "這是臺灣東北部族群的理論最大體長 L∞"
+    }
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.036,
+      "src": [
+        "R2"
+      ],
+      "status": "partial",
+      "note": "雌魚；雄魚 a=0.032、b=2.71；臺灣東北部；只讀到摘要"
+    },
+    "b": {
+      "value": 2.6771,
+      "src": [
+        "R2"
+      ],
+      "status": "partial"
+    },
+    "lengthType": "FL",
+    "unit": "g, cm"
+  },
+  "maturity": {
+    "L50": {
+      "value": 18,
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "各來源 18～27 公分不一致"
+    }
+  },
+  "intro": {
+    "value": "臺灣東北部很重要的漁獲，也是夜晚漁港燈下常釣到的魚。最好認的地方是：身體兩側從頭到尾有一整排硬硬的「稜鱗」，在胸鰭上方往下彎，所以叫「硬尾仔」。臺灣的研究發現，東北部抓到的竹筴魚大多是 0～1 歲的年輕魚。",
+    "src": [
+      "R2"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "safety": {
+    "value": "側線上的稜鱗邊緣很利，從尾巴往頭的方向摸會割手。",
+    "src": [
+      "project"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "無危（LC）",
+      "license": "—",
+      "status": "partial",
+      "note": "依記憶，未能開啟 IUCN 確認"
+    },
+    "taiwan": {
+      "value": "不是保育類；《鯖鰺漁業管理辦法》規定鯖鰺漁船的鰺魚要 17 公分以上（或每公斤 16 尾以下）——只適用漁船",
+      "src": [
+        "R12"
+      ],
+      "status": "partial"
+    },
+    "legalMinSize": {
+      "value": "漁船：17 公分（休閒岸釣查無規定）",
+      "src": [
+        "R12"
+      ],
+      "status": "partial"
+    },
+    "release": {
+      "mode": {
+        "value": "belowSize",
+        "src": [
+          "R12"
+        ],
+        "status": "partial"
+      },
+      "sizeCm": {
+        "value": 17,
+        "src": [
+          "R12"
+        ],
+        "status": "partial"
+      },
+      "basis": {
+        "value": "law-reference",
+        "src": [
+          "R12"
+        ],
+        "status": "game-design"
+      },
+      "reason": "比照漁船的規定：未滿 17 公分的小竹筴魚放回海裡（休閒釣法規沒有要求，這是本遊戲的規則）"
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 0.2,
+      "sand": 0.6,
+      "open": 0.8
+    },
+    "abundance": {
+      "value": 0.9,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "difficulty": {
+      "value": 1,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "dart",
+      "speed": 1.3,
+      "tailHz": 3.6,
+      "wiggle": 0.08
+    },
+    "bite": {
+      "nibbles": [
+        0,
+        2
+      ],
+      "window": 1,
+      "type": "run"
+    },
+    "fight": {
+      "power": 0.35,
+      "stamina": 4,
+      "surgeEvery": [
+        2,
+        3.5
+      ],
+      "surgeLen": 0.8,
+      "surgeMul": 1.5
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/trachurus-japonicus.png",
+    "facing": "left",
+    "placeholder": {
+      "depth": 0.25,
+      "peak": 0.4,
+      "snout": 0.75,
+      "tailFork": 0.9,
+      "tailSpread": 0.8,
+      "peduncle": 0.12,
+      "eye": 0.13,
+      "dorsal": {
+        "spiny": [
+          0.3,
+          0.45
+        ],
+        "soft": [
+          0.48,
+          0.78
+        ],
+        "spinyH": 0.32,
+        "softH": 0.12
+      },
+      "anal": [
+        0.52,
+        0.78
+      ],
+      "analH": 0.12,
+      "colors": {
+        "back": "#3c6e6a",
+        "side": "#8eaaa6",
+        "belly": "#eef2f0",
+        "fin": "#a1a98a"
+      },
+      "pattern": {
+        "scutes": "rgba(40,60,60,0.55)"
+      }
+    },
+    "idFeatures": [
+      "紡錘形、略側扁",
+      "背部藍綠到黃綠色、腹部銀白；鰓蓋上緣有一個黑斑",
+      "側線從頭到尾是一整排高起的稜鱗，在胸鰭上方急轉向下（最重要的特徵）",
+      "兩個背鰭分開；眼睛大、嘴斜向上；尾鰭深分叉"
+    ]
+  }
+}

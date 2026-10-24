@@ -1,0 +1,338 @@
+{
+  "format": "ocean-fish/1",
+  "id": "sebastiscus-marmoratus",
+  "kind": "fish",
+  "names": {
+    "zh": {
+      "value": "褐菖鮋",
+      "src": [
+        "taicol",
+        "R9"
+      ],
+      "status": "partial"
+    },
+    "aliases": {
+      "value": [
+        "石狗公（泛稱）"
+      ],
+      "src": [
+        "anglers"
+      ],
+      "status": "partial",
+      "note": "俗名各地叫法不同"
+    },
+    "scientific": {
+      "value": "Sebastiscus marmoratus",
+      "src": [
+        "taicol"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "鮋科 Scorpaenidae（也有分類放在 Sebastidae）",
+      "src": [
+        "taicol"
+      ],
+      "status": "partial"
+    },
+    "en": {
+      "value": "False kelpfish",
+      "src": [
+        "project"
+      ],
+      "status": "partial"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "peakMonths": {
+        "value": [
+          10,
+          11,
+          12,
+          1,
+          2,
+          3
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      }
+    }
+  },
+  "habitat": {
+    "value": "礁岩底、石縫、消波塊縫隙；晚上比較活躍",
+    "src": [
+      "R36"
+    ],
+    "status": "partial"
+  },
+  "depth": {
+    "value": "淺水到約 50 公尺",
+    "src": [
+      "project"
+    ],
+    "status": "illustrative"
+  },
+  "diet": {
+    "value": "肉食：蝦、蟹、小魚",
+    "src": [
+      "R36"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "躲在石縫裡埋伏，看到食物就一口吞下；不太挑餌，新手也容易釣到",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "fightNote": {
+    "value": "拉力不大，但會鑽進石縫、張開鰭卡住",
+    "src": [
+      "anglers"
+    ],
+    "status": "illustrative"
+  },
+  "length": {
+    "type": {
+      "value": "TL",
+      "src": [
+        "project"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 15,
+        "src": [
+          "project"
+        ],
+        "status": "partial",
+        "note": "中文期刊：成魚體長 12～20 公分"
+      },
+      "p95": {
+        "value": 21,
+        "src": [
+          "project"
+        ],
+        "status": "partial"
+      }
+    },
+    "min": {
+      "value": 9,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxCommon": {
+      "value": 28,
+      "src": [
+        "R24"
+      ],
+      "status": "partial"
+    },
+    "maxRecorded": {
+      "value": 36,
+      "src": [
+        "R24"
+      ],
+      "status": "partial",
+      "note": "各來源 30～36 公分"
+    }
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.02,
+      "src": [
+        "R21"
+      ],
+      "status": "illustrative",
+      "note": "沒有讀到體長體重式，依 b≈3 示意（20 公分約 160 公克）"
+    },
+    "b": {
+      "value": 3,
+      "src": [
+        "R21"
+      ],
+      "status": "illustrative"
+    },
+    "lengthType": "TL",
+    "unit": "g, cm"
+  },
+  "maturity": {
+    "L50": {
+      "value": null,
+      "src": [
+        "R24"
+      ],
+      "status": "partial",
+      "note": "各來源差很多（香港資料偏小），不設放流尺寸"
+    }
+  },
+  "intro": {
+    "value": "釣友說的「石狗公」其實是好幾種鮋科魚的通稱，這裡畫的是褐菖鮋。牠頭大嘴大，身上有像大理石的花紋，顏色會跟著周圍的石頭改變，躲在石縫裡很難發現。牠還有一個特別的地方：媽媽不是產卵，而是直接生下小魚（卵胎生）。",
+    "src": [
+      "R9",
+      "R24"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "safety": {
+    "value": "背鰭、臀鰭、腹鰭的硬棘有毒，被刺到會非常痛、腫起來。用毛巾或魚夾拿，不要空手抓；萬一被刺，請大人幫忙用清水沖、泡在不會燙傷的熱水裡，痛一直不退就要看醫生。鰓蓋上也有棘。",
+    "src": [
+      "R26"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial",
+    "note": "鮋科有毒棘：已查證；本種毒性強弱待確認"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "未確認",
+      "license": "—",
+      "status": "illustrative"
+    },
+    "taiwan": {
+      "value": "無（不是保育類）",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "查了保育類名錄與新北市公告，沒有找到休閒垂釣的限制；「查無」不等於「確定沒有」"
+    },
+    "legalMinSize": {
+      "value": "查無休閒垂釣的法定最小尺寸",
+      "src": [
+        "project"
+      ],
+      "status": "partial",
+      "note": "「查無」不等於「確定沒有」，請專業人士確認"
+    },
+    "release": {
+      "mode": {
+        "value": "none",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      },
+      "basis": {
+        "value": "none",
+        "src": [
+          "project"
+        ],
+        "status": "game-design"
+      }
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 1,
+      "sand": 0.4,
+      "open": 0
+    },
+    "abundance": {
+      "value": 0.8,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "difficulty": {
+      "value": 2,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "bottom",
+      "speed": 0.6,
+      "tailHz": 1.6,
+      "wiggle": 0.08
+    },
+    "bite": {
+      "nibbles": [
+        0,
+        1
+      ],
+      "window": 1.3,
+      "type": "sink"
+    },
+    "fight": {
+      "power": 0.4,
+      "stamina": 5,
+      "surgeEvery": [
+        3,
+        6
+      ],
+      "surgeLen": 0.8,
+      "surgeMul": 1.6
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/sebastiscus-marmoratus.png",
+    "facing": "left",
+    "placeholder": {
+      "depth": 0.34,
+      "peak": 0.24,
+      "snout": 0.5,
+      "tailFork": -0.4,
+      "spines": true,
+      "gill": 0.28,
+      "eyeX": 0.12,
+      "eye": 0.12,
+      "mouth": 0.12,
+      "dorsal": {
+        "spiny": [
+          0.22,
+          0.58
+        ],
+        "soft": [
+          0.6,
+          0.8
+        ],
+        "spinyH": 0.26
+      },
+      "colors": {
+        "back": "#5a2a1c",
+        "side": "#8a4a32",
+        "belly": "#c79a7a",
+        "fin": "#6b3424",
+        "pectoral": "#7a3c28"
+      },
+      "pattern": {
+        "type": "mottled",
+        "count": 30,
+        "color": "#3a1a10"
+      }
+    },
+    "idFeatures": [
+      "頭大、身體粗短；嘴很大",
+      "紅褐到黑褐色，有大理石般的雲狀斑紋，散布白色小點",
+      "背鰭前段有 12 根尖硬棘、中間有缺刻；胸鰭大而呈扇形",
+      "頭上和鰓蓋有好幾根小棘；尾鰭圓形"
+    ]
+  }
+}

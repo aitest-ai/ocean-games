@@ -1,0 +1,287 @@
+{
+  "format": "ocean-fish/1",
+  "id": "chelonia-mydas",
+  "kind": "bycatch",
+  "names": {
+    "zh": {
+      "value": "綠蠵龜",
+      "src": [
+        "R17"
+      ],
+      "status": "verified"
+    },
+    "aliases": {
+      "value": [
+        "海龜"
+      ],
+      "src": [
+        "project"
+      ],
+      "status": "verified"
+    },
+    "scientific": {
+      "value": "Chelonia mydas",
+      "src": [
+        "R17"
+      ],
+      "status": "verified"
+    },
+    "family": {
+      "value": "海龜科 Cheloniidae",
+      "src": [
+        "project"
+      ],
+      "status": "verified"
+    },
+    "en": {
+      "value": "Green sea turtle",
+      "src": [
+        "project"
+      ],
+      "status": "verified"
+    }
+  },
+  "regions": {
+    "tw-northeast": {
+      "months": {
+        "value": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative",
+        "note": "東北角沿岸全年都有目擊"
+      },
+      "peakMonths": {
+        "value": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      }
+    }
+  },
+  "habitat": {
+    "value": "沿岸礁岩、藻場，常在岸邊吃海藻",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "diet": {
+    "value": "長大後以海藻、海草為主",
+    "src": [
+      "project"
+    ],
+    "status": "partial"
+  },
+  "behavior": {
+    "value": "會浮上水面換氣；常被魚鉤、釣線和廢棄漁網纏住",
+    "src": [
+      "R15"
+    ],
+    "status": "verified"
+  },
+  "length": {
+    "type": {
+      "value": "CCL",
+      "src": [
+        "project"
+      ],
+      "status": "verified"
+    },
+    "catch": {
+      "p50": {
+        "value": 65,
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      },
+      "p95": {
+        "value": 95,
+        "src": [
+          "project"
+        ],
+        "status": "illustrative"
+      }
+    },
+    "min": {
+      "value": 40,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxCommon": {
+      "value": 110,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "maxRecorded": null
+  },
+  "lengthWeight": {
+    "a": {
+      "value": 0.4,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative",
+      "note": "遊戲內不顯示海龜體重"
+    },
+    "b": {
+      "value": 2.75,
+      "src": [
+        "project"
+      ],
+      "status": "illustrative"
+    },
+    "lengthType": "CCL",
+    "unit": "g, cm"
+  },
+  "intro": {
+    "value": "臺灣海邊最常見的海龜。名字裡的「綠」不是殼的顏色，而是牠吃海藻，身體裡的脂肪偏綠色。牠要浮上水面呼吸，所以被釣線纏住或吞下魚鉤時非常危險。東北角的海邊常常可以看到牠在礁石邊吃海藻。",
+    "src": [
+      "R15"
+    ],
+    "license": "本專案自寫文字（可自由使用）",
+    "status": "partial"
+  },
+  "handling": {
+    "value": [
+      "先<b>停止捲線</b>，不要把海龜硬拉上岸。",
+      "<b>不要自己拔魚鉤</b>，也<b>不要自己剪線放走</b>。",
+      "讓海龜的頭可以露出水面呼吸，不要圍觀、拍打或餵食。",
+      "請大人<b>立刻撥打 118</b>（海巡署報案專線），說出地點和狀況，拍幾張照片，等救援人員指示。"
+    ],
+    "src": [
+      "R15",
+      "R16"
+    ],
+    "status": "verified",
+    "note": "官方原則多個來源一致；海保署《釣到海龜怎麼辦？》摺頁原文沒有讀到（例如是否剪線）"
+  },
+  "conservation": {
+    "iucn": {
+      "value": "全球評估 2025 年 10 月由瀕危（EN）調為無危（LC），但有些區域族群仍受威脅",
+      "src": [
+        "R18"
+      ],
+      "status": "verified"
+    },
+    "taiwan": {
+      "value": "海洋保育類野生動物（瀕臨絕種，第 I 級），受《野生動物保育法》保護",
+      "src": [
+        "R17"
+      ],
+      "status": "verified"
+    },
+    "legalMinSize": {
+      "value": "保育類，任何大小都不能捕捉",
+      "src": [
+        "R17"
+      ],
+      "status": "verified"
+    },
+    "release": {
+      "mode": {
+        "value": "always",
+        "src": [
+          "R17"
+        ],
+        "status": "verified"
+      },
+      "basis": {
+        "value": "protected",
+        "src": [
+          "R17"
+        ],
+        "status": "verified"
+      },
+      "reason": "保育類動物，交給救援人員處理"
+    },
+    "note": {
+      "value": "意外釣到保育類，只要依規定通報就不違法。釣魚時要把斷掉的釣線和魚鉤帶走，海龜才不會被纏住。",
+      "src": [
+        "R15"
+      ],
+      "status": "partial"
+    }
+  },
+  "game": {
+    "zones": {
+      "reef": 0.6,
+      "sand": 0.5,
+      "open": 0.5
+    },
+    "abundance": {
+      "value": 0.05,
+      "status": "game-design",
+      "license": "本專案遊戲設定"
+    },
+    "swim": {
+      "style": "steady",
+      "speed": 0.5,
+      "tailHz": 0.8,
+      "wiggle": 0.05
+    },
+    "bite": {
+      "nibbles": [
+        0,
+        1
+      ],
+      "window": 1.3,
+      "type": "sink"
+    },
+    "fight": {
+      "power": 0.8,
+      "stamina": 30,
+      "surgeEvery": [
+        3,
+        6
+      ],
+      "surgeLen": 1.5,
+      "surgeMul": 1.5
+    }
+  },
+  "art": {
+    "file": "assets/fishing/species/chelonia-mydas.png",
+    "facing": "left",
+    "placeholder": {
+      "shape": "turtle",
+      "colors": {
+        "shell": "#6a5434",
+        "shellEdge": "#3d3122",
+        "skin": "#7d8a5a",
+        "plastron": "#d9c78f"
+      }
+    },
+    "idFeatures": [
+      "側面看：背甲橢圓、光滑，盾片不重疊（和玳瑁不同）",
+      "頭比較小、吻圓鈍，前額只有 1 對大鱗片",
+      "背甲橄欖褐到深褐，有放射狀斑紋；腹甲淡黃白",
+      "四肢是鰭狀，前肢各有 1 個爪"
+    ]
+  }
+}
