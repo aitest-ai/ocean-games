@@ -7,11 +7,17 @@ import { TIMES } from '../land/ballpark.js';
 import { DIFFICULTY, LABEL, SCORE, PLATE_Z, MITT_Z, makePitch, judgeSwing, flyBall, Session } from './batting-logic.js';
 
 const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
-// 各種輸入「動作開始 → 事件送出」的延遲（秒）。判定時把揮棒時間往前推這麼多。
-//   鍵盤／畫面按鈕：按下去後模擬人偶要 0.36 秒才揮到一半；鏡頭：事件在雙手揮到身體前面時送出，再加拍攝運算約 0.1 秒
-const LATENCY = { keyboard: 0.36, camera: 0.1, replay: 0.1 };
+// 各種輸入「事件的時間 → 雙手真的揮到身體前面（擊球）」還差多少秒。判定時把揮棒時間往前推這麼多。
+//   鍵盤／畫面按鈕：按下去後模擬人偶要 0.36 秒才揮到一半。
+//   鏡頭：事件的時間是「那一格被拍到的時間」（輸入層用 requestVideoFrameCallback 取得），已經不含鏡頭與推論的延遲；
+//   bat 事件大約在雙手揮到身體前面「之前」0.05 秒送出（人偶影像實測），所以是負的。
+//   瀏覽器拿不到拍攝時間時（clock = present / raf），時間戳比真實晚一點，往回補。
+const LATENCY = { keyboard: 0.36, replay: -0.05 };
+const CAMERA_LATENCY = { capture: -0.05, present: -0.02, raf: 0.03 };
+const latencyOf = (game, e) => (e.source === 'camera' ? CAMERA_LATENCY[game.kit?.stats?.clock] ?? 0.03 : LATENCY[e.source] ?? 0);
 // 揮棒測試量到的時間偏差（秒），依輸入方式（鏡頭／鍵盤）分開存在這台裝置上
-const calibKey = (game) => `taikan-batting-calib-${game.kit?.source || 'keyboard'}`;
+// （v2：鏡頭事件改用拍攝時間後，舊的校正值不再適用，換一個名字重新測）
+const calibKey = (game) => `taikan-batting-calib-v2-${game.kit?.source || 'keyboard'}`;
 function loadCalib(game) { try { const v = Number(localStorage.getItem(calibKey(game))); return Number.isFinite(v) ? clamp(v, -0.6, 0.6) : 0; } catch { return 0; } }
 function saveCalib(game, v) { try { localStorage.setItem(calibKey(game), String(v)); } catch { /* 沒有儲存空間也沒關係 */ } }
 const CALIB_PITCHES = 5, CALIB_MAX = 9;
@@ -24,6 +30,8 @@ const CONTACT = { hipY: 0.63, bend: 0.25, torsoYaw: 0.75, headYaw: 0.65, lHand: 
 const FINISH = { hipY: 0.66, bend: 0.12, torsoYaw: 1.45, headYaw: 0.2, lHand: [0.12, 0.5, 0.18], rHand: [0.06, 0.52, 0.2], batTip: [0.5, 0.9, -0.5], lFoot: [0.42, 0.04, 0.6], rFoot: [-0.22, -0.02, 1.2] };
 const SWING = [[0, LOAD], [0.07, LOAD], [0.16, CONTACT], [0.32, FINISH], [0.9, FINISH], [1.5, STANCE]];
 const SWING_CONTACT = 0.16; // 揮棒動畫開始後幾秒「碰到球」
+const SWING_FWD = 0.07;     // 動畫裡「從預備姿勢開始往前揮」的那一格
+const CHECK_AFTER = 0.45;   // 揮棒起動後這麼久都沒等到 bat（不是真的揮）→ 人物「止揮」收回
 
 const P_SET = { hipY: 0.74, bend: 0.05, lHand: [0.03, 0.3, 0.2], rHand: [-0.03, 0.3, 0.2], lFoot: [0.12, 0.05], rFoot: [-0.12, 0.05] };
 const P_KICK = { ...P_SET, torsoYaw: -0.6, hipY: 0.72, lFoot: [0.08, 0.2, 0, 0.32] };
@@ -44,10 +52,19 @@ export const batting = {
   goal: '看著投手投出的球，<b>球快到本壘時揮棒</b>。太早會打成三壘側界外、太晚會打到一壘側或揮空。壞球（離好球框很遠）不要揮！<br>⚠️ <b>空手</b>做動作，不要拿真的球棒、掃把或雨傘；張開雙手轉一圈碰不到東西才開始。',
   difficulties: DIFFICULTY,
   soundLabel: '球場聲音（觀眾、擊球聲）',
+  // 打擊只需要追蹤一個人：MediaPipe 只找 1 人時每格推論快約一倍（代價：這款不會提醒「鏡頭前有兩個人」）
+  // 診斷用網址參數（平常不用）：
+  //   ?worker=1 推論放到背景執行緒（遊戲畫面比較順，但雲端實測推論本身變慢，所以預設不開，請用平板比較）
+  //   ?delegate=cpu 強制用 CPU 推論（比較 GPU／CPU 哪個快）
+  get cameraInput() {
+    const q = new URLSearchParams(location.search), d = q.get('delegate');
+    return { numPoses: 1, worker: q.get('worker') === '1', ...(d ? { delegate: d.toUpperCase() } : {}) };
+  },
   options: [
     { key: 'calibTest', label: '開始前先做「揮棒測試」（5 球，量你的揮棒快慢並自動校正，建議開著）', default: true },
     { key: 'autoSwing', label: '自動揮棒（只看球，練習分辨好球、壞球）' },
     { key: 'autoCalib', label: '自動校正揮棒時機（依你前幾球的快慢調整，建議開著）', default: true },
+    { key: 'diag', label: '顯示延遲診斷（給老師／資訊人員看：揮棒到人物動作差多少毫秒）' },
   ],
   safety: [
     '🚫 <b>空手</b>做揮棒動作：<b>不要拿真的球棒</b>、掃把、雨傘、水壺或任何東西揮。',
@@ -65,7 +82,8 @@ export const batting = {
   hudExtra: `<div class="widget" id="bTiming">揮棒時機 <b id="bTimingText">—</b>
     <div class="bar center" style="width:min(240px,40vw)"><span class="mark" id="bTimingMark" style="left:50%;display:none"></span></div>
     <small>← 太早　　剛好　　太晚 →</small></div>
-    <div class="widget" id="bPitch" style="display:none"></div>`,
+    <div class="widget" id="bPitch" style="display:none"></div>
+    <div class="widget diag" id="bDiag" style="display:none"></div>`,
 
   howto(s) {
     const cards = [];
@@ -146,7 +164,7 @@ export const batting = {
     game.calib = game.calibBase;
     B.cal = s.calibTest && !s.autoSwing ? { n: 0, tries: 0, es: [], done: false } : null; // 揮棒測試進行中
     if (B.cal) game.calib = 0;                   // 測試時不套用任何校正，量「原始」的偏差
-    B.phase = 'ready'; B.phaseT = 0; B.pitch = null; B.swing = null; B.hit = null; B.called = false; B.lastE = null;
+    B.phase = 'ready'; B.phaseT = 0; B.pitch = null; B.swing = null; B.hit = null; B.called = false; B.lastE = null; B.anim = null;
     B.ball.visible = B.shadow.visible = B.ring.visible = false;
     B.zone.visible = d.assist;
     B.cam.mode = 'bat';
@@ -158,13 +176,14 @@ export const batting = {
   onAction(game, e, s) {
     const B = game.bat;
     if (s.autoSwing) return;
-    // 只認雙手一起揮（bat）：事件送出的那一刻＝雙手揮過身體＝擊球瞬間
+    // 揮棒起動（batStart）：雙手剛開始往前揮，人物馬上開始揮（不判定；等 bat 來才判定）
+    if (e.type === 'batStart') { preSwing(game, e); return; }
+    // 只認雙手一起揮（bat）：事件的時間＝雙手揮過身體＝擊球瞬間
     if (e.type !== 'bat') return;
     if (B.swing && game.clock - B.swing.at < 0.6) return;
     if (B.cal && B.swing?.missRecorded) return; // 測試球每球只收一次揮棒（再揮也不算）
     const delay = Math.max(0, (performance.now() - e.time) / 1000);
-    const lat = LATENCY[e.source] ?? 0.1;
-    startSwing(game, s, game.clock - delay - lat + game.calib, e.strength ?? 0.7);
+    startSwing(game, s, game.clock - delay - latencyOf(game, e) + game.calib, e.strength ?? 0.7, false, e);
   },
 
   update(game, dt0, st, s) {
@@ -178,6 +197,8 @@ export const batting = {
     game.clock += dt;
     B.phaseT += dt;
     const S = game.session;
+    // 起動後一直沒等到真正的揮棒（bat）：可能只是手動了一下 → 人物止揮
+    if (B.anim && !B.anim.confirmed && !B.anim.check && game.clock - B.anim.clock0 > CHECK_AFTER) { B.anim.check = true; B.anim.checkT = 0; B.anim.checkFrom = samplePose(SWING, B.anim.t); }
     if (B.phase === 'ready') {
       if (B.cal && (B.cal.n >= CALIB_PITCHES || B.cal.tries >= CALIB_MAX)) finishCalib(game, out);
       if (S.done) { B.phase = 'end'; return out; }
@@ -255,6 +276,8 @@ export const batting = {
     // 球的影子
     if (B.ball.visible) { B.shadow.position.set(B.ball.position.x, 0.02, B.ball.position.z); const h = B.ball.position.y; B.shadow.scale.setScalar(1 + h * 0.15); B.shadow.material.opacity = clamp(0.4 - h * 0.03, 0.08, 0.4); }
     animate(game, dt, s);
+    // 延遲診斷：人物開始揮的那一格（這一格接著就會畫出來）
+    if (B.anim && !B.anim.shownAt) { B.anim.shownAt = performance.now(); diagRecord(game, B.anim); }
     if (B.missToast) { out.push(B.missToast); B.missToast = null; }
     return out;
   },
@@ -274,10 +297,14 @@ export const batting = {
     if (game.bat.cal) return { pitch: `揮棒測試 ${Math.min(game.bat.cal.n + 1, CALIB_PITCHES)} / ${CALIB_PITCHES}`, hits: 0, score: 0 };
     return { pitch: `${Math.min(S.n + (game.bat.phase === 'ready' || game.bat.phase === 'end' ? 0 : 1), S.d.pitches)} / ${S.d.pitches}`, hits: S.hits, score: S.score };
   },
-  hudExtraUpdate(game) {
+  hudExtraUpdate(game, st, s) {
     const p = game.bat.pitch, el = document.getElementById('bPitch');
     if (p && game.bat.phase !== 'ready') { el.style.display = ''; el.innerHTML = `球速 <b>${p.kmh}</b> 公里/小時${p.change ? '（變速球）' : ''}`; }
     else el.style.display = 'none';
+    const dg = document.getElementById('bDiag');
+    const on = s.diag || new URLSearchParams(location.search).has('diag');
+    dg.style.display = on ? '' : 'none';
+    if (on) dg.innerHTML = diagHtml(game);
   },
 
   result(game) {
@@ -355,12 +382,11 @@ function placeBatter(game, s) {
   b.set(STANCE);
 }
 
-function startSwing(game, s, contactClock, strength, auto = false) {
+function startSwing(game, s, contactClock, strength, auto = false, ev = null) {
   const B = game.bat, d = game.diff;
-  // 揮棒動畫：事件送出時人已經揮到「碰到球」那一格；打到球的畫面對準球到本壘板那一刻
-  B.swing = { at: game.clock, anim: SWING_CONTACT };
+  B.swing = { at: game.clock };
   const p = B.pitch;
-  if (!p || B.phase !== 'flight' || B.hit) { game.cue('whoosh'); return; } // 沒有球時揮棒：只是空揮練習
+  if (!p || B.phase !== 'flight' || B.hit) { swingAnim(game, 0, ev); game.cue('whoosh'); return; } // 沒有球時揮棒：只是空揮練習
   const e = contactClock - (p.at + p.T);
   // 太早太多（球還沒出手就揮）不算這一球，讓學生再揮一次
   if (e < -0.6) { B.swing = null; game.bat.missToast = { text: '太早了，等球來再揮', kind: 'bad' }; return; }
@@ -369,6 +395,7 @@ function startSwing(game, s, contactClock, strength, auto = false) {
     B.cal.es.push(e); B.cal.n++;
     timingWidget(e, d);
     B.swing.missRecorded = true;          // 測試球不計分，揮完就換下一球
+    swingAnim(game, 0, ev);
     game.cue('whoosh');
     B.missToast = { text: `測試 ${B.cal.n}/${CALIB_PITCHES}：你${Math.abs(e) < 0.04 ? '很準' : e < 0 ? '早了' : '晚了'}${Math.abs(e) < 0.04 ? '' : ` ${Math.abs(e).toFixed(2)} 秒`}`, kind: Math.abs(e) < 0.08 ? 'good' : '' };
     return;
@@ -382,6 +409,7 @@ function startSwing(game, s, contactClock, strength, auto = false) {
   if (!j.contact) {
     game.session.record('miss', { e });
     B.swing.missRecorded = true;
+    swingAnim(game, 0, ev);
     game.cue('whoosh');
     B.missToast = { text: `揮空！${e < 0 ? '太早了' : '太晚了'}`, kind: 'bad' };
     scoreboard(game, '揮空', 'miss');
@@ -390,11 +418,67 @@ function startSwing(game, s, contactClock, strength, auto = false) {
   const from = [p.target[0], p.target[1], PLATE_Z];
   const fly = flyBall(j, d, from);
   game.session.record(fly.result, { e, dist: Math.round(fly.dist) });
-  // 打到球：動畫往後延，讓「碰到球」那一格剛好在球到本壘板時
-  B.swing.anim = SWING_CONTACT - wait;
+  // 打到球：調整揮棒動畫的快慢（不停住），讓「碰到球」那一格剛好在球到本壘板時
+  swingAnim(game, wait, ev);
   B.hit = { j, fly, showAt: game.clock + wait, shown: false, announced: false };
   const word = Math.abs(e) < d.window * 0.35 ? '剛好！' : e < 0 ? '有點早' : '有點晚';
   B.missToast = { text: word, kind: Math.abs(e) < d.window * 0.35 ? 'good' : '' };
+}
+
+// 揮棒起動：人物從預備姿勢開始往前揮（還沒判定）。玩家已經揮了一段，所以從「往前揮」那一格開始，不播往後拉
+function preSwing(game, e) {
+  const B = game.bat;
+  if (B.anim && !B.anim.check) return;
+  B.anim = { t: SWING_FWD, rate: 1, clock0: game.clock, confirmed: false, ev: diagEvent(game, e), start: 'batStart' };
+}
+
+// 判定之後的揮棒動畫。wait＝球還要多久才到本壘板（打到球時，讓「碰到球」那一格對準它）
+function swingAnim(game, wait, e) {
+  const B = game.bat, A = B.anim;
+  if (A && !A.check && A.t < SWING_CONTACT + 0.05) {
+    // 已經因為 batStart 開始揮了：只調快慢
+    A.confirmed = true;
+    if (wait > 0 && A.t < SWING_CONTACT) A.rate = clamp((SWING_CONTACT - A.t) / wait, 0.25, 3);
+    if (A.ev) A.ev.bat = diagEvent(game, e);
+    return;
+  }
+  // 沒有起動事件（例如鍵盤、或起動沒被抓到）：玩家已經揮到擊球點了，動畫從「碰到球」開始；
+  // 球還沒到時從往前揮開始、放慢到剛好在球到時碰到（不再停在原地等）
+  const t = wait > 0 ? Math.max(SWING_FWD, SWING_CONTACT - wait) : SWING_CONTACT;
+  B.anim = { t, rate: wait > 0 ? clamp((SWING_CONTACT - t) / wait, 0.25, 3) : 1, clock0: game.clock, confirmed: true, ev: diagEvent(game, e), start: 'bat' };
+}
+
+// ── 延遲診斷 ──
+// 每次揮棒記下：玩家雙手開始往前揮的時間（onset，拍攝時間）、送出事件那一格的拍攝時間、
+// 程式收到事件的時間、人物開始動的那一格。全部用 performance.now() 的時間軸（毫秒）。
+function diagEvent(game, e) {
+  if (!e) return null;
+  return { type: e.type, source: e.source, onset: e.onset ?? e.time, frame: e.time, recv: performance.now(), clock: game.kit?.stats?.clock || (e.source === 'camera' ? '?' : 'puppet') };
+}
+function diagRecord(game, A) {
+  const ev = A.ev;
+  if (!ev || (ev.source !== 'camera' && ev.source !== 'replay')) return; // 鍵盤模擬沒有鏡頭延遲可量
+  const r = {
+    by: A.start, source: ev.source, clock: ev.clock,
+    recognize: Math.round(ev.frame - ev.onset),   // 動作起動 → 辨識出來的那一格（辨識需要看多久）
+    pipeline: Math.round(ev.recv - ev.frame),     // 那一格拍到 → 程式收到（鏡頭＋推論＋排隊）
+    render: Math.round(A.shownAt - ev.recv),      // 收到 → 人物開始動的那一格
+    total: Math.round(A.shownAt - ev.onset),      // 起動 → 人物開始動
+    at: Math.round(A.shownAt), onset: Math.round(ev.onset),
+  };
+  const log = (game.diagLog ||= []);
+  log.push(r); if (log.length > 10) log.shift();
+  (window.batDiag ||= []).push(r);
+}
+function diagHtml(game) {
+  const log = (game.diagLog || []).slice(-5), cs = game.kit?.stats;
+  const avg = (k) => Math.round(log.reduce((a, r) => a + r[k], 0) / log.length);
+  const cam = cs ? `鏡頭 ${cs.fps} 格/秒（間隔 ${Math.round(cs.frameMs)} ms）・推論 ${Math.round(cs.inferMs)} ms・拍到→算完 ${Math.round(cs.pipeMs)} ms・時間戳：${{ capture: '拍攝時間 ✅', present: '顯示時間（估計）', raf: '畫面更新時間（估計）' }[cs.clock] || '—'}・找 ${cs.numPoses ?? '?'} 人・${cs.delegate || ''}${cs.thread === 'worker' ? '・背景執行緒' : cs.thread === 'main' ? '・主執行緒' : ''}` : '鍵盤模擬（沒有鏡頭延遲）';
+  if (!log.length) return `<b>延遲診斷</b><small>${cam}</small><small>揮一次棒就會顯示</small>`;
+  const last = log[log.length - 1];
+  return `<b>延遲診斷</b>：起動→人物揮棒 <b>${avg('total')}</b> ms（最近 ${log.length} 次平均）` +
+    `<small>＝ 辨識 ${avg('recognize')} ＋ 鏡頭與推論 ${avg('pipeline')} ＋ 畫面 ${avg('render')} ms</small>` +
+    `<small>最近一次：${last.total} ms，由 ${last.by === 'batStart' ? '揮棒起動（提早）' : '擊球事件（沒抓到起動）'} 觸發</small><small>${cam}</small>`;
 }
 
 function finishCalib(game, out) {
@@ -444,10 +528,19 @@ function timingWidget(e, d) {
 function animate(game, dt, s) {
   const B = game.bat;
   // 打者
-  if (B.swing && B.swing.anim < SWING[SWING.length - 1][0]) {
-    B.swing.anim += dt;
-    B.batter.set(samplePose(SWING, Math.max(B.swing.anim, 0)));
+  const A = B.anim;
+  if (A && A.check) {
+    // 止揮：從目前的姿勢收回預備姿勢
+    A.checkT += dt;
+    B.batter.set(mixPose(A.checkFrom, STANCE, clamp(A.checkT / 0.3, 0, 1)));
+    if (A.checkT > 0.3) B.anim = null;
+  } else if (A && A.t < SWING[SWING.length - 1][0]) {
+    const before = A.t;
+    A.t += dt * A.rate;
+    if (before < SWING_CONTACT && A.t >= SWING_CONTACT) A.rate = 1; // 碰到球之後照正常速度收棒
+    B.batter.set(samplePose(SWING, A.t));
   } else {
+    if (A) B.anim = null;
     const breath = Math.sin(game.time * 2.2) * 0.02;
     B.batter.set(mixPose(STANCE, { ...STANCE, torsoYaw: STANCE.torsoYaw - 0.06 }, 0.5 + breath * 10));
   }

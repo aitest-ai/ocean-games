@@ -1,0 +1,63 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#888">
+<canvas id="c" width="640" height="480"></canvas>
+<script type="module">
+// 產生「人偶揮棒」影格 → MediaPipe（VIDEO 模式、固定 30 fps 時間戳）→ 骨架序列（taikan-pose/1）
+import * as THREE from '../../src/land/three.js';
+import { Figure, samplePose } from '../../src/land/figure.js';
+import { packPose, fromMediaPipe, KEYPOINTS } from '../../packages/taikan-kit/src/pose.js';
+const P = new URLSearchParams(location.search);
+const stance = P.get('stance') || 'front', frames = P.get('frames') === '1', seated = P.get('seated') === '1';
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), preserveDrawingBuffer: true, antialias: true });
+r.setSize(640, 480, false);
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0xc9c2b8);
+sc.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.4));
+const dl = new THREE.DirectionalLight(0xffffff, 2); dl.position.set(1, 3, 4); sc.add(dl);
+// 牆與地板（像教室）
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(10, 5), new THREE.MeshStandardMaterial({ color: 0xd8d2c8 })); wall.position.set(0, 2, -1.5); sc.add(wall);
+const cam = new THREE.PerspectiveCamera(58, 640 / 480, 0.1, 50); cam.position.set(0, 1.0, 1.75); cam.lookAt(0, 0.82, 0);
+const f = new Figure({ jersey: '#3a6fb0', pants: '#333333', cap: '#222', skin: '#e2b48c', castShadow: false }); sc.add(f.root);
+// 姿勢（右打者）。front：面向鏡頭；side：側身、前肩朝鏡頭、頭轉向鏡頭
+const H = seated ? 0.5 : 0.7;
+const FR = {
+  stance: { hipY: H, bend: 0.1, torsoYaw: -0.1, lHand: [-0.1, 0.36, 0.2], rHand: [-0.16, 0.42, 0.17], lFoot: [0.2, 0.05], rFoot: [-0.2, 0.05] },
+  load: { hipY: H, bend: 0.1, torsoYaw: -0.45, lHand: [-0.2, 0.42, 0.08], rHand: [-0.26, 0.47, 0.05], lFoot: [0.2, 0.05], rFoot: [-0.2, 0.05] },
+  contact: { hipY: H - 0.02, bend: 0.15, torsoYaw: 0.45, lHand: [0.02, 0.24, 0.45], rHand: [-0.04, 0.26, 0.42], lFoot: [0.2, 0.05], rFoot: [-0.2, 0.05] },
+  finish: { hipY: H, bend: 0.05, torsoYaw: 1.0, lHand: [0.3, 0.42, 0.18], rHand: [0.25, 0.46, 0.16], lFoot: [0.2, 0.05], rFoot: [-0.2, 0.05] },
+};
+const SD = {
+  stance: { hipY: H - 0.04, bend: 0.22, torsoYaw: -0.1, headYaw: 1.25, lHand: [-0.09, 0.36, 0.16], rHand: [-0.13, 0.42, 0.13], lFoot: [0.3, 0.02, 0.15], rFoot: [-0.28, -0.04, 0.2] },
+  load: { hipY: H - 0.04, bend: 0.22, torsoYaw: -0.4, headYaw: 1.4, lHand: [-0.17, 0.4, 0.08], rHand: [-0.21, 0.46, 0.05], lFoot: [0.22, 0.04, 0.1], rFoot: [-0.28, -0.04, 0.2] },
+  contact: { hipY: H - 0.07, bend: 0.25, torsoYaw: 0.75, headYaw: 0.65, lHand: [-0.02, 0.2, 0.42], rHand: [-0.08, 0.22, 0.38], lFoot: [0.42, 0.04, 0.4], rFoot: [-0.28, -0.04, 0.6] },
+  finish: { hipY: H - 0.04, bend: 0.12, torsoYaw: 1.45, headYaw: 0.2, lHand: [0.12, 0.5, 0.18], rHand: [0.06, 0.52, 0.2], lFoot: [0.42, 0.04, 0.6], rFoot: [-0.22, -0.02, 1.2] },
+};
+const K = stance === 'side' ? SD : FR;
+if (stance === 'side') f.root.rotation.y = -Math.PI / 2;
+// 時間軸：兩次揮棒（一般速度、慢一點）。forward = 往前加速開始（真實的「揮棒起動」）
+const swings = [{ t0: 1.3, load: 0.25, hold: 0.12, fwd: 0.24, fin: 0.2 }, { t0: 3.4, load: 0.3, hold: 0.15, fwd: 0.34, fin: 0.25 }];
+const keys = [[0, K.stance]];
+const onsets = [], contacts = [];
+for (const s of swings) {
+  let t = s.t0;
+  keys.push([t, K.stance]); t += s.load; keys.push([t, K.load]); t += s.hold; keys.push([t, K.load]);
+  onsets.push(Math.round(t * 1000)); const tf = t; t += s.fwd; keys.push([t, K.contact]); contacts.push(Math.round(t * 1000)); t += s.fin; keys.push([t, K.finish]);
+  t += 0.35; keys.push([t, K.finish]); t += 0.45; keys.push([t, K.stance]);
+}
+const dur = 5.6, fps = 30;
+const vision = await import('../../packages/taikan-kit/vendor/mediapipe/vision_bundle.mjs');
+const fs = await vision.FilesetResolver.forVisionTasks(new URL('../../packages/taikan-kit/vendor/mediapipe/wasm', location.href).href);
+const lm = await vision.PoseLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: '../../packages/taikan-kit/vendor/mediapipe/pose_landmarker_lite.task', delegate: 'CPU' }, runningMode: 'VIDEO', numPoses: 1 });
+const rows = [], imgs = [], truth = [];
+for (let i = 0; i * 1000 / fps <= dur * 1000; i++) {
+  const t = i * 1000 / fps;
+  f.set(samplePose(keys, t / 1000));
+  r.render(sc, cam);
+  // 真實的手腕位置（鏡像畫面座標），量 MediaPipe 本身的延遲用
+  const w = f.handWorld('l').add(f.handWorld('r')).multiplyScalar(0.5).project(cam);
+  truth.push([Math.round(t), +(1 - (w.x * 0.5 + 0.5)).toFixed(4)]);
+  const res = lm.detectForVideo(document.getElementById('c'), t + 1);
+  const l = res.landmarks[0];
+  rows.push(l ? packPose(fromMediaPipe(l, Math.round(t))) : [Math.round(t), ...KEYPOINTS.flatMap(() => [0, 0, 0])]);
+  if (frames) imgs.push(document.getElementById('c').toDataURL('image/png'));
+}
+window.result = { clip: { format: 'taikan-pose/1', name: `mp-bat-${stance}${seated ? '-seated' : ''}`, synthetic: true, source: 'three.js 人偶影像 → MediaPipe Pose Landmarker lite（VIDEO 模式，30 fps）', fps, onsets, contacts, keypoints: KEYPOINTS, frames: rows }, truth, imgs };
+</script>
