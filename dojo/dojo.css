@@ -1,0 +1,45 @@
+/* 道場專用的 HUD（其餘沿用 ../game/game.css 的海洋系列樣式，學生看到的操作方式一致） */
+:root { --accent: #e9a948; }
+.proto { display: inline-block; margin-left: 6px; font-size: 12px; background: rgba(233, 169, 72, 0.2); color: var(--accent); border: 1px solid rgba(233, 169, 72, 0.5); border-radius: 999px; padding: 0 8px; vertical-align: middle; }
+.disclaimer { border-left: 3px solid var(--accent); padding-left: 8px; }
+.panel.small.left { text-align: left; }
+.chk.big { font-size: 17px; margin: 10px 0; }
+.chk.big input { width: 22px; height: 22px; }
+
+.dj-demo, .dj-you { position: fixed; top: 64px; width: min(22vw, 200px); aspect-ratio: 26 / 30; border-radius: 14px; border: 1px solid var(--line); background: rgba(12, 8, 5, 0.62); pointer-events: none; overflow: hidden; }
+.dj-demo { left: 10px; border-color: rgba(233, 169, 72, 0.6); }
+.dj-you { right: 10px; }
+.dj-demo canvas, .dj-you canvas { width: 100%; height: 100%; display: block; }
+.dj-demo span, .dj-you span { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; font-size: 13px; color: var(--muted); }
+.dj-demo span { color: var(--accent); font-weight: 700; font-size: 15px; }
+
+.dj-meter { position: fixed; right: calc(min(22vw, 200px) + 20px); top: 64px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+.dj-meter[hidden] { display: none; }
+.dj-meter .lbl { font-size: 12px; color: var(--muted); }
+.dj-meter .bar { position: relative; width: 22px; height: min(26vh, 170px); border-radius: 11px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.dj-meter .bar i { position: absolute; left: 0; right: 0; top: 0; background: linear-gradient(#e9a948, #c4672f); transition: height 0.1s; }
+.dj-meter .bar b { position: absolute; left: -2px; right: -2px; height: 3px; background: #5fd39a; box-shadow: 0 0 6px #5fd39a; }
+.dj-meter .ring { position: relative; width: 56px; height: 56px; }
+.dj-meter svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.dj-meter circle { fill: none; stroke-width: 4; }
+.dj-meter .bg { stroke: rgba(255, 255, 255, 0.12); }
+.dj-meter .fg { stroke: #5fd39a; stroke-linecap: round; stroke-dasharray: 97.4; stroke-dashoffset: 97.4; }
+.dj-meter .ring span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; }
+
+.dj-feedback { position: fixed; left: 50%; bottom: 104px; transform: translateX(-50%); font-size: clamp(22px, 4.2vw, 40px); font-weight: 900; padding: 8px 22px; border-radius: 16px; background: rgba(12, 8, 5, 0.72); border: 2px solid var(--line); white-space: nowrap; pointer-events: none; max-width: calc(100vw - 20px); overflow: hidden; text-overflow: ellipsis; }
+.dj-feedback:empty { display: none; }
+.dj-feedback.good { color: #b7ffd6; border-color: #3ccf7a; }
+.dj-feedback.bad { color: #ffe1c4; border-color: #e9a948; }
+
+.dj-beat { position: fixed; left: 50%; top: 52%; width: 150px; height: 150px; margin: -75px 0 0 -75px; pointer-events: none; }
+.dj-beat[hidden] { display: none; }
+.dj-beat .core { position: absolute; inset: 30px; border-radius: 50%; background: rgba(233, 169, 72, 0.88); color: #2a1800; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); }
+.dj-beat .core.right { background: rgba(99, 184, 255, 0.9); color: #04223a; }
+.dj-beat .ring { position: absolute; inset: 30px; border-radius: 50%; border: 5px solid #fff; opacity: 0.9; }
+
+.dj-safety { font-size: 13px; color: #ffd9a8; background: rgba(60, 30, 5, 0.75); border: 1px solid rgba(233, 169, 72, 0.5); border-radius: 10px; padding: 4px 10px; }
+.dj-lines { margin: 8px auto 4px; border-collapse: collapse; font-size: 15px; }
+.dj-lines td { padding: 3px 10px; text-align: left; }
+.dj-lines td.s { font-weight: 800; color: var(--accent); text-align: right; }
+.dj-lines td.d { color: var(--muted); font-size: 13px; }
+@media (max-width: 700px) { .dj-demo, .dj-you { width: 26vw; } .dj-meter { right: calc(26vw + 16px); } .dj-safety { display: none; } }

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>體感武術系列文件</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg: #120d09; --panel: #1d150f; --line: #3b2c20; --text: #f3ece2; --muted: #c2b3a0; --accent: #e9a948; --code: #241a12; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.7 system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  nav { position: sticky; top: 0; background: rgba(18, 13, 9, 0.95); border-bottom: 1px solid var(--line); z-index: 2; }
+  nav .in { max-width: 980px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  nav a { color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 10px; }
+  nav a[aria-current="page"] { background: var(--accent); color: #2a1800; font-weight: 700; }
+  nav .home { margin-left: auto; }
+  article { max-width: 980px; margin: 0 auto; padding: 16px 16px 60px; }
+  a { color: #f0c27a; }
+  h1 { line-height: 1.3; } h2 { border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-top: 36px; }
+  table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; font-size: 15px; }
+  th, td { border: 1px solid var(--line); padding: 6px 10px; vertical-align: top; }
+  th { background: var(--panel); }
+  code, pre { background: var(--code); border-radius: 6px; }
+  code { padding: 1px 5px; } pre { padding: 10px 14px; overflow-x: auto; }
+  blockquote { margin: 0; padding: 4px 14px; border-left: 4px solid var(--accent); color: var(--muted); }
+</style>
+</head>
+<body>
+<nav><div class="in">
+  <a data-doc="plan" href="?doc=plan">🥋 武術系列企劃（含可行性與測試）</a>
+  <a data-doc="martial" href="?doc=martial">🧍 武術動作辨識說明</a>
+  <a data-doc="assets" href="?doc=assets">📜 素材登錄表</a>
+  <a class="home" href="./">← 回道場</a>
+</div></nav>
+<article id="doc">載入中…</article>
+<script type="module">
+const DOCS = { plan: '../docs/dojo-plan.md', martial: '../packages/taikan-kit/martial/README.md', assets: './ASSETS.md' };
+const key = DOCS[new URLSearchParams(location.search).get('doc')] ? new URLSearchParams(location.search).get('doc') : 'plan';
+for (const a of document.querySelectorAll('nav a[data-doc]')) if (a.dataset.doc === key) a.setAttribute('aria-current', 'page');
+const el = document.getElementById('doc');
+try {
+  const md = await (await fetch(DOCS[key])).text();
+  try {
+    const { marked } = await import('https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.esm.js');
+    el.innerHTML = marked.parse(md);
+    const base = new URL(DOCS[key], location.href);
+    for (const a of el.querySelectorAll('a[href]')) { const h = a.getAttribute('href'); if (!/^(https?:|#|mailto:)/.test(h)) a.href = new URL(h, base).href; }
+    document.title = el.querySelector('h1')?.textContent || document.title;
+  } catch {
+    // 排版程式載入失敗（學校網路擋 CDN）：直接顯示原文
+    el.innerHTML = '';
+    const pre = document.createElement('pre');
+    pre.style.whiteSpace = 'pre-wrap';
+    pre.textContent = md;
+    el.appendChild(pre);
+  }
+} catch (e) { el.textContent = '文件載入失敗：' + e.message; }
+</script>
+</body>
+</html>
