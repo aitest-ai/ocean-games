@@ -161,6 +161,7 @@ export const batting = {
     // 只認雙手一起揮（bat）：事件送出的那一刻＝雙手揮過身體＝擊球瞬間
     if (e.type !== 'bat') return;
     if (B.swing && game.clock - B.swing.at < 0.6) return;
+    if (B.cal && B.swing?.missRecorded) return; // 測試球每球只收一次揮棒（再揮也不算）
     const delay = Math.max(0, (performance.now() - e.time) / 1000);
     const lat = LATENCY[e.source] ?? 0.1;
     startSwing(game, s, game.clock - delay - lat + (s.autoCalib ? game.calib : 0), e.strength ?? 0.7);
