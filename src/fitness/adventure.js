@@ -1,14 +1,17 @@
 // 冒險模式（階段二）：關卡 → 校正 → 暖身 → 主訓練（技能攻擊怪獸）→ 收操封印 → 結果與本機進度。
 // 訓練結構在 session.js、對戰規則在 battle.js、進度在 progress.js（都是純邏輯、有測試）；這裡只負責畫面。
-import { ExerciseAnalyzer, Calibrator, EXERCISES, CONF_TEXT } from '../../packages/taikan-kit/src/exercise/index.js';
-import { LEVELS, MONSTERS, SKILLS, DIFFS, levelExercises, repsFor } from './levels.js';
+import { ExerciseAnalyzer, Calibrator, EXERCISES, CONF_TEXT, SynthPerson, MOTIONS } from '../../packages/taikan-kit/src/exercise/index.js';
+import { LEVELS, MONSTERS, SKILLS, DIFFS, LOW_IMPACT, repsFor } from './levels.js';
+import { PLANS } from './plans.js';
+import { DEMOS, DEMO_YAW, SEATED_DEMOS } from './demos.js';
+import { drawBody } from './mirror.js';
 import { Session } from './session.js';
 import { Battle } from './battle.js';
 import { Progress } from './progress.js';
 import { load, save, loadProfile, saveTarget } from './store.js';
 
 // 暖身／收操時，鍵盤模擬的合成人體跟著示範做（模擬一個配合的玩家）
-const SIM_ROUTINE = { march: ['march'], armCircle: ['armCircle'], halfSquat: ['squat', { depth: 45 }], sideReach: ['sideReach'], quadL: ['quad', { side: 'left' }, 20000], quadR: ['quad', { side: 'right' }, 20000], hamstring: ['hamstring', {}, 25000], shoulder: ['shoulder'], breathe: ['breathe'] };
+const SIM_ROUTINE = { walkInPlace: ['march'], seatedMarch: ['seated', { knee: 'left', lift: 0.6 }, 700], seatedHam: ['seated', {}, 30000], armCircle: ['armCircle'], halfSquat: ['squat', { depth: 45 }], sideReach: ['sideReach'], quadL: ['quad', { side: 'left' }, 20000], quadR: ['quad', { side: 'right' }, 20000], hamstring: ['hamstring', {}, 25000], shoulder: ['shoulder'], breathe: ['breathe'] };
 const STOP_HTML = `<p class="sub">做得對：<b>不舒服就停</b>是最重要的安全規則。這次做到的部分都有記下來，不會扣任何東西。</p>
   <ul><li>先坐下休息、慢慢深呼吸、喝點水。</li>
   <li>如果有<b>胸痛、胸悶、呼吸困難、頭暈想吐</b>，或疼痛沒有很快消退，請立刻尋求醫療協助。</li>
@@ -23,8 +26,10 @@ export function createAdventure(app) {
   window.fitnessProgress = progress;
   let levelIdx = Math.min(load('advLevel', 0), progress.d.unlocked - 1);
   let diff = load('advDiff', 'normal');
+  let kind = load('advKind', 'levels'), planId = load('advPlan', PLANS[0].id);
+  const exsOf = (lv) => [...new Set(lv.sets.map(([e]) => (app.settings.lowImpact ? LOW_IMPACT[e] || e : e)))];
   let level = null, session = null, battle = null, stage = null, base = null, analyzer = null;
-  let calQueue = [], stepCount = 0;
+  let calQueue = [], stepCount = 0, lite = false, activeStage = null, demo2d = null, lastRender = 0, stageDt = 0;
   const pres = { hist: [], present: false, moving: false };
 
   // ── 選單 ──
@@ -36,7 +41,7 @@ export function createAdventure(app) {
     $('aLevels').innerHTML = LEVELS.map((lv, i) => {
       const M = MONSTERS[lv.monster];
       const locked = i >= un;
-      const sets = lv.sets.map(([ex, n]) => `${SKILLS[ex].icon}${EXERCISES[ex].name}×${repsFor(n, diff)}${EXERCISES[ex].perSide ? '/邊' : ''}`).join('　');
+      const sets = lv.sets.map(([ex0, n]) => { const ex = app.settings.lowImpact ? LOW_IMPACT[ex0] || ex0 : ex0; return `${SKILLS[ex].icon}${EXERCISES[ex].name}×${repsFor(n, diff)}${EXERCISES[ex].hold ? '秒' : EXERCISES[ex].perSide ? '/邊' : ''}`; }).join('　');
       return `<button class="lv" data-i="${i}" ${locked ? 'disabled' : ''} aria-pressed="${i === levelIdx}">
         <span class="ic">${locked ? '🔒' : lv.boss ? '👑' : '👾'}</span>
         <span><b>${i + 1}. ${lv.name}</b>　<small style="display:inline">${M.name}</small><small>${locked ? '完成前一關就會解鎖' : sets}</small></span>
@@ -48,6 +53,16 @@ export function createAdventure(app) {
       levelIdx = Number(b.dataset.i); save('advLevel', levelIdx);
       for (const x of $('aLevels').querySelectorAll('.lv')) x.setAttribute('aria-pressed', x === b);
     };
+    $('aKind').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === kind));
+    $('aKind').onclick = (e) => { const v = e.target.closest('button')?.dataset.v; if (v) { kind = v; save('advKind', v); buildMenu(); } };
+    $('aLevelBox').hidden = kind !== 'levels'; $('aPlanBox').hidden = kind !== 'plan';
+    $('aPlans').innerHTML = PLANS.map((p) => {
+      const n = progress.planNext(p.id), next = p.sessions[n];
+      return `<button class="plan" data-p="${p.id}" aria-pressed="${p.id === planId}"><b>${p.name}</b><small>${p.desc}</small>
+        <small>${next ? `下一次：${next.name}（${next.sets.map(([ex, k]) => `${EXERCISES[app.settings.lowImpact ? LOW_IMPACT[ex] || ex : ex].name}×${repsFor(k, diff)}`).join('、')}）` : '🎉 這個計畫做完了！可以重新開始，或換一個計畫'}</small>
+        <div class="bar"><i style="width:${(n / p.sessions.length) * 100}%"></i></div></button>`;
+    }).join('');
+    $('aPlans').onclick = (e) => { const b = e.target.closest('.plan'); if (!b) return; planId = b.dataset.p; save('advPlan', planId); buildMenu(); };
     $('aDiff').innerHTML = Object.entries(DIFFS).map(([k, d]) => `<button data-v="${k}" aria-pressed="${k === diff}">${d.label}</button>`).join('');
     $('aDiff').onclick = (e) => { const v = e.target.closest('button')?.dataset.v; if (v) { diff = v; save('advDiff', v); buildMenu(); } };
     $('aDiffNote').textContent = DIFFS[diff].note + '。做不完的組可以按「結束這組」，不勉強。';
@@ -68,14 +83,23 @@ export function createAdventure(app) {
 
   // ── 開始一關 ──
   async function start() {
-    level = LEVELS[levelIdx];
+    if (kind === 'plan') {
+      const p = PLANS.find((x) => x.id === planId);
+      let n = progress.planNext(p.id);
+      if (n >= p.sessions.length) {
+        if (!confirm(`「${p.name}」已經做完了！要從第 1 週重新開始嗎？`)) return;
+        progress.d.plans[p.id] = 0; progress.persist(); n = 0;
+      }
+      level = p.sessions[n];
+    } else level = LEVELS[levelIdx];
     const can = progress.canTrain();
     if (!can.ok) { $('mStatus').textContent = can.text; return; }
     if (can.warn && !confirm(can.text + '\n\n要繼續嗎？')) return;
-    const exs = levelExercises(level);
+    const exs = exsOf(level);
     if (!(await app.ensureInput(exs[0]))) return;
     const prof = loadProfile();
-    const need = exs.filter((ex) => EXERCISES[ex].calib && (prof.targets[EXERCISES[ex].calib.key] == null || $('mRecal').checked));
+    // 坐姿動作在每一組開始時坐著量；站姿動作開始前先站著量
+    const need = exs.filter((ex) => EXERCISES[ex].calib && !EXERCISES[ex].seated && (prof.targets[EXERCISES[ex].calib.key] == null || $('mRecal').checked));
     calQueue = need.length ? need : [null];
     base = null;
     nextCalibration();
@@ -84,7 +108,7 @@ export function createAdventure(app) {
   function nextCalibration() {
     const ex = calQueue.shift();
     const d = ex ? EXERCISES[ex] : null;
-    const c = new Calibrator({ exercise: ex || levelExercises(level)[0], rom: !!ex, base, emit: onCalib });
+    const c = new Calibrator({ exercise: ex || exsOf(level).find((x) => !EXERCISES[x].seated) || 'squat', rom: !!ex, base, emit: onCalib });
     app.setCalibrator(c);
     app.setupScreen({
       title: base ? `量你的舒服幅度：${d.name}` : `${level.name}：擺好手機`,
@@ -108,12 +132,17 @@ export function createAdventure(app) {
 
   async function beginSession() {
     app.setCalibrator(null);
-    if (!stage) {
+    // 省電模式：不用 3D，改用簡單線條示範
+    lite = !!app.settings.lite;
+    $('coachCv').hidden = lite; $('coach2d').hidden = !lite;
+    if (!stage && !lite) {
       try { const { CoachStage } = await import('./coach3d.js'); stage = new CoachStage($('coachCv')); }
-      catch (err) { console.warn('3D 示範無法啟動', err); $('coachCv').hidden = true; }
+      catch (err) { console.warn('3D 示範無法啟動', err); $('coachCv').hidden = true; lite = true; $('coach2d').hidden = false; }
     }
-    if (stage) { stage.setMonster(level.monster); stage.calm = !!app.settings.calm; }
-    session = new Session(level, { diff, emit: onSession });
+    const st3 = lite ? null : stage;
+    activeStage = st3;
+    if (st3) { st3.setMonster(level.monster); st3.calm = !!app.settings.calm; }
+    session = new Session(level, { diff, lowImpact: !!app.settings.lowImpact, emit: onSession });
     battle = new Battle(session.plannedReps());
     $('aMon').textContent = `👾 ${MONSTERS[level.monster].name}`;
     document.body.classList.add('adv-on');
@@ -144,7 +173,8 @@ export function createAdventure(app) {
       $('aCombo').textContent = '';
       if (st.type === 'set') {
         const d = EXERCISES[st.exercise];
-        analyzer = new ExerciseAnalyzer({ exercise: st.exercise, profile: loadProfile(), base, emit: onAnalyzer });
+        // 坐姿動作：這一組開始時坐好不動 1 秒，自動量坐姿基準
+        analyzer = new ExerciseAnalyzer({ exercise: st.exercise, profile: loadProfile(), base: d.seated ? null : base, emit: onAnalyzer });
         app.setAnalyzer(analyzer);
         battle.newSet();
         $('aRoutine').hidden = true;
@@ -152,8 +182,9 @@ export function createAdventure(app) {
         $('hEx').textContent = `${st.skill.icon} ${st.skill.name}・${d.name}`;
         $('aCharge').hidden = st.exercise !== 'squat';
         setCounter();
-        stage?.setDemo(st.exercise);
-        app.bubble(`${st.skill.icon} ${st.skill.name}：${st.skill.verb}`, 'praise', `第 ${st.set} / ${st.sets} 組・${d.name} ${st.reps} 下${st.perSide ? '（每邊）' : ''}・${d.bestView === 'side' ? '請轉成側身' : '請面向鏡頭'}`);
+        activeStage?.setDemo(st.exercise);
+        app.bubble(`${st.skill.icon} ${st.skill.name}：${st.skill.verb}`, 'praise', `第 ${st.set} / ${st.sets} 組・${d.name} ${st.reps} ${st.hold ? '秒' : '下'}${st.perSide ? '（每邊）' : ''}・${d.seated ? '坐好、雙手放大腿旁不動 1 秒就開始' : d.bestView === 'side' ? '請轉成側身' : '請面向鏡頭'}`);
+        setDemo2d(st.exercise);
         if (app.sim) { app.sim.setExercise(st.exercise); app.sim.setView(d.bestView === 'side' ? 90 : 0); app.syncSim?.(); }
       } else {
         $('hud').hidden = true;
@@ -165,7 +196,8 @@ export function createAdventure(app) {
         $('aRtTitle').textContent = isRest ? '休息一下、喝口水 💧' : st.name;
         $('aRtTip').textContent = isRest ? nextSetText() : st.tip;
         $('aRestBtns').hidden = !isRest;
-        stage?.setDemo(isRest ? 'breathe' : st.coach);
+        activeStage?.setDemo(isRest ? 'breathe' : st.coach);
+        setDemo2d(isRest ? 'breathe' : st.coach);
         if (app.sim) app.sim.setView(0);
         if (isRest) app.sfx.play('rest');
         if (st.type === 'cooldown' && list.indexOf(st) === 0) app.bubble(battle.defeated ? '怪獸倒下了！做完收操把牠封印起來' : '主訓練結束！收操伸展把怪獸封印起來', 'praise');
@@ -190,7 +222,7 @@ export function createAdventure(app) {
     if (!st || st.type !== 'set') return;
     const r = session.setReps;
     $('hCount').textContent = r.total;
-    $('hTarget').textContent = `/ ${st.reps * (st.perSide ? 2 : 1)}`;
+    $('hTarget').textContent = `/ ${st.reps * (st.perSide ? 2 : 1)}${st.hold ? ' 秒' : ''}`;
     $('hSides').textContent = st.perSide ? `左 ${r.left}・右 ${r.right}（每邊 ${st.reps} 下）` : `第 ${st.set} / ${st.sets} 組`;
   }
 
@@ -203,7 +235,7 @@ export function createAdventure(app) {
       app.onRepVisual(e);
       app.sfx.play(e.exercise === 'squat' ? 'strike' : e.good ? 'good' : 'rep');
       if (r.combo >= 3) app.sfx.play('combo');
-      stage?.attack(SKILLS[e.exercise].color, e.exercise === 'squat');
+      activeStage?.attack(SKILLS[e.exercise].color, e.exercise === 'squat');
       floater(`${r.text} -${r.damage}`, r.crit);
       $('aCombo').textContent = r.combo >= 2 ? `${r.combo} 連擊 ×${(1 + Math.min(r.combo * 0.02, 0.3)).toFixed(2)}` : '';
       updateHp();
@@ -211,11 +243,43 @@ export function createAdventure(app) {
       session.rep(e);
       if (session.i === before && ex) setCounter();
       if (battle.defeated && !battle.saidLow) { battle.saidLow = true; app.bubble('怪獸撐不住了！把這次訓練做完', 'praise'); }
-    } else if (e.type === 'partial') { app.sfx.play('partial'); app.onRepVisual(e); }
+    } else if (e.type === 'hold') {
+      const r = battle.holdTick();
+      if (e.seconds % 2 === 0) activeStage?.attack(SKILLS[e.exercise]?.color || '#9fb7ff', false);
+      if (e.seconds % 5 === 0) { app.sfx.play('shield'); floater(`撐住 ${e.seconds} 秒！`, false); } else floater(`${r.text} -${r.damage}`, false);
+      updateHp();
+      const before = session.i;
+      session.holdSec(e);
+      if (session.i === before) setCounter();
+    } else if (e.type === 'holdCheck') {
+      battle.quality(e.quality); session.holdQuality(e); app.onRepVisual({ ...e, type: 'check' });
+    } else if (e.type === 'holdStart') { app.bubble('撐住！護盾展開 🛡️', 'praise', '正常呼吸，不舒服就站起來'); app.sfx.play('shield'); }
+    else if (e.type === 'holdEnd') { if (session?.step?.type === 'set') app.bubble('休息幾秒也沒關係，準備好再撐', 'praise'); }
+    else if (e.type === 'partial') { app.sfx.play('partial'); app.onRepVisual(e); }
     else if (e.type === 'hint') {
       app.sfx.play(e.kind === 'praise' ? 'combo' : 'hint');
       app.bubble(e.text, e.kind, e.kind === 'tip' ? `這項判斷的可信度：${CONF_TEXT[e.level]}` : '');
     }
+  }
+
+  // 省電模式的線條示範：合成人體反覆做同一個動作
+  function setDemo2d(name) {
+    if (!lite) return;
+    const cv = $('coach2d');
+    const floor = ['plank', 'pushUp', 'bridge'].includes(name);
+    const yaw = Math.abs(DEMO_YAW[name] ?? 0) > 0.7 ? 90 : 0;
+    const P = new SynthPerson({ seed: 2, jitter: 0, sway: 0, camera: floor ? { yaw: 90, height: 0.3, distance: 2.6, aim: [0, 0.3, -0.4], aspect: cv.width / cv.height } : { yaw, aspect: cv.width / cv.height, distance: 3.1 } });
+    if (SEATED_DEMOS.has(name) && name !== 'sitStand') P.hold = { name: 'seated', u: 0, opts: {} };
+    demo2d = { P, list: DEMOS[name] || DEMOS.idle, i: 0 };
+  }
+  function drawDemo2d(now) {
+    if (!lite || !demo2d) return;
+    const { P } = demo2d;
+    if (!P.busy()) { const [n, o, ms] = demo2d.list[demo2d.i++ % demo2d.list.length]; if (n === 'stand') P.play('squat', { depth: 0 }, ms); else P.play(n, o || {}, ms ?? MOTIONS[n]?.ms); }
+    const cv = $('coach2d'), ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const pose = P.step(now);
+    if (pose) drawBody(ctx, pose.kp, { x: 0, y: 0, w: cv.width, h: cv.height }, { width: 5 });
   }
 
   function updateHp() {
@@ -252,7 +316,7 @@ export function createAdventure(app) {
 
   const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, Math.ceil(s)) % 60).padStart(2, '0')}`;
   function update(dt) {
-    if (!session || session.done) { stage?.update(dt); stage?.render(); return; }
+    if (!session || session.done) { activeStage?.update(dt); activeStage?.render(); return; }
     const pose = app.lastPose;
     presence(pose, pose?.t ?? performance.now());
     const camera = app.kit.source === 'camera';
@@ -272,15 +336,19 @@ export function createAdventure(app) {
     } else {
       const m = st.exercise === 'squat' && app.frame?.m != null ? Math.min(Math.max(app.frame.m, 0), 1.2) / 1.2 : 0;
       $('aChargeBar').style.width = `${m * 100}%`;
-      stage?.setCharge(st.exercise === 'squat' ? m : 0);
+      activeStage?.setCharge(st.exercise === 'squat' ? m : 0);
     }
-    stage?.update(dt); stage?.render();
+    // 3D 小舞台最多每秒 30 格（手機上把運算留給姿態模型）
+    const now = performance.now();
+    stageDt += dt;
+    if (now - lastRender >= 32) { activeStage?.update(stageDt); activeStage?.render(); stageDt = 0; lastRender = now; }
+    drawDemo2d(now);
   }
 
   function finish(completed) {
     const sum = session.summary();
     app.setAnalyzer(null);
-    if (completed) stage?.defeat();
+    if (completed) activeStage?.defeat();
     const stars = completed ? battle.stars() : 0;
     const out = progress.record(sum, { stars, score: battle.score });
     $('hud').hidden = true; $('aRoutine').hidden = true;
@@ -292,16 +360,18 @@ export function createAdventure(app) {
       const M = MONSTERS[level.monster];
       $('arTitle').textContent = completed ? `${M.name}被封印了！` : '先休息一下';
       $('arStars').textContent = completed ? '★'.repeat(stars) + '☆'.repeat(3 - stars) : '';
-      const reps = Object.entries(sum.reps).map(([ex, n]) => `${EXERCISES[ex].name} ${n} 下（標準 ${sum.good[ex] || 0}）`).join('、') || '—';
+      const reps = Object.entries(sum.reps).map(([ex, n]) => (EXERCISES[ex].hold ? `${EXERCISES[ex].name} ${n} 秒` : `${EXERCISES[ex].name} ${n} 下（標準 ${sum.good[ex] || 0}）`)).join('、') || '—';
+      const kc = app.estimate?.(sum);
       const items = [`時間 ${fmt(sum.durationSec)}・${reps}`];
       if (sum.avgQuality != null) items.push(`平均品質 ${Math.round(sum.avgQuality * 100)} 分（只算鏡頭看得清楚的項目）`);
       for (const b of out.newBests) items.push(`🏅 新紀錄：${b}`);
       for (const q of out.questsDone) items.push(`✅ 完成任務：${q}`);
       if (out.unlocked) items.push(`🔓 解鎖新關卡：${out.unlocked.name}${out.unlocked.intro ? `（${out.unlocked.intro}）` : ''}`);
       if (sum.capped) items.push('今天練得比較久，剩下的組直接跳到收操了。');
+      if (kc) items.push(`🔥 粗估消耗約 ${kc.low}～${kc.high} 大卡（依你填的體重與一般運動強度表估算，誤差很大，只供參考）`);
       $('arBody').innerHTML = (completed ? '' : STOP_HTML) + `<ul>${items.map((x) => `<li>${x}</li>`).join('')}</ul>` +
         (completed ? `<p class="note">${progress.canTrain().warn ? progress.canTrain().text : '記得補充水分。肌肉是在休息時變強的，同一個部位建議隔一天再練。'}</p>` : '');
-      const next = LEVELS[levelIdx + 1];
+      const next = level.planId ? null : LEVELS[levelIdx + 1];
       $('arNext').hidden = !(completed && next && levelIdx + 1 < progress.d.unlocked);
       $('arNext').textContent = next ? `下一關：${next.name}` : '';
       app.show('advResult');

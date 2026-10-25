@@ -327,3 +327,107 @@ test('預錄骨架檔（fixtures/exercise）重播：次數與提示符合預期
     if (!clip.expect.tips.length) assert.equal(tips.size, 0, `${f}：不該有提示，卻有 ${[...tips]}`);
   }
 });
+
+// ── 階段三：更多動作 ──
+const altSide = (o = {}) => (i) => ({ side: i % 2 ? 'right' : 'left', ...o });
+const FLOOR = { yaw: 90, height: 0.3, distance: 2.4, aim: [0, 0.3, -0.4], aspect: 16 / 9 };
+const holdPose = (name, opts = {}, u = 0.5) => (P) => { P.hold = { name, u, opts }; };
+
+test('高抬腿：正面與側面都算到，左右分開；抬太低不算；側面看到往後仰會提示', () => {
+  for (const camera of [FRONT, SIDE]) {
+    const r = run('highKnees', series(10, 'highKnee', altSide(), 800), { camera });
+    assert.equal(r.reps.length, 10);
+    assert.equal(r.a.reps.left, 5);
+    assert.equal(r.tips.length, 0);
+  }
+  assert.equal(run('highKnees', series(10, 'highKnee', altSide({ lift: 0.3 }), 800), { camera: FRONT }).reps.length, 0);
+  assert.ok(run('highKnees', series(8, 'highKnee', altSide({ lean: 25 }), 800), { camera: SIDE }).tip('upright') >= 2);
+  assert.equal(run('highKnees', series(8, 'highKnee', altSide({ lean: 25 }), 800), { camera: FRONT }).tip('upright'), 0);
+});
+
+test('抬膝踏步（低衝擊）：抬到腰附近就算', () => {
+  const r = run('march', series(10, 'highKnee', altSide({ lift: 0.75 }), 900, WARM, 900), { camera: FRONT });
+  assert.equal(r.reps.length, 10);
+});
+
+test('弓箭步：側面標準 6 下；太淺有提示；上半身前傾有提示', () => {
+  const ok = run('lunge', series(6, 'lunge', altSide(), 3200), { camera: SIDE });
+  assert.equal(ok.reps.length, 6);
+  assert.equal(ok.tips.length, 0);
+  const shallow = run('lunge', series(6, 'lunge', altSide({ depth: 0.3 }), 3200), { camera: SIDE });
+  assert.ok(shallow.tip('depth') >= 2);
+  assert.ok(run('lunge', series(6, 'lunge', altSide({ lean: 30 }), 3200), { camera: SIDE }).tip('upright') >= 2);
+});
+
+test('提踵：踮高 7 公分算到；站著不動 40 秒、走近走遠都不算；可信度誠實標「中」', () => {
+  const r = run('calfRaise', series(6, 'calfRaise', {}, 2600), { camera: FRONT });
+  assert.equal(r.reps.length, 6);
+  assert.equal(r.reps[0].results.find((x) => x.code === 'height').level, 'mid');
+  assert.equal(r.a.frame.countLevel, 'mid');
+  assert.equal(run('calfRaise', [], { camera: FRONT, durationMs: 40000, jitter: 0.004 }).reps.length, 0);
+  const walk = [];
+  for (let i = 0; i <= 40; i++) walk.push([WARM + i * 150, (P) => { P.offset = [0, 0, 0.8 * Math.sin(i / 40 * Math.PI)]; }]);
+  assert.equal(run('calfRaise', walk, { camera: { yaw: 0, height: 0.4 }, durationMs: WARM + 9000 }).reps.length, 0);
+});
+
+test('靠牆深蹲：維持時每秒加一；上半身前傾會提示；站起來就停止計秒', () => {
+  const ev = [];
+  const r = run('wallSit', [[WARM, 'wallSit', {}, 25000]], { camera: SIDE, durationMs: WARM + 30000 });
+  const secs = r.ev.filter((e) => e.type === 'hold').length;
+  assert.ok(secs >= 18 && secs <= 24, 'seconds ' + secs);
+  assert.ok(r.ev.some((e) => e.type === 'holdEnd'));
+  assert.equal(r.tips.length, 0);
+  assert.ok(run('wallSit', [[WARM, 'wallSit', { lean: 30 }, 25000]], { camera: SIDE, durationMs: WARM + 30000 }).tip('upright') >= 1);
+  assert.equal(run('wallSit', [], { camera: SIDE, durationMs: 20000 }).ev.filter((e) => e.type === 'hold').length, 0);
+  void ev;
+});
+
+test('坐到站：從椅子站起坐下 5 下都算；正面稍微轉身（25°）不會亂報重心偏', () => {
+  for (const yaw of [0, 25]) {
+    const r = run('sitStand', series(5, 'sitStand', {}, 3600), { camera: { yaw } });
+    assert.equal(r.reps.length, 5);
+    assert.equal(r.tip('balance'), 0);
+  }
+});
+
+test('坐姿抬膝、坐姿開合手：坐著也能算；手舉不夠高會提示', () => {
+  const sit = [0, holdPose('seated', {}, 0)];
+  const knees = run('seatedKnee', [sit, ...series(8, 'seated', (i) => ({ knee: i % 2 ? 'right' : 'left' }), 2000)], { camera: { yaw: 0, distance: 2.2 } });
+  assert.equal(knees.reps.length, 8);
+  assert.equal(knees.a.reps.left, 4);
+  const arms = run('seatedArms', [sit, ...series(8, 'seated', { arms: true }, 2000)], { camera: { yaw: 0, distance: 2.2 } });
+  assert.equal(arms.reps.length, 8);
+  const low = run('seatedArms', [sit, ...series(8, 'seated', { arms: true, armsLevel: 0.45 }, 2000)], { camera: { yaw: 0, distance: 2.2 } });
+  assert.equal(low.reps.length, 0);
+  assert.ok(low.tip('arms') >= 2);
+  assert.equal(run('seatedKnee', [sit], { camera: { yaw: 0, distance: 2.2 }, durationMs: 30000 }).reps.length, 0);
+});
+
+test('地板（實驗）：棒式維持計秒、腰塌會提示；伏地挺身與臀橋側面算得到', () => {
+  const plank = run('plank', [[0, holdPose('plank')]], { camera: FLOOR, durationMs: 15000 });
+  assert.ok(plank.ev.filter((e) => e.type === 'hold').length >= 12);
+  assert.equal(plank.tips.length, 0);
+  assert.ok(run('plank', [[0, holdPose('plank', { sag: 0.14 })]], { camera: FLOOR, durationMs: 15000 }).tip('line') >= 1);
+  const pu = run('pushUp', [[0, holdPose('pushUp', {}, 0)], ...series(6, 'pushUp', {}, 2600)], { camera: FLOOR });
+  assert.equal(pu.reps.length, 6);
+  const br = run('bridge', [[0, holdPose('bridge', {}, 0)], ...series(6, 'bridge', {}, 2800)], { camera: FLOOR });
+  assert.equal(br.reps.length, 6);
+});
+
+test('地板（實驗）：站著做動作不會被當成伏地挺身或臀橋；正面（頭朝鏡頭）不算', () => {
+  assert.equal(run('pushUp', series(4, 'squat'), { camera: SIDE }).reps.length, 0);
+  assert.equal(run('pushUp', series(4, 'fidget', {}, 3200), { camera: FRONT }).reps.length, 0);
+  assert.equal(run('bridge', series(4, 'squat'), { camera: SIDE }).reps.length, 0);
+  const headOn = run('pushUp', [[0, holdPose('pushUp', {}, 0)], ...series(5, 'pushUp', {}, 2600)], { camera: { ...FLOOR, yaw: 0, aim: [0, 0.3, -0.5] } });
+  assert.equal(headOn.reps.length, 0);
+});
+
+test('效能：每一格的分析不到 0.5 毫秒（手機上的姿態模型本身約 20～60 毫秒）', () => {
+  const poses = synthSequence(series(20, 'squat'), { durationMs: WARM + 62000, camera: SIDE });
+  const a = new ExerciseAnalyzer({ exercise: 'squat' });
+  for (const p of poses.slice(0, 200)) a.feed(p); // 暖機
+  const t0 = performance.now();
+  for (const p of poses) a.feed(p);
+  const per = (performance.now() - t0) / poses.length;
+  assert.ok(per < 0.5, `每格 ${per.toFixed(3)} 毫秒`);
+});

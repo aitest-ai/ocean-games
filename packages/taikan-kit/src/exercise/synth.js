@@ -58,13 +58,15 @@ export function standSpec() {
   };
 }
 
+// 玩家的「左邊」：+x 扣掉和上半身軸線平行的部分（躺著、趴著時也不會左右顛倒）
+const latOf = (up) => norm(sub([1, 0, 0], mul(up, up[0])));
+
 // 上半身的方向（示範人偶要把手的位置換成「上半身座標」）
 export function torsoFrame(spec) {
   const cp = Math.cos(spec.pitch || 0), sp = Math.sin(spec.pitch || 0);
   const cr = Math.cos(spec.roll || 0), sr = Math.sin(spec.roll || 0);
   const up = norm([sr * cp, cr * cp, sp]);
-  let lat = norm(cross(up, [0, 0, 1]));
-  if (len(lat) < 0.5) lat = [1, 0, 0];
+  const lat = latOf(up);
   return { up, lat, fwd: norm(cross(lat, up)) };
 }
 
@@ -74,8 +76,7 @@ export function buildJoints(spec, scale = 1) {
   const cr = Math.cos(spec.roll || 0), sr = Math.sin(spec.roll || 0);
   // 上半身的「上」：先前彎（往 +z），再側彎（往 +x）
   const up = norm([sr * cp, cr * cp, sp]);
-  const lat = norm(cross(up, [0, 0, 1])); // 玩家左邊
-  const latFix = len(lat) > 0.5 ? lat : [1, 0, 0];
+  const latFix = latOf(up); // 玩家左邊
   const fwd = norm(cross(latFix, up));
   const hipL = add(P, [BODY.hipHalf, 0, 0]), hipR = add(P, [-BODY.hipHalf, 0, 0]);
   const sMid = add(P, mul(up, BODY.torso));
@@ -227,6 +228,91 @@ export const MOTIONS = {
     spec.lHand = armHand(spec, 1, 10 + 160 * s, 8); spec.rHand = armHand(spec, -1, 10 + 160 * s, 8);
     return spec;
   } },
+  // ── 階段三的動作 ──
+  // 高抬腿：side 那隻膝蓋抬到 lift（1 = 大腿水平）；lean = 上半身往後仰幾度（常見錯誤）
+  highKnee: { ms: 700, make(u, o = {}) {
+    const spec = standSpec(), sd = o.side === 'right' ? -1 : 1, s = bump(u), th = (o.lift ?? 1) * 88 * DEG * s;
+    const hip = [sd * BODY.hipHalf, HIP_Y - 0.004, 0];
+    const knee = add(hip, [0, -BODY.thigh * Math.cos(th), BODY.thigh * Math.sin(th)]);
+    const foot = add(knee, [0, -BODY.shin * 0.98, -0.03 * s]);
+    if (sd === 1) { spec.lFoot = foot; spec.lKnee = [0, 0, 1]; } else { spec.rFoot = foot; spec.rKnee = [0, 0, 1]; }
+    spec.pitch = -(o.lean ?? 0) * DEG * s;
+    spec.lHand = armHand(spec, 1, 10, sd === 1 ? -25 * s : 45 * s); spec.rHand = armHand(spec, -1, 10, sd === 1 ? 45 * s : -25 * s);
+    return spec;
+  } },
+  // 弓箭步：side 那隻腳往前跨，兩膝彎曲往下；depth 1 = 前腳大腿接近水平；lean = 上半身前傾幾度
+  lunge: { ms: 2800, make(u, o = {}) {
+    const spec = standSpec(), sd = o.side === 'right' ? -1 : 1, s = bump(u), d = (o.depth ?? 1) * s;
+    const step = 0.72 * Math.min(s * 2, 1);
+    const front = [sd * 0.13, BODY.ankle, 0.02 + step * 0.62], back = [-sd * 0.13, BODY.ankle + 0.06 * d, 0.02 - step * 0.38];
+    spec.pelvis = [0, HIP_Y - 0.004 - 0.36 * d - 0.03 * Math.min(s * 2, 1), 0.02 + step * 0.05];
+    spec.pitch = (o.lean ?? 0) * DEG * s + 4 * DEG * s;
+    if (sd === 1) { spec.lFoot = front; spec.rFoot = back; spec.rKnee = [0, -0.4, 1]; } else { spec.rFoot = front; spec.lFoot = back; spec.lKnee = [0, -0.4, 1]; }
+    const j = buildJoints(spec);
+    spec.lHand = add(j.leftHip, [0.06, 0.06, 0.04]); spec.rHand = add(j.rightHip, [-0.06, 0.06, 0.04]);
+    spec.lElbow = [1, 0, -0.6]; spec.rElbow = [-1, 0, -0.6];
+    return spec;
+  } },
+  // 提踵（踮腳尖）：rise = 身體往上多少公尺
+  calfRaise: { ms: 2200, make(u, o = {}) {
+    const spec = standSpec(), r = (o.rise ?? 0.07) * bump(u);
+    spec.pelvis = add(spec.pelvis, [0, r, 0]);
+    spec.lFoot = add(spec.lFoot, [0, r * 0.7, 0]); spec.rFoot = add(spec.rFoot, [0, r * 0.7, 0]);
+    return spec;
+  } },
+  // 靠牆深蹲（維持）：u 只用來進出姿勢；depth = 大腿角度，lean = 上半身前傾
+  wallSit: { ms: 3000, make(u, o = {}) {
+    const spec = standSpec(), s = smooth(Math.min(u * 6, 1)) * smooth(Math.min((1 - u) * 6, 1)), th = (o.depth ?? 85) * DEG * s, ph = 8 * DEG * s;
+    spec.pelvis = [0, BODY.ankle + BODY.shin * Math.cos(ph) + BODY.thigh * Math.cos(th) - 0.004, -BODY.thigh * Math.sin(th) + BODY.shin * Math.sin(ph) + 0.02];
+    spec.pitch = (o.lean ?? 0) * DEG * s;
+    spec.lFoot = [0.16, BODY.ankle, 0.02]; spec.rFoot = [-0.16, BODY.ankle, 0.02];
+    return spec;
+  } },
+  // 坐在椅子上（椅面高 0.47 公尺）。knee = 抬起哪一腳、arms = 雙手側舉角度（坐姿開合手）
+  seated: { ms: 1800, make(u, o = {}) {
+    const spec = standSpec(), s = bump(u);
+    spec.pelvis = [0, 0.5, -0.05];
+    spec.pitch = 0.05;
+    const lift = (o.knee ? (o.lift ?? 1) * 0.16 * s : 0);
+    spec.lFoot = [0.15, BODY.ankle + (o.knee === 'left' ? lift : 0), 0.4]; spec.rFoot = [-0.15, BODY.ankle + (o.knee === 'right' ? lift : 0), 0.4];
+    spec.lKnee = [0, 0.4, 1]; spec.rKnee = [0, 0.4, 1];
+    const a = o.arms ? 8 + 150 * (o.armsLevel ?? 1) * s : 8;
+    spec.lHand = armHand(spec, 1, a, 5); spec.rHand = armHand(spec, -1, a, 5);
+    return spec;
+  } },
+  // 坐到站（從椅子站起來再坐下）：0 = 站、1 = 坐
+  sitStand: { ms: 3200, make(u) {
+    const spec = standSpec(), s = bump(u);
+    const sit = MOTIONS.seated.make(0.5, {}), stand = standSpec();
+    spec.pelvis = mix3(stand.pelvis, sit.pelvis, s);
+    spec.pitch = 0.5 * Math.sin(Math.PI * s) + 0.05 * s;
+    spec.lFoot = mix3(stand.lFoot, [0.15, BODY.ankle, 0.22], Math.min(s * 3, 1)); spec.rFoot = mix3(stand.rFoot, [-0.15, BODY.ankle, 0.22], Math.min(s * 3, 1));
+    spec.lKnee = [0.1, 0.3, 1]; spec.rKnee = [-0.1, 0.3, 1];
+    spec.lHand = armHand(spec, 1, 10, 60 * s + 5); spec.rHand = armHand(spec, -1, 10, 60 * s + 5);
+    return spec;
+  } },
+  // ── 地板動作（實驗）：側面看，玩家頭朝 +z ──
+  // 伏地挺身：depth 1 = 手肘約 90°；sag = 腰往下塌（公尺）；knees = 跪姿版
+  pushUp: { ms: 2400, make(u, o = {}) { return prone(bump(u) * (o.depth ?? 1), o.sag ?? 0, o.pike ?? 0, 'hands'); } },
+  // 棒式（維持）：前臂撐地；sag / pike = 腰塌下或屁股翹高（公尺）
+  plank: { ms: 3000, make(u, o = {}) { return prone(0, o.sag ?? 0, o.pike ?? 0, 'forearms'); } },
+  // 臀橋：躺著、膝蓋彎曲，把髖往上推；lift 1 = 肩—髖—膝接近一直線
+  bridge: { ms: 2600, make(u, o = {}) {
+    const spec = standSpec(), s = bump(u) * (o.lift ?? 1);
+    const sh = [0, 0.11, -0.52];
+    const pel = [0, 0.13 + 0.22 * s, 0];
+    spec.pelvis = pel;
+    const d = sub(sh, pel), L = len(d);
+    spec.pitch = Math.atan2(d[2], d[1]);
+    spec.pelvis = sub(sh, mul(norm(d), BODY.torso));
+    spec.lFoot = [0.15, BODY.ankle, 0.42]; spec.rFoot = [-0.15, BODY.ankle, 0.42];
+    spec.lKnee = [0, 1, 0.2]; spec.rKnee = [0, 1, 0.2];
+    spec.head = -0.2;
+    spec.lHand = [0.3, 0.03, -0.25]; spec.rHand = [-0.3, 0.03, -0.25];
+    spec.lElbow = [0.5, 0.5, 0]; spec.rElbow = [-0.5, 0.5, 0];
+    void L;
+    return spec;
+  } },
   // ── 不該算次數的動作（測試「亂動不能亂計次」） ──
   // 抓頭、交叉手臂、看手機
   fidget: { ms: 3000, make(u) {
@@ -259,6 +345,30 @@ export const MOTIONS = {
     return spec;
   } },
 };
+
+// 趴著的身體（伏地挺身、棒式）：腳尖在地上，身體一直線，k = 往下的程度 0～1
+function prone(k, sag, pike, support) {
+  const spec = standSpec();
+  const ank = 0.09;
+  // 頂端：手撐直時肩膀高約 0.56；底部：肩膀高約 0.24；前臂撐地約 0.3
+  const shY = support === 'hands' ? 0.58 - 0.33 * k : 0.3;
+  const Lb = BODY.thigh + BODY.shin + BODY.torso;
+  const a = Math.asin((shY - ank) / Lb);
+  const dir = [0, Math.sin(a), Math.cos(a)];
+  const foot = [0, ank, -1.0];
+  const pelvis = add(add(foot, mul(dir, BODY.thigh + BODY.shin)), [0, pike - sag, 0]);
+  const sh = add(foot, mul(dir, Lb));
+  const d = sub(sh, pelvis);
+  spec.pelvis = add(sh, mul(norm(d), -BODY.torso));
+  spec.pitch = Math.atan2(d[2], d[1]);
+  spec.lFoot = [0.12, ank, -1.0]; spec.rFoot = [-0.12, ank, -1.0];
+  spec.lKnee = [0, -1, 0]; spec.rKnee = [0, -1, 0];
+  spec.head = 0.2;
+  const shX = BODY.shoulderHalf + 0.03;
+  if (support === 'hands') { spec.lHand = [shX, 0.03, sh[2] - 0.02]; spec.rHand = [-shX, 0.03, sh[2] - 0.02]; spec.lElbow = [0.6, 0.3, -1]; spec.rElbow = [-0.6, 0.3, -1]; }
+  else { spec.lHand = [0.12, 0.04, sh[2] + 0.3]; spec.rHand = [-0.12, 0.04, sh[2] + 0.3]; spec.lElbow = [0.2, -1, 0]; spec.rElbow = [-0.2, -1, 0]; }
+  return spec;
+}
 
 // ── 鏡頭投影 ──
 export function project(p, cam) {

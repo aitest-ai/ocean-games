@@ -10,6 +10,7 @@
 // 單一鏡頭沒有深度：只檢查「在畫面平面上」的動作。往鏡頭方向（前後）的偏差從正面看不出來，
 // 所以這類檢查在正面的可信度一律設 0；膝蓋內夾、背部圓弧這類容易誤判的項目不做提示。
 import { avg2, clamp } from './features.js';
+import { MORE, makeSitStand } from './exercises-more.js';
 
 const lerp01 = (x, a, b) => clamp((x - a) / (b - a), 0, 1);
 
@@ -59,8 +60,8 @@ const squat = {
       score: (r) => (r.atPeak?.trunk == null ? null : 1 - lerp01(Math.abs(r.atPeak.trunk), 55, 72) * 0.7),
       value: (r) => (r.atPeak?.trunk == null ? '—' : `${Math.round(Math.abs(r.atPeak.trunk))}°`),
       hint: '胸口抬高、眼睛看前方，上半身不要太往前倒', good: '上半身很穩' },
-    { code: 'balance', label: '重心左右', weight: 1, joints: ['hips', 'ankles'], views: { front: 1, angled: 0, side: 0 },
-      how: '蹲下時髖的中心有沒有偏向某一隻腳（以肩寬為單位）。側面看不到左右偏移；斜角時「屁股往後坐」會看起來像往旁邊偏，所以也不檢查。',
+    { code: 'balance', label: '重心左右', weight: 1, joints: ['hips', 'ankles'], views: { front: 1, angled: 0, side: 0 }, yawLimit: 20,
+      how: '蹲下時髖的中心有沒有偏向某一隻腳（以肩寬為單位）。側面看不到左右偏移；斜角時「屁股往後坐」會看起來像往旁邊偏，所以也不檢查（正面但轉了 10° 以上可信度就開始降低）。',
       score: (r) => 1 - lerp01(r.maxShift ?? 0, 0.16, 0.36) * 0.7,
       value: (r) => `${Math.round((r.maxShift ?? 0) * 100)}%`,
       hint: '重心放在兩腳中間，兩邊一樣出力', good: '左右很平均' },
@@ -196,5 +197,9 @@ const legRaise = {
   ],
 };
 
-export const EXERCISES = { squat, jack, legRaise };
+// 開合跳的低衝擊版（不跳，左右輪流踏出去）：量法完全一樣
+const stepJack = { ...jack, id: 'stepJack', name: '低衝擊開合跳', icon: '✨',
+  howto: [{ title: '併腳站好', text: '雙手放在身體兩側' }, { title: '往旁邊踏一步', text: '不用跳，一腳往旁邊踏，同時雙手舉到頭頂' }, { title: '收回來', text: '腳收回、手放下，換邊' }] };
+
+export const EXERCISES = { squat, jack, legRaise, stepJack, sitStand: makeSitStand(squat), ...MORE };
 export const VIEW_NAMES = { front: '正面', angled: '斜角', side: '側面' };

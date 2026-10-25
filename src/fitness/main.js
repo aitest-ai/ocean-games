@@ -7,7 +7,9 @@
 // 沒有鏡頭時用「鍵盤模擬」：按鍵讓合成人體做動作，走跟鏡頭一樣的辨識流程。
 import { createTaikan } from '../../packages/taikan-kit/src/index.js';
 import { ExerciseAnalyzer, Calibrator, EXERCISES, VIEW_NAMES, CONF_TEXT, SynthPerson } from '../../packages/taikan-kit/src/exercise/index.js';
-import { FitnessSim, SIM_KEYS, variantNames } from './sim.js';
+import { FitnessSim, SIM_KEYS, VARIANTS, FLOOR_CAMERA, variantNames } from './sim.js';
+import { renderHistory } from './history.js';
+import { estimateKcal } from './estimate.js';
 import { drawBody, fitRect, groupStatus } from './mirror.js';
 import { renderDebug } from './debug.js';
 import { Sfx } from './audio.js';
@@ -17,10 +19,12 @@ import { createAdventure } from './adventure.js';
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
-const REP_CHOICES = { squat: [5, 8, 10, 12, 15], jack: [10, 15, 20, 30], legRaise: [5, 8, 10, 12] };
+// 每組次數的選項（維持類是秒數）
+const REP_CHOICES = (d) => (d.hold ? [15, 20, 30, 45] : d.perSide ? [5, 8, 10, 12] : ['jack', 'stepJack', 'highKnees', 'march'].includes(d.id) ? [10, 15, 20, 30] : [5, 8, 10, 12, 15]);
+const repsOf = (d) => { const c = REP_CHOICES(d); return c.includes(settings.reps[d.id]) ? settings.reps[d.id] : c[Math.min(2, c.length - 1)]; };
 const SET_LIMIT_MS = 4 * 60 * 1000; // 一組最多 4 分鐘（鼓勵休息）
 
-const settings = { mode: 'adventure', calm: false, input: 'camera', exercise: 'squat', showVideo: true, sound: true, reps: { squat: 10, jack: 20, legRaise: 8 }, ...load('settings', {}) };
+const settings = { mode: 'adventure', calm: false, big: false, lite: false, lowImpact: false, experimental: false, weight: '', input: 'camera', exercise: 'squat', showVideo: true, sound: true, reps: { squat: 10, jack: 20, legRaise: 8 }, ...load('settings', {}) };
 if (params.get('input') === 'keyboard') settings.input = 'keyboard';
 const persist = () => save('settings', settings);
 
@@ -31,7 +35,7 @@ sfx.on = settings.sound;
 let sim = null, analyzer = null, calibrator = null, baseline = null;
 let phase = 'safety';
 let lastPose = null, frame = null, recent = null, recentAt = 0;
-let setStart = 0, setLog = [], hintsGiven = [];
+let setStart = 0, setLog = [], hintsGiven = [], holdLog = [];
 const log = [];
 const logLine = (s) => { log.push(`${new Date().toLocaleTimeString('zh-TW', { hour12: false })} ${s}`); if (log.length > 40) log.shift(); };
 window.fitness = { get analyzer() { return analyzer; }, get calibrator() { return calibrator; }, get sim() { return sim; }, get phase() { return phase; }, get frame() { return frame; } };
@@ -39,7 +43,7 @@ window.fitness = { get analyzer() { return analyzer; }, get calibrator() { retur
 if (DEBUG) { document.body.classList.add('has-debug'); $('debug').hidden = false; $('mDebug').href = '?'; $('mDebug').textContent = '關閉除錯畫面'; }
 
 // ── 畫面切換 ──
-const OVERLAYS = ['safety', 'menu', 'summary', 'pause', 'advResult'];
+const OVERLAYS = ['safety', 'menu', 'summary', 'pause', 'advResult', 'history'];
 function show(id) {
   for (const o of OVERLAYS) $(o).hidden = o !== id;
   $('setup').hidden = id !== 'setup';
@@ -55,10 +59,11 @@ $('mSafety').onclick = () => { phase = 'safety'; show('safety'); };
 // ── 選單 ──
 const demos = [];
 function buildMenu() {
-  $('exGrid').innerHTML = Object.values(EXERCISES).map((d) => `
+  if (!EXERCISES[settings.exercise] || (EXERCISES[settings.exercise].beta && !settings.experimental)) settings.exercise = 'squat';
+  $('exGrid').innerHTML = Object.values(EXERCISES).filter((d) => !d.beta || settings.experimental).map((d) => `
     <button class="excard" data-ex="${d.id}" aria-pressed="${settings.exercise === d.id}">
-      <canvas width="180" height="240" data-demo="${d.id}" aria-hidden="true"></canvas>
-      <div><b>${d.icon} ${d.name}</b>
+      <canvas width="${VARIANTS[d.id]?.floor ? 240 : 180}" height="${VARIANTS[d.id]?.floor ? 135 : 240}" data-demo="${d.id}" aria-hidden="true"></canvas>
+      <div><b>${d.icon} ${d.name}</b>${d.beta ? '<span class="exp">實驗</span>' : ''}${d.seated ? '<span class="exp" style="background:#2b8a6e">坐姿</span>' : ''}
         <span>手機放：<b>${VIEW_NAMES[d.bestView]}</b>${d.bestView === 'side' ? '（正面也可以）' : ''}</span>
         <span>檢查：${d.checks.map((c) => c.label).join('、')}</span></div>
     </button>`).join('');
@@ -76,8 +81,14 @@ function buildMenu() {
   syncMode();
   for (const box of document.querySelectorAll('[data-set]')) {
     box.checked = !!settings[box.dataset.set];
-    box.onchange = () => { settings[box.dataset.set] = box.checked; sfx.on = settings.sound; persist(); };
+    box.onchange = () => {
+      settings[box.dataset.set] = box.checked; sfx.on = settings.sound; persist(); applyLook();
+      if (box.dataset.set === 'experimental') buildMenu();
+      if (box.dataset.set === 'lowImpact') adventure.buildMenu();
+    };
   }
+  $('mWeight').value = settings.weight || '';
+  $('mWeight').onchange = (e) => { const v = Number(e.target.value); settings.weight = v >= 25 && v <= 250 ? v : ''; e.target.value = settings.weight; persist(); };
   $('mReps').onchange = (e) => { settings.reps[settings.exercise] = Number(e.target.value); persist(); };
   syncMenu();
 }
@@ -95,8 +106,8 @@ function seg(id, value, onPick) {
 }
 function syncMenu() {
   const d = EXERCISES[settings.exercise];
-  const unit = d.perSide ? '下（每邊）' : '下';
-  $('mReps').innerHTML = REP_CHOICES[d.id].map((n) => `<option value="${n}" ${settings.reps[d.id] === n ? 'selected' : ''}>${n} ${unit}</option>`).join('');
+  const unit = d.hold ? '秒' : d.perSide ? '下（每邊）' : '下';
+  $('mReps').innerHTML = REP_CHOICES(d).map((n) => `<option value="${n}" ${repsOf(d) === n ? 'selected' : ''}>${n} ${unit}</option>`).join('');
   $('mInputNote').innerHTML = settings.input === 'camera'
     ? `手機或平板立好，${d.placement}`
     : '用鍵盤（或畫面上的按鈕）讓模擬人做動作，走的是和鏡頭一樣的辨識流程，可以試「標準」和「常見錯誤」。';
@@ -109,14 +120,20 @@ function syncMenu() {
 
 // 選單卡片與擺放畫面的小示範：合成人體反覆做標準動作（從建議的手機位置看過去）
 function makeDemo(cv, ex, yaw) {
-  const d = EXERCISES[ex];
-  const P = new SynthPerson({ seed: 2, jitter: 0, sway: 0, camera: { yaw: yaw ?? (d.bestView === 'side' ? 90 : 0), aspect: cv.width / cv.height, distance: 2.9 } });
-  const motion = { squat: 'squat', jack: 'jack', legRaise: 'legRaise' }[ex];
+  const d = EXERCISES[ex], V = VARIANTS[ex];
+  const camera = V.floor ? { ...FLOOR_CAMERA, aspect: cv.width / cv.height } : { yaw: yaw ?? (d.bestView === 'side' ? 90 : 0), aspect: cv.width / cv.height, distance: 2.9 };
+  const P = new SynthPerson({ seed: 2, jitter: 0, sway: 0, camera });
+  if (V.base) P.hold = { name: V.base[0], opts: V.base[1], u: V.base[2] };
   let side = 'left';
   return {
     cv, P,
     draw(now) {
-      if (!P.busy()) { P.play(motion, ex === 'legRaise' ? { side } : {}); side = side === 'left' ? 'right' : 'left'; P.play('squat', { depth: 0 }, ex === 'jack' ? 200 : 700); }
+      if (!P.busy()) {
+        const { ms, ...o } = V.good;
+        if (V.alt) { o[V.alt === true ? 'side' : V.alt] = side; side = side === 'left' ? 'right' : 'left'; }
+        P.play(V.motion, o, V.hold ? 6000 : ms);
+        if (!V.base) P.play('squat', { depth: 0 }, ex === 'jack' ? 200 : 700);
+      }
       const pose = P.step(now);
       const ctx = cv.getContext('2d');
       ctx.clearRect(0, 0, cv.width, cv.height);
@@ -208,6 +225,14 @@ async function startSet() {
   if (!(await tryInput())) return;
   const d = EXERCISES[settings.exercise];
   const prof = loadProfile();
+  if (d.noBase) {
+    // 地板動作：不用站著量基準，擺好就開始
+    calibrator = null; baseline = null;
+    setupScreen({ title: `${d.icon} ${d.name}（實驗）：擺好手機`, place: d.placement, step: '趴好（或躺好）、身體側面對著手機，準備好就按「我擺好了」。', demo: d.id, skipRom: true });
+    $('sSkipRom').textContent = '我擺好了，開始';
+    return;
+  }
+  $('sSkipRom').textContent = '先用預設值';
   const needRom = !!d.calib && ($('mRecal').checked || prof.targets[d.calib.key] == null);
   calibrator = new Calibrator({ exercise: d.id, rom: needRom, emit: onCalibEvent });
   setupScreen({ title: `${d.icon} ${d.name}：擺好手機`, place: d.placement, step: needRom ? '第 1 步：面向鏡頭站直不動 2 秒　第 2 步：做幾下「舒服幅度」的動作' : '面向鏡頭站直不動 2 秒，就會開始。', demo: d.id });
@@ -235,7 +260,10 @@ function onCalibEvent(e) {
     setTimeout(() => beginCountdown(), 900);
   }
 }
-$('sSkipRom').onclick = () => { if (calibrator?.phase === 'rom') calibrator.finish(lastPose?.t ?? 0, false); };
+$('sSkipRom').onclick = () => {
+  if (calibrator?.phase === 'rom') calibrator.finish(lastPose?.t ?? 0, false);
+  else if (!calibrator && phase === 'setup' && EXERCISES[settings.exercise].noBase) beginCountdown();
+};
 
 function beginCountdown() {
   const d = EXERCISES[settings.exercise];
@@ -247,7 +275,8 @@ function beginCountdown() {
   $('hEx').textContent = `${d.icon} ${d.name}`;
   updateCounter();
   if (sim && d.bestView === 'side') sim.setView(90);
-  const turn = d.bestView === 'side' && kit.source === 'camera' ? '可以轉成側身了' : '';
+  holdLog = [];
+  const turn = d.bestView === 'side' && kit.source === 'camera' && !d.lying ? '可以轉成側身了' : '';
   let n = turn ? 5 : 3;
   const el = $('count');
   el.hidden = false; el.textContent = n;
@@ -272,10 +301,18 @@ function onAnalyzerEvent(e) {
     updateCounter();
     $('hQuality').innerHTML = e.quality == null ? '' : `上一下：<b>${Math.round(e.quality * 100)}</b> 分${e.good ? ' 👍' : ''}`;
     logLine(`算一下 #${e.n}${e.side ? `（${e.side === 'left' ? '左' : '右'}）` : ''} 品質 ${e.quality ?? '—'}・${(e.durationMs / 1000).toFixed(1)} 秒${e.issues.length ? '・' + e.issues.join(',') : ''}`);
-    const target = settings.reps[d.id];
+    const target = repsOf(d);
     const done = d.perSide ? analyzer.reps.left >= target && analyzer.reps.right >= target : analyzer.reps.total >= target;
     if (done) setTimeout(() => endSet('done'), 900);
-  } else if (e.type === 'partial') {
+  } else if (e.type === 'hold') {
+    updateCounter();
+    if (e.seconds % 5 === 0) sfx.play('shield');
+    if (analyzer.reps.total >= repsOf(d)) setTimeout(() => endSet('done'), 600);
+  } else if (e.type === 'holdCheck') {
+    holdLog.push(e); recent = e.results; recentAt = performance.now();
+    if (e.quality != null) $('hQuality').innerHTML = `姿勢：<b>${Math.round(e.quality * 100)}</b> 分`;
+  } else if (e.type === 'holdStart') { bubble('開始計秒，撐住！', 'praise', '正常呼吸，不舒服就停'); sfx.play('shield'); }
+  else if (e.type === 'partial') {
     recent = e.results; recentAt = performance.now();
     sfx.play('partial');
     logLine('沒到位（不算）');
@@ -298,13 +335,13 @@ function bubble(text, kind = 'tip', sub = '') {
 }
 
 function updateCounter() {
-  const d = EXERCISES[settings.exercise], target = settings.reps[d.id];
+  const d = EXERCISES[settings.exercise], target = repsOf(d);
   const r = analyzer?.reps || { total: 0, left: 0, right: 0 };
   if (d.perSide) {
     $('hCount').textContent = r.total;
     $('hTarget').textContent = `/ ${target * 2}`;
     $('hSides').textContent = `左 ${r.left}・右 ${r.right}（每邊 ${target} 下）`;
-  } else { $('hCount').textContent = r.total; $('hTarget').textContent = `/ ${target}`; $('hSides').textContent = ''; }
+  } else { $('hCount').textContent = r.total; $('hTarget').textContent = `/ ${target}${d.hold ? ' 秒' : ''}`; $('hSides').textContent = d.hold ? '維持' : ''; }
 }
 
 let pausedFrom = null;
@@ -330,10 +367,12 @@ function endSet(reason) {
   phase = 'summary';
   $('hud').hidden = true;
   const d = EXERCISES[settings.exercise];
-  const n = setLog.length;
+  // 維持類（靠牆深蹲、棒式）：次數 = 撐住的秒數，品質 = 每隔幾秒的姿勢檢查
+  if (d.hold) setLog = holdLog.map((e) => ({ ...e, good: e.quality != null && e.quality >= 0.75 }));
+  const n = d.hold ? analyzer?.reps.total ?? 0 : setLog.length;
   const qs = setLog.map((e) => e.quality).filter((q) => q != null);
   const avg = qs.length ? qs.reduce((a, b) => a + b, 0) / qs.length : null;
-  const good = setLog.filter((e) => e.good).length;
+  const good = d.hold ? setLog.filter((e) => e.good).length : setLog.filter((e) => e.good).length;
   const secs = Math.round((performance.now() - setStart) / 1000);
   const tips = [...new Set(hintsGiven)].map((c) => d.checks.find((x) => x.code === c)?.hint || '每一下都要先回到起始姿勢').filter(Boolean);
   // 每一項檢查：這組的平均分數與可信度
@@ -345,7 +384,7 @@ function endSet(reason) {
   }).join('');
   $('rTitle').textContent = reason === 'done' ? '這組完成！' : reason === 'time' ? '這組時間到，休息一下' : '這組結束';
   $('rBody').innerHTML = `
-    <div class="bigstat"><div><b>${n}</b><span>算到的次數</span></div><div><b>${good}</b><span>標準的次數</span></div><div><b>${avg == null ? '—' : Math.round(avg * 100)}</b><span>平均品質</span></div><div><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b><span>時間</span></div></div>
+    <div class="bigstat"><div><b>${n}</b><span>${d.hold ? '撐住的秒數' : '算到的次數'}</span></div><div><b>${good}</b><span>${d.hold ? '姿勢標準的檢查' : '標準的次數'}</span></div><div><b>${avg == null ? '—' : Math.round(avg * 100)}</b><span>平均品質</span></div><div><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b><span>時間</span></div></div>
     <table><tr><th>姿勢檢查</th><th>平均</th><th>可信度</th></tr>${rows}</table>
     ${tips.length ? `<p class="sub">下次可以注意：${tips.map((x) => `<br>・${x}`).join('')}</p>` : n ? '<p class="sub">姿勢都很好！</p>' : ''}
     <p class="note">「可信度：這個角度看不到」的項目沒有被檢查（不是做錯）。品質分數只是鏡頭看得到的部分，不代表動作一定完全正確。休息 1～2 分鐘、喝口水再做下一組。</p>`;
@@ -507,15 +546,33 @@ function hudUpdate() {
   if (html !== lastChecksHtml) { $('hChecks').innerHTML = html; lastChecksHtml = html; }
 }
 function statusText(code) {
-  const map = { lost: '看不到你，請回到畫面中', crowd: '畫面裡有兩個人，請只留一位', cut: '身體超出畫面：請往後退，或把手機放遠、放低', noFeet: '看不到腳：請往後退一點，或把手機放低', noHands: '看不到雙手：請往後退一點', baseline: '請站直、雙手放下，不動 2 秒' };
+  const map = { lost: '看不到你，請回到畫面中', crowd: '畫面裡有兩個人，請只留一位', cut: '身體超出畫面：請往後退，或把手機放遠、放低', noFeet: '看不到腳：請往後退一點，或把手機放低', noHands: '看不到雙手：請往後退一點', baseline: analyzer?.def.seated ? '請坐好、雙手放在大腿旁，不動 1 秒' : '請站直、雙手放下，不動 2 秒', notLying: '請趴好（或躺好），身體側面對著手機' };
   if (code === 'wrongView') { const d = analyzer.def; return `${d.name}要${VIEW_NAMES[d.bestView]}對著鏡頭才看得到，請${d.bestView === 'side' ? '轉成側身' : '轉向鏡頭'}`; }
   return map[code] || '';
 }
+
+// ── 外觀：大字、減少動畫 ──
+function applyLook() {
+  document.body.classList.toggle('big', !!settings.big);
+  document.body.classList.toggle('calm', !!settings.calm || matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+applyLook();
+
+// ── 成績與歷史 ──
+$('mHistory').onclick = () => { renderHistory($('histBody'), adventure.progress, { weight: settings.weight }); show('history'); };
+$('histClose').onclick = () => show('menu');
+$('histExport').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ format: 'taikan-fitness-progress/1', progress: adventure.progress.d, profile: loadProfile() }, null, 1)], { type: 'application/json' }));
+  a.download = `fitness-progress-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+};
 
 // ── 冒險模式 ──
 const app = {
   $, kit, sfx, settings, show, bubble, logLine, setupScreen, syncSim: syncSimLabels,
   ensureInput: (ex) => tryInput(ex),
+  estimate: (sum) => estimateKcal(sum, settings.weight),
   get sim() { return sim; }, get phase() { return phase; }, setPhase: (p) => { phase = p; },
   setAnalyzer: (a) => { analyzer = a; frame = null; recent = null; }, setCalibrator: (c) => { calibrator = c; },
   get calibrator() { return calibrator; }, get frame() { return frame; }, get lastPose() { return lastPose; },

@@ -22,6 +22,8 @@ export const QUEST_POOL = [
   { id: 'legStraight', text: '側抬腿時「上半身直立」做到 10 下', goal: 10, need: ['legRaise'], get: (s) => s.checkOk?.legRaise?.lean || 0 },
   { id: 'quality', text: '一次訓練平均品質 80 分以上', goal: 1, need: [], get: (s) => (s.avgQuality != null && s.avgQuality >= 0.8 ? 1 : 0) },
   { id: 'slowSquat', text: '深蹲「速度剛好」做到 10 下', goal: 10, need: ['squat'], get: (s) => s.checkOk?.squat?.tempo || 0 },
+  { id: 'wallHold', text: '靠牆深蹲累積撐 40 秒', goal: 40, need: ['wallSit'], get: (s) => s.reps?.wallSit || 0 },
+  { id: 'lungeUpright', text: '弓箭步「上半身直立」做到 8 下', goal: 8, need: ['lunge'], get: (s) => s.checkOk?.lunge?.upright || 0 },
 ];
 
 function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return (h >>> 0) / 4294967296; }; }
@@ -29,7 +31,8 @@ function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.charCod
 export class Progress {
   constructor({ load = () => null, save = () => {}, now = () => Date.now() } = {}) {
     this.io = { load, save }; this.now = now;
-    this.d = { sessions: [], unlocked: 1, bests: {}, quests: null, weeklyGoal: 3, badges: 0, ...(load(KEY) || {}) };
+    this.d = { sessions: [], unlocked: 1, bests: {}, quests: null, weeklyGoal: 3, badges: 0, plans: {}, ...(load(KEY) || {}) };
+    this.d.plans ||= {};
   }
 
   persist() { this.io.save(KEY, this.d); }
@@ -112,6 +115,8 @@ export class Progress {
     // 解鎖：完整做完（含收操）才解鎖下一關，跟連續天數無關
     const idx = LEVELS.findIndex((l) => l.id === summary.levelId);
     if (summary.completed && idx >= 0 && idx + 1 >= this.d.unlocked && idx + 1 < LEVELS.length) { this.d.unlocked = idx + 2; out.unlocked = LEVELS[idx + 1]; }
+    // 訓練計畫：完整做完才前進到下一次
+    if (summary.planId && summary.completed) this.d.plans[summary.planId] = Math.max(this.d.plans[summary.planId] || 0, (summary.planIndex ?? 0) + 1);
     // 個人最佳：「標準的次數」與連擊（不是總次數，鼓勵品質）
     for (const ex of Object.keys(EXERCISES)) {
       const b = (this.d.bests[ex] ||= { good: 0, combo: 0 });
@@ -132,5 +137,7 @@ export class Progress {
     return out;
   }
 
-  clear() { this.d = { sessions: [], unlocked: 1, bests: {}, quests: null, weeklyGoal: 3, badges: 0 }; this.persist(); }
+  planNext(planId) { return this.d.plans[planId] || 0; }
+
+  clear() { this.d = { sessions: [], unlocked: 1, bests: {}, quests: null, weeklyGoal: 3, badges: 0, plans: {} }; this.persist(); }
 }

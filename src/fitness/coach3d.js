@@ -7,6 +7,7 @@ import * as THREE from '../land/three.js';
 import { Figure } from '../land/figure.js';
 import { MOTIONS, buildJoints, torsoFrame, BODY } from '../../packages/taikan-kit/src/exercise/synth.js';
 import { MONSTERS } from './levels.js';
+import { DEMOS, DEMO_YAW, SEATED_DEMOS } from './demos.js';
 
 const K = 0.74 / (BODY.ankle + BODY.shin + BODY.thigh); // 合成人體（成人）→ figure.js 的身材比例
 const UP = new THREE.Vector3(0, 1, 0);
@@ -77,16 +78,6 @@ export function specToFigure(spec) {
   };
 }
 
-// 示範的動作（合成人體的 MOTIONS 名稱與參數）
-const DEMOS = {
-  squat: [['squat', {}], ['stand', {}, 600]], jack: [['jack', {}]], legRaise: [['legRaise', { side: 'left' }], ['legRaise', { side: 'right' }]],
-  march: [['march', {}]], armCircle: [['armCircle', {}]], halfSquat: [['squat', { depth: 45 }]], sideReach: [['sideReach', {}]],
-  quadL: [['quad', { side: 'left' }, 30000]], quadR: [['quad', { side: 'right' }, 30000]], hamstring: [['hamstring', {}, 30000]],
-  shoulder: [['shoulder', {}]], breathe: [['breathe', {}]], idle: [['stand', {}, 1000]],
-};
-// 深蹲從斜側面看最清楚；其他正面
-const DEMO_YAW = { squat: -0.9, halfSquat: -0.9, hamstring: -1.2, quadL: -0.6, quadR: 0.6 };
-
 function makeMonster(id) {
   const M = MONSTERS[id] || MONSTERS.slime;
   const g = new THREE.Group();
@@ -143,6 +134,14 @@ export class CoachStage {
     this.coach = new FitFigure({ jersey: '#2b8a6e', pants: '#24303c', cap: '#2a2a2a', skin: '#d9a77f', shoes: '#f2f2f2', scale: 1.15, castShadow: false });
     this.coach.root.position.set(-0.55, 0, 0);
     this.scene.add(this.coach.root);
+    // 坐姿動作用的椅子（簡單方塊）
+    const wood = new THREE.MeshStandardMaterial({ color: '#8a6a4a', roughness: 0.8 });
+    this.chair = new THREE.Group();
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.4), wood); seat.position.set(0, 0.37, -0.06); this.chair.add(seat);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.04), wood); back.position.set(0, 0.6, -0.27); this.chair.add(back);
+    for (const [x, z] of [[-0.18, 0.1], [0.18, 0.1], [-0.18, -0.24], [0.18, -0.24]]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.37, 0.03), wood); leg.position.set(x, 0.185, z); this.chair.add(leg); }
+    this.chair.visible = false;
+    this.coach.root.add(this.chair);
     this.monster = null; this.monsterId = null;
     this.demo = 'idle'; this.queue = []; this.cur = null; this.t = 0;
     this.fx = []; this.hitT = 0; this.defeatT = 0;
@@ -158,7 +157,7 @@ export class CoachStage {
     this.defeatT = 0; this.monster.visible = true;
   }
 
-  setDemo(name) { if (name !== this.demo) { this.demo = name; this.queue = []; this.cur = null; } }
+  setDemo(name) { if (name !== this.demo) { this.demo = name; this.queue = []; this.cur = null; this.chair.visible = SEATED_DEMOS.has(name); } }
 
   // 技能命中：從人偶飛向怪獸的光球
   attack(color = '#ffb547', big = false) {

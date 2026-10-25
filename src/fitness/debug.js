@@ -7,7 +7,7 @@
 import { CONF_TEXT, VIEW_NAMES } from '../../packages/taikan-kit/src/exercise/index.js';
 
 const STATE_TEXT = { top: '休息姿勢（等待開始）', moving: '動作中（還沒到位）', reached: '已到位（等回到休息姿勢）' };
-const STATUS_NAME = { ok: '正常', lost: '看不到人', crowd: '兩個人', cut: '超出畫面', noFeet: '看不到腳', noHands: '看不到手', tooFar: '太遠', wrongView: '視角不對', baseline: '等待量站姿' };
+const STATUS_NAME = { ok: '正常', lost: '看不到人', crowd: '兩個人', cut: '超出畫面', noFeet: '看不到腳', noHands: '看不到手', tooFar: '太遠', wrongView: '視角不對', baseline: '等待量站姿', notLying: '身體不是橫的' };
 const r = (x, d = 0) => (x == null || !isFinite(x) ? '—' : (+x).toFixed(d));
 
 export function renderDebug(el, { analyzer, frame, log, calib, source, kit }) {

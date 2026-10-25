@@ -6,23 +6,28 @@
 // - 組間休息至少 REST_MIN_SEC 秒才能按「準備好了」，也可以「多休息 15 秒」。
 // - 整次訓練超過 SESSION_CAP_MIN 分鐘：剩下的組取消，直接進收操。
 // - 隨時可以「不舒服，停止」：立刻結束，不扣任何東西。
-import { WARMUP, COOLDOWN, SKILLS, SESSION_CAP_MIN, REST_MIN_SEC, repsFor } from './levels.js';
+import { WARMUP, COOLDOWN, SKILLS, SESSION_CAP_MIN, REST_MIN_SEC, LOW_IMPACT, repsFor } from './levels.js';
 import { EXERCISES } from '../../packages/taikan-kit/src/exercise/exercises.js';
 
-export function buildSteps(level, { diff = 'normal' } = {}) {
-  const steps = WARMUP.map((m) => ({ type: 'warmup', ...m }));
-  level.sets.forEach(([ex, n], i) => {
+// lowImpact：不跳（開合跳 → 低衝擊開合跳、高抬腿 → 抬膝踏步）
+export function buildSteps(level, { diff = 'normal', lowImpact = false } = {}) {
+  const steps = (level.warmup || WARMUP).map((m) => ({ type: 'warmup', ...m }));
+  level.sets.forEach(([ex0, n], i) => {
+    const ex = lowImpact ? LOW_IMPACT[ex0] || ex0 : ex0;
+    const def = EXERCISES[ex];
     if (i > 0) steps.push({ type: 'rest', sec: level.rest });
-    steps.push({ type: 'set', exercise: ex, reps: repsFor(n, diff), perSide: !!EXERCISES[ex].perSide, skill: SKILLS[ex], set: i + 1, sets: level.sets.length });
+    steps.push({ type: 'set', exercise: ex, reps: repsFor(n, diff), perSide: !!def.perSide, hold: !!def.hold, skill: SKILLS[ex], set: i + 1, sets: level.sets.length });
   });
-  for (const m of COOLDOWN) steps.push({ type: 'cooldown', ...m });
+  for (const m of level.cooldown || COOLDOWN) steps.push({ type: 'cooldown', ...m });
   return steps;
 }
+// 「維持」類的一秒 = 0.4 下（10 秒 = 4 下的傷害），讓怪獸血量和預定量一致
+export const HOLD_UNIT = 0.4;
 
 export class Session {
-  constructor(level, { diff = 'normal', capMin = SESSION_CAP_MIN, emit = () => {} } = {}) {
-    this.level = level; this.diff = diff; this.emit = emit;
-    this.steps = buildSteps(level, { diff });
+  constructor(level, { diff = 'normal', lowImpact = false, capMin = SESSION_CAP_MIN, emit = () => {} } = {}) {
+    this.level = level; this.diff = diff; this.emit = emit; this.lowImpact = lowImpact;
+    this.steps = buildSteps(level, { diff, lowImpact });
     this.capSec = capMin * 60;
     this.i = -1; this.elapsed = 0; this.total = 0;
     this.done = false; this.stopped = false; this.capped = false;
@@ -34,7 +39,7 @@ export class Session {
 
   get step() { return this.steps[this.i]; }
   get phase() { const s = this.step; return !s ? 'done' : s.type === 'set' || s.type === 'rest' ? 'main' : s.type; }
-  plannedReps() { return this.steps.filter((s) => s.type === 'set').reduce((a, s) => a + s.reps * (s.perSide ? 2 : 1), 0); }
+  plannedReps() { return this.steps.filter((s) => s.type === 'set').reduce((a, s) => a + s.reps * (s.perSide ? 2 : 1) * (s.hold ? HOLD_UNIT : 1), 0); }
 
   next() {
     const prev = this.step;
@@ -91,6 +96,23 @@ export class Session {
     return true;
   }
 
+  // 「維持」類動作每撐一秒（動作分析器的 hold 事件）
+  holdSec(e) {
+    const s = this.step;
+    if (this.done || !s || s.type !== 'set' || !s.hold || e.exercise !== s.exercise) return false;
+    this.setReps.total++;
+    this.reps[s.exercise] = (this.reps[s.exercise] || 0) + 1;
+    if (this.setReps.total >= s.reps) { this.endSetRecord(false); this.emit({ type: 'setComplete', step: s }); this.next(); }
+    return true;
+  }
+  // 維持期間每隔幾秒的姿勢檢查結果（算品質）
+  holdQuality(e) {
+    if (e.quality != null) this.qual.push(e.quality);
+    const ex = e.exercise, ok = (this.checkOk[ex] ||= {});
+    for (const r of e.results || []) if (r.ok && r.conf >= 0.5) ok[r.code] = (ok[r.code] || 0) + 1;
+    if (e.quality != null && e.quality >= 0.75) this.good[ex] = (this.good[ex] || 0) + 1;
+  }
+
   combo(ex, n) { this.maxCombo[ex] = Math.max(this.maxCombo[ex] || 0, n); }
 
   endSetRecord(partial) {
@@ -109,7 +131,7 @@ export class Session {
     const q = this.qual;
     const avg = q.length ? q.reduce((a, b) => a + b, 0) / q.length : null;
     return {
-      levelId: this.level.id, diff: this.diff, completed: this.done && !this.stopped, stopped: this.stopped, capped: this.capped,
+      levelId: this.level.id, planId: this.level.planId ?? null, planIndex: this.level.planIndex ?? null, lowImpact: this.lowImpact, diff: this.diff, completed: this.done && !this.stopped, stopped: this.stopped, capped: this.capped,
       warmupDone: this.warmupDone, cooldownDone: this.cooldownDone && !this.stopped,
       durationSec: Math.round(this.total), reps: { ...this.reps }, good: { ...this.good }, avgQuality: avg, checkOk: JSON.parse(JSON.stringify(this.checkOk)),
       maxCombo: { ...this.maxCombo }, sets: [...this.setResults], planned: this.plannedReps(),

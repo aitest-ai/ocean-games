@@ -249,3 +249,123 @@ test('活動天數：連續天數只鼓勵；斷了說「歡迎回來」不責�
   assert.equal(p.canTrain().ok, false);
   assert.equal(dayKey(new Date(2026, 0, 5)), '2026-01-05');
 });
+
+// ── 階段三：更多動作、訓練計畫、低衝擊、維持類、成績 ──
+const { PLANS } = await import('../src/fitness/plans.js');
+const { estimateKcal } = await import('../src/fitness/estimate.js');
+const { EXERCISES } = await import('../packages/taikan-kit/src/exercise/index.js');
+const { SKILLS, LOW_IMPACT, SEATED_WARMUP } = await import('../src/fitness/levels.js');
+
+// 階段二的 playSession 只會送 rep；這裡也送「維持」類的每一秒
+function playAny(level, { lowImpact = false, quality = 0.9 } = {}) {
+  const s = new Session(level, { lowImpact });
+  const battle = new Battle(s.plannedReps());
+  let t = 0, guard = 0;
+  while (!s.done && guard++ < 200000) {
+    const st = s.step;
+    if (st.type === 'set' && st.hold) { t += 1000; battle.holdTick(); s.holdSec({ type: 'hold', exercise: st.exercise }); s.tick(1); }
+    else if (st.type === 'set') {
+      const side = st.perSide ? (s.setReps.left <= s.setReps.right ? 'left' : 'right') : undefined;
+      t += 2000; const e = fakeRep(st.exercise, { quality, side, time: t }); battle.hit(e); s.rep(e); s.tick(2);
+    } else s.tick(0.5);
+  }
+  return { s, battle };
+}
+
+test('每個動作都有技能、鍵盤模擬的動作與示範；實驗動作有標記', async () => {
+  const { VARIANTS } = await import('../src/fitness/sim.js');
+  const { DEMOS } = await import('../src/fitness/demos.js');
+  for (const id of Object.keys(EXERCISES)) {
+    assert.ok(SKILLS[id], `${id} 沒有技能`);
+    assert.ok(VARIANTS[id], `${id} 沒有鍵盤模擬`);
+    assert.ok(DEMOS[id], `${id} 沒有示範動作`);
+  }
+  assert.deepEqual(Object.values(EXERCISES).filter((d) => d.beta).map((d) => d.id).sort(), ['bridge', 'plank', 'pushUp']);
+});
+
+test('訓練計畫：3 個計畫各 12 次、次數每週增加；每一次都是完整的暖身／主訓練／收操', () => {
+  for (const p of PLANS) {
+    assert.equal(p.sessions.length, 12);
+    const w1 = p.sessions[0].sets[0][1], w4 = p.sessions[9].sets[0][1];
+    assert.ok(w4 > w1, `${p.id} 第 4 週要比第 1 週多`);
+    for (const lv of p.sessions) {
+      const types = buildSteps(lv).map((x) => x.type);
+      assert.equal(types[0], 'warmup'); assert.equal(types[types.length - 1], 'cooldown');
+      for (const [ex] of lv.sets) assert.ok(EXERCISES[ex] && !EXERCISES[ex].beta, `${lv.id} 用到 ${ex}`);
+    }
+  }
+  const low = PLANS.find((p) => p.id === 'lowImpact');
+  assert.ok(low.sessions.every((lv) => lv.sets.every(([ex]) => !['jack', 'highKnees'].includes(ex))), '低衝擊計畫不能有跳躍');
+  const seated = PLANS.find((p) => p.id === 'seated');
+  assert.equal(buildSteps(seated.sessions[0])[0].id, SEATED_WARMUP[0].id);
+});
+
+test('低衝擊模式：開合跳換成左右踏步、高抬腿換成抬膝踏步', () => {
+  const lv = LEVELS.find((l) => l.id === 'c2-1');
+  const sets = buildSteps(lv, { lowImpact: true }).filter((x) => x.type === 'set').map((x) => x.exercise);
+  assert.ok(!sets.includes('highKnees') && sets.includes('march'));
+  const sets2 = buildSteps(LEVELS[1], { lowImpact: true }).filter((x) => x.type === 'set').map((x) => x.exercise);
+  assert.ok(!sets2.includes('jack') && sets2.includes('stepJack'));
+  for (const v of Object.values(LOW_IMPACT)) assert.ok(EXERCISES[v]);
+});
+
+test('第二章、訓練計畫、低衝擊：做完預定次數（含靠牆深蹲的秒數）一定打得倒', () => {
+  const all = [...LEVELS, ...PLANS.flatMap((p) => p.sessions)];
+  for (const lv of all) for (const lowImpact of [false, true]) {
+    const { s, battle } = playAny(lv, { lowImpact });
+    assert.equal(s.summary().completed, true, lv.id);
+    assert.equal(battle.defeated, true, `${lv.id}${lowImpact ? '（低衝擊）' : ''}`);
+  }
+});
+
+test('靠牆深蹲的組：撐到預定秒數就完成', () => {
+  const lv = LEVELS.find((l) => l.id === 'c2-2');
+  const s = new Session(lv);
+  while (!(s.step.type === 'set' && s.step.hold)) {
+    const st = s.step;
+    if (st.type === 'set') for (let i = 0; i < st.reps; i++) s.rep(fakeRep(st.exercise, { side: st.perSide ? (i % 2 ? 'right' : 'left') : undefined }));
+    else s.tick(1);
+  }
+  const need = s.step.reps;
+  for (let i = 0; i < need - 1; i++) s.holdSec({ exercise: 'wallSit' });
+  assert.equal(s.step.exercise, 'wallSit');
+  s.holdSec({ exercise: 'wallSit' });
+  assert.equal(s.step.type, 'rest');
+  assert.equal(s.summary().reps.wallSit, need);
+});
+
+test('進度：訓練計畫完整做完才前進；第一章打完解鎖第二章', () => {
+  const io = memStore();
+  const p = new Progress({ ...io, now: () => new Date(2026, 9, 26, 19).getTime() });
+  const plan = PLANS[0];
+  const stopped = playSession(plan.sessions[0], { stopAt: 'rest' }).s.summary();
+  p.record(stopped);
+  assert.equal(p.planNext(plan.id), 0);
+  p.record(playAny(plan.sessions[0]).s.summary());
+  assert.equal(p.planNext(plan.id), 1);
+  for (const lv of LEVELS.slice(0, 5)) p.record(playAny(lv).s.summary());
+  assert.equal(LEVELS[p.d.unlocked - 1].id, 'c2-1');
+  assert.ok(p.unlockedExercises().includes('highKnees'));
+});
+
+test('粗估熱量：沒填體重就不算；有填就給一個範圍', () => {
+  const sum = playAny(LEVELS[1]).s.summary();
+  assert.equal(estimateKcal(sum, ''), null);
+  assert.equal(estimateKcal(sum, 10), null);
+  const k = estimateKcal(sum, 60);
+  assert.ok(k.low > 5 && k.high > k.low && k.high < 400, JSON.stringify(k));
+});
+
+test('鍵盤模擬（階段三動作）：標準動作算得到、常見錯誤會提示', () => {
+  assert.equal(drive('highKnees', every(8, 'good', 800)).reps, 8);
+  assert.ok(drive('highKnees', every(6, 'bad2', 800), { view: 90 }).tips.includes('upright'));
+  assert.equal(drive('lunge', every(4, 'good', 3200), { view: 90 }).reps, 4);
+  assert.equal(drive('calfRaise', every(5, 'good', 2600)).reps, 5);
+  const wall = drive('wallSit', [[2500, 'good']], { view: 90, ms: 26000 });
+  assert.ok(wall.ev.filter((e) => e.type === 'hold').length >= 15);
+  assert.equal(drive('seatedKnee', every(6, 'good', 2000)).reps, 6);
+  assert.equal(drive('seatedArms', every(6, 'good', 2000)).reps, 6);
+  assert.equal(drive('pushUp', every(5, 'good', 2600)).reps, 5);
+  assert.ok(drive('plank', [[1000, 'bad1']], { ms: 16000 }).tips.includes('line'));
+  assert.equal(drive('stepJack', every(8, 'good', 1300)).reps, 8);
+});

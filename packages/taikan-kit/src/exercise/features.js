@@ -112,6 +112,25 @@ export function measure(p, base) {
   f.bottom = ys.length ? Math.max(...ys.map((q) => q.y)) : null;
   // 側面時比較看得清楚的那一邊（離鏡頭近、可信度高）
   f.near = f.vis.left >= f.vis.right ? 'L' : 'R';
+  // 膝蓋在髖下方多遠（以軀幹長為單位）：站直約 0.85，抬到和髖一樣高 = 0（高抬腿、坐姿抬膝）
+  f.kyL = LK && LH && T ? (LK.y - LH.y) / T : null;
+  f.kyR = RK && RH && T ? (RK.y - RH.y) / T : null;
+  // 手臂（肩—肘—腕）看得最清楚的那一邊
+  const arm = (sd) => vis(p, [sd + 'Shoulder', sd + 'Elbow', sd + 'Wrist']);
+  f.vis.nearArm = Math.max(arm('left'), arm('right'));
+  f.elbow = arm('left') >= arm('right') ? f.elbowL : f.elbowR;
+  // 身體是不是橫的（趴著、躺著）：軀幹和垂直線夾角 50°～130°
+  f.lying = f.trunk != null && Math.abs(Math.abs(tiltFromVertical(Hm, S)) - 90) < 40;
+  // 趴著／躺著時，髖偏離「肩—腳踝」連線多少（以軀幹長為單位）：正 = 往地板塌、負 = 屁股翹高
+  {
+    const sd = f.near === 'L' ? 'left' : 'right';
+    const Sh = p[sd + 'Shoulder'], Hp = p[sd + 'Hip'], An = p[sd + 'Ankle'];
+    if (Sh && Hp && An && T && Math.abs(An.x - Sh.x) > 1e-3) {
+      const k = (Hp.x - Sh.x) / (An.x - Sh.x);
+      f.hipDev = (Hp.y - (Sh.y + (An.y - Sh.y) * k)) / T;
+      f.line = angle(Sh, Hp, An);
+    } else { f.hipDev = null; f.line = null; }
+  }
   // 鼻子偏離兩肩中點多少（以肩寬為單位）：正對鏡頭 ≈ 0，轉 45° 約 0.26
   f.noseOff = p.nose && S && swx > 0.02 ? (p.nose.x - S.x) / swx : null;
   f.knee = f.near === 'L' ? f.kneeL : f.kneeR;

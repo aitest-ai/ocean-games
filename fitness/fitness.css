@@ -201,3 +201,25 @@ body.calm .floaters b { animation: none; opacity: 0; }
   body.adv-on .chip.ex { font-size: 14px; }
   .charge .bar { width: 110px; }
 }
+
+/* ── 階段三 ── */
+#aKind { margin-bottom: 10px; }
+.plan { display: block; width: 100%; text-align: left; background: rgba(255,255,255,0.05); border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; color: var(--text); font: inherit; cursor: pointer; }
+.plan[aria-pressed="true"] { border-color: var(--accent); background: rgba(255,181,71,0.1); }
+.plan small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.plan .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); margin-top: 6px; overflow: hidden; }
+.plan .bar i { display: block; height: 100%; background: var(--ok); }
+.excard .exp { font-size: 11px; background: #8a5cff; color: #fff; border-radius: 999px; padding: 1px 7px; margin-left: 4px; vertical-align: middle; }
+#coach2d { position: absolute; right: 10px; top: calc(max(10px, env(safe-area-inset-top)) + 96px); width: min(400px, 34vw); height: min(330px, 42vh); border-radius: 14px; background: rgba(9,18,26,0.85); border: 1px solid var(--line); }
+#history .chart { width: 100%; height: auto; color: var(--muted); }
+#history .spark { width: 120px; height: 30px; }
+#history table { width: 100%; border-collapse: collapse; font-size: 14px; }
+#history td, #history th { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+#history h2 { margin-top: 14px; }
+body.big { font-size: 118%; }
+body.big .panel { font-size: 18px; }
+body.big .bubble { font-size: clamp(24px, 4.4vmin, 36px); }
+body.big .checks .ck { font-size: 16px; }
+body.big .routine p { font-size: 19px; }
+body.calm .counter.pop b, body.calm .bubble, body.calm .mon .hp i { animation: none !important; transition: none !important; }
+@media (max-width: 800px) { #coach2d { width: 46vw; height: 28vh; top: calc(max(10px, env(safe-area-inset-top)) + 58px); } }

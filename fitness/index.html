@@ -88,7 +88,10 @@
     <div id="advMenu">
       <p class="sub" id="aWelcome"></p>
       <div class="advgrid">
-        <section class="levels"><h2>關卡（完整做完一關才會解鎖下一關）</h2><div id="aLevels"></div>
+        <section class="levels">
+          <div class="seg" id="aKind"><button data-v="levels">👾 冒險關卡</button><button data-v="plan">📅 訓練計畫</button></div>
+          <div id="aLevelBox"><h2>關卡（完整做完一關才會解鎖下一關）</h2><div id="aLevels"></div></div>
+          <div id="aPlanBox" hidden><h2>訓練計畫（每週 3 次、4 週，次數慢慢增加）</h2><div id="aPlans"></div></div>
           <h2 style="margin-top:10px">難度（只改次數）</h2><div class="seg" id="aDiff"></div><p class="note" id="aDiffNote"></p></section>
         <section><h2>今天的任務</h2><ul class="quests" id="aQuests"></ul>
           <h2>本週</h2><div class="week" id="aWeek"></div><p class="note" id="aWeekNote"></p>
@@ -117,6 +120,15 @@
         <label class="chk"><input type="checkbox" data-set="sound"> 音效</label>
       </section>
       <section>
+        <h2>無障礙與省電</h2>
+        <label class="chk"><input type="checkbox" data-set="lowImpact"> 低衝擊（不跳：開合跳改左右踏步、高抬腿改抬膝踏步）</label>
+        <label class="chk"><input type="checkbox" data-set="calm"> 減少動畫與閃爍</label>
+        <label class="chk"><input type="checkbox" data-set="big"> 大字</label>
+        <label class="chk"><input type="checkbox" data-set="lite"> 省電（不顯示 3D 示範人偶，改用簡單線條）</label>
+        <label class="chk pr-only"><input type="checkbox" data-set="experimental"> 顯示實驗動作（地板：棒式、伏地挺身、臀橋）</label>
+        <div class="row"><span>體重（粗估熱量用，可不填）</span><input type="number" id="mWeight" min="25" max="250" step="1" inputmode="numeric" style="width:6em"> 公斤</div>
+      </section>
+      <section>
         <h2>個人校正</h2>
         <div id="mCalib" class="note"></div>
         <label class="chk"><input type="checkbox" id="mRecal"> 這次重新量「舒服的幅度」</label>
@@ -124,6 +136,7 @@
     </div>
     <div class="actions">
       <button class="primary" id="mStart">開始</button>
+      <button id="mHistory">📈 成績與歷史</button>
       <button id="mSafety">安全須知</button>
       <button id="mClear">清除這台裝置上的紀錄</button>
       <a class="link" href="../">回首頁</a>
@@ -140,6 +153,7 @@
     <div class="mon"><b id="aMon"></b><div class="hp"><i id="aHp"></i></div><small id="aHpTxt"></small></div>
   </div>
   <canvas id="coachCv" aria-label="示範人偶與怪獸"></canvas>
+  <canvas id="coach2d" width="400" height="330" aria-label="示範動作（簡單線條）" hidden></canvas>
   <div class="combo" id="aCombo"></div>
   <div class="charge" id="aCharge" hidden><span>蓄力</span><div class="bar"><i id="aChargeBar"></i></div></div>
   <div class="routine" id="aRoutine" hidden>
@@ -152,6 +166,15 @@
     <div class="actions"><button class="stopbtn" id="aStop">🛑 不舒服，停止</button></div>
   </div>
   <div class="floaters" id="aFloat"></div>
+</div>
+
+<!-- 成績與歷史 -->
+<div class="overlay" id="history" hidden>
+  <div class="panel">
+    <h1>📈 成績與歷史</h1>
+    <div id="histBody"></div>
+    <div class="actions"><button class="primary" id="histClose">關閉</button><button id="histExport">下載我的紀錄（只存到這台裝置）</button></div>
+  </div>
 </div>
 
 <!-- 冒險模式：結果 -->

@@ -35,6 +35,17 @@ export class Battle {
     return { damage: dmg, combo: this.combo, crit, defeated: this.defeated, text: crit ? '會心一擊！' : e.good ? (this.combo >= 5 ? `${this.combo} 連擊！` : '漂亮！') : '命中' };
   }
 
+  // 「維持」類（靠牆深蹲、棒式）每撐一秒：護盾反擊 4 點（10 秒 = 4 下）
+  holdTick() {
+    const dmg = 4;
+    this.hp = Math.max(this.hp - dmg, 0);
+    this.score += dmg;
+    return { damage: dmg, defeated: this.defeated, text: '護盾反擊' };
+  }
+
+  // 維持期間的姿勢品質也算進星星
+  quality(q) { if (q != null) { this.qsum += q; this.qn++; } }
+
   // 新的一組開始：連擊重新算（中間有休息）
   newSet() { this.combo = 0; this.lastAt = -1e9; }
 
