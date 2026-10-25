@@ -22,6 +22,8 @@ import { imageURL } from './art.js';
 import { LETTER, itemLabel } from './bank.js';
 import { addRecord, listRecords, clearRecords, loadSettings, saveSettings } from './store.js';
 import { toCSV } from './csv.js';
+import { Match, MODES } from './match.js';
+import { classroomSVG } from './classroom.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -38,11 +40,15 @@ const PRESETS = {
   boss: { label: '👾 挑戰 Boss（約 6 分鐘）', list: [['run', 3], ['wall', 3], ['tf', 3], ['boss', 4]] },
 };
 const DEFAULTS = {
+  // the device's "reduce motion" accessibility setting turns calm mode on by default
+  reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
   bank: 'sample-english', diff: 'easy', input: 'keyboard', sens: 'normal', who: '',
+  mode: 'solo', teams: 2, rounds: 2, players: 6, big: false, contrast: false,
   seated: false, simpleTF: false, simpleBuzz: false, combo: true, revive: true, sound: true, music: false, voice: false, reduceMotion: false,
   levels: PRESETS.standard.list.map(([level, count]) => ({ level, count, on: true })), tags: [],
 };
 const settings = loadSettings(DEFAULTS);
+const SHAPES = ['●', '▲', '■', '★']; // with the colours, so colour-blind players can tell the options apart
 // levels added in later versions appear (switched off) for teachers with saved settings
 for (const id of LEVEL_ORDER) if (!settings.levels.some((l) => l.level === id)) settings.levels.push({ level: id, count: 3, on: false });
 settings.levels = settings.levels.filter((l) => LEVELS[l.level]);
@@ -58,6 +64,8 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 // ── boot ────────────────────────────────────────────────────────────────────
 const st = document.createElement('style'); st.textContent = HOWTO_CSS; document.head.appendChild(st);
 if (settings.reduceMotion) document.body.classList.add('calm');
+const bodyClasses = () => { document.body.classList.toggle('big', !!settings.big); document.body.classList.toggle('hc', !!settings.contrast); };
+bodyClasses();
 const stage = new Stage($('c'), { tier: TIER, reduceMotion: settings.reduceMotion });
 stage.scale = TIER === 'low' ? 0.75 : Math.min(devicePixelRatio || 1, TIER === 'rt' ? 1.5 : 1);
 stage.resize();
@@ -75,10 +83,10 @@ const syncDisabled = () => kit.setDisabled(['paddle', 'swing', 'bat', ...(settin
 syncDisabled();
 
 let banks = [], bank = null;
-let state = 'howto', session = null, stopCards = null, stopIntro = null;
-window.quiz = { stage, kit, get session() { return session; }, get state() { return state; }, settings };
+let state = 'howto', session = null, match = null, stopCards = null, stopIntro = null;
+window.quiz = { stage, kit, get session() { return session; }, get match() { return match; }, get state() { return state; }, settings };
 
-const overlays = ['howto', 'menu', 'pause', 'result', 'records'];
+const overlays = ['howto', 'menu', 'pause', 'result', 'records', 'handover'];
 function show(id) { for (const o of overlays) $(o).hidden = o !== id; }
 
 // ── how-to ──
@@ -126,6 +134,7 @@ function renderLevels() {
   const est = on.reduce((s, l) => s + l.count * (l.level === 'buzz' ? 14 : 12) + 6, 0) * DIFFS[settings.diff].time;
   $('mLen').textContent = on.length ? `共 ${on.length} 關、${on.reduce((s, l) => s + l.count, 0)} 題，大約 ${Math.max(1, Math.round(est / 60))} 分鐘。` : '⚠️ 至少要勾一關。';
   $('mStart').disabled = !on.length;
+  if ($('mModeOpts')) modeOpts();
 }
 $('mLevels').addEventListener('change', (e) => {
   const li = e.target.closest('li'); const l = settings.levels[li.dataset.i];
@@ -170,6 +179,7 @@ for (const box of document.querySelectorAll('#menu input[data-opt]')) {
     if (k === 'sound' || k === 'music') sfx.enable(settings.sound, settings.music);
     if (k === 'voice') voice.on = box.checked;
     if (k === 'reduceMotion') { document.body.classList.toggle('calm', box.checked); stage.reduceMotion = box.checked; }
+    if (k === 'big' || k === 'contrast') bodyClasses();
   };
 }
 $('mWho').value = settings.who || '';
@@ -177,11 +187,25 @@ $('mWho').oninput = () => { settings.who = $('mWho').value.trim(); save(); };
 $('mSens').value = settings.sens;
 $('mSens').onchange = (e) => { settings.sens = e.target.value; kit.setSensitivity(settings.sens); save(); };
 
+// ⑥ 玩法: single player or group play in the classroom
+function modeOpts() {
+  const m = settings.mode;
+  const num = (k, lo, hi, label) => `<label>${label} <select data-k="${k}">${Array.from({ length: hi - lo + 1 }, (_, i) => lo + i).map((n) => `<option ${n === settings[k] ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
+  $('mModeOpts').innerHTML = m === 'teams' ? num('teams', 2, 4, '隊數') + '　' + num('rounds', 1, 5, '每隊上場幾次') : m === 'coop' || m === 'relay' ? num('players', 2, 40, '上場人數') : '';
+  const on = settings.levels.filter((l) => l.on);
+  const turns = m === 'teams' ? settings.teams * settings.rounds : m === 'solo' ? 0 : settings.players;
+  $('mModeNote').textContent = m === 'solo' ? '一位玩家玩完全部打勾的關卡。'
+    : `${MODES[m].desc}。每人玩「一關」（輪流用上面打勾的關卡），共 ${turns} 棒，大約 ${Math.round(turns * (on.length ? on.reduce((n, l) => n + l.count, 0) / on.length : 3) * 13 / 60 + turns * 0.3)} 分鐘。成績只記隊名與棒次。`;
+}
+$('mModeOpts').onchange = (e) => { const k = e.target.dataset.k; if (k) { settings[k] = Number(e.target.value); save(); modeOpts(); } };
+seg('mMode', settings.mode, (v) => { settings.mode = v; save(); modeOpts(); });
+$('mRoom').innerHTML = classroomSVG();
+
 function toMenu() {
   state = 'menu'; show('menu');
   $('play').hidden = true; $('camview').hidden = true;
   sfx.setMusic(false); voice.stop();
-  stage.setView(views.idle);
+  stage.setView(views.idle); modeOpts();
 }
 
 // ── input source (live from the start, so raising both hands works on the how-to screen too) ──
@@ -207,10 +231,20 @@ async function start() {
   catch (err) { $('mStatus').textContent = '⚠️ 無法使用鏡頭：' + camError(err) + '。可以先改用鍵盤模擬。'; show('menu'); state = 'menu'; return; }
   const playlist = settings.levels.filter((l) => l.on).map(({ level, count }) => ({ level, count }));
   if (!playlist.length || !bank) return;
+  const opts = { seated: settings.seated, simpleTF: settings.simpleTF, simpleBuzz: settings.simpleBuzz, combo: settings.combo, revive: settings.revive };
+  if (settings.mode !== 'solo') {
+    match = new Match({ mode: settings.mode, bank, levels: playlist, teams: settings.teams, rounds: settings.rounds, players: settings.players, diff: settings.diff, opts, seed: Number(params.get('seed')) || Math.floor(Math.random() * 1e9), tags: settings.tags });
+    session = null;
+    sfx.play('fanfare');
+    showHandover(null);
+    return;
+  }
+  match = null;
   session = new QuizSession({ bank, playlist, diff: settings.diff, seed: Number(params.get('seed')) || Math.floor(Math.random() * 1e9), tags: settings.tags, opts: { seated: settings.seated, simpleTF: settings.simpleTF, simpleBuzz: settings.simpleBuzz, combo: settings.combo, revive: settings.revive } });
   show(null);
   $('play').hidden = false; $('qPanel').hidden = true; $('qOpts').innerHTML = ''; $('qBanner').hidden = true;
   $('hWhoChip').hidden = !settings.who; $('hWho').textContent = settings.who;
+  $('hTeamChip').hidden = true; $('qBoard').hidden = true;
   $('hSource').textContent = settings.input === 'camera' ? '📷 鏡頭' : '⌨️ 鍵盤模擬';
   $('camview').hidden = settings.input !== 'camera';
   $('hScore').textContent = '0'; hearts(3); $('hCombo').textContent = '—'; $('qRevive').hidden = true;
@@ -236,10 +270,14 @@ function pause(title = '暫停', text = '按「繼續」或雙手舉高 1 秒。
 function resume() { if (state !== 'paused') return; show(null); countdown(() => { state = 'play'; qin.queue = []; }); }
 $('hPause').onclick = () => pause();
 $('pResume').onclick = resume;
-$('pQuit').onclick = () => { session = null; toMenu(); };
+$('pQuit').onclick = () => { if (match) { finishMatch(); return; } session = null; toMenu(); };
 $('pSkip').onclick = () => { if (session?.level) { session.level.done = true; session.level.phase = 'done'; session.levelScores.push({ level: session.def.id, score: 0, correct: 0, total: 0, skipped: true }); session.phase = 'between'; session.t = 99; } resume(); };
 addEventListener('keydown', (e) => {
-  if ((e.code === 'Escape' || e.code === 'KeyP') && !/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) { if (state === 'play') pause(); else if (state === 'paused') resume(); }
+  if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.code === 'Escape' || e.code === 'KeyP') { if (state === 'play') pause(); else if (state === 'paused') resume(); }
+  // teacher keys in group play: Space = next player ready, Y = the whole team did the revive task
+  if (e.code === 'Space' && state === 'handover') { e.preventDefault(); beginTurn(); }
+  if (e.code === 'KeyY' && match && session?.phase === 'revive') match.teamRevive();
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
@@ -279,10 +317,10 @@ function onStep(e) {
   const layout = LAYOUT[session.def.id];
   box.className = 'qopts' + (layout === 'row' ? ' row' : '');
   if (s.kind === 'tf') box.innerHTML = `<div class="qopt tfo" data-i="true"><span class="lt">${settings.simpleTF ? '往左傾' : '雙手舉高'}</span>○ 對</div><div class="qopt tfx" data-i="false"><span class="lt">${settings.simpleTF ? '往右傾' : '雙臂交叉'}</span>× 錯</div>`;
-  else box.innerHTML = s.options.map((o, i) => `<div class="qopt c${i}" data-i="${i}"><span class="lt">${LETTER(i)}${cardHint(session.def.id, lv, i, s.options.length)}</span>${session.def.id === 'wall' ? `<span class="pose">${POSES[lv.poses[i]].icon} ${POSES[lv.poses[i]].name}</span>` : ''}${imgTag(o.image)}${esc(o.text)}</div>`).join('');
+  else box.innerHTML = s.options.map((o, i) => `<div class="qopt c${i}" data-i="${i}"><span class="lt">${SHAPES[i]} ${LETTER(i)}${cardHint(session.def.id, lv, i, s.options.length)}</span>${session.def.id === 'wall' ? `<span class="pose">${POSES[lv.poses[i]].icon} ${POSES[lv.poses[i]].name}</span>` : ''}${imgTag(o.image)}${esc(o.text)}</div>`).join('');
   $('qFuse').hidden = session.def.id !== 'buzz';
   $('qHold').hidden = session.def.id !== 'tf';
-  voice.say(s.prompt + (sub ? '。' + sub : '') + (s.kind === 'choice' && session.def.id !== 'run' ? '' : ''));
+  voice.say(s.prompt + (sub ? '。' + sub : '') + (s.kind === 'choice' ? '。' + s.options.map((o, i) => `${LETTER(i)}，${o.text || '圖片'}`).join('。') : ''));
 }
 function onAnswer(e) {
   const s = e.step;
@@ -301,6 +339,7 @@ function onAnswer(e) {
     : `<h2>${e.none ? '⏰ 時間到' : '🫧 可惜！'}</h2><p>正確答案：<b>${esc(s.answerText)}</b></p>${s.explain ? `<p>${esc(s.explain)}</p>` : ''}`;
   b.hidden = false;
   sfx.play(e.correct ? 'right' : 'wrong');
+  boardUpdate();
   hearts(e.hearts); $('hCombo').textContent = e.combo >= 2 ? `🔥${e.combo}` : '—';
   if (e.correct && comboMult(e.combo) > comboMult(e.combo - 1)) { setTimeout(() => sfx.play('combo'), 300); flash(`🔥 ${e.combo} 連對！之後每題 ×${comboMult(e.combo)}`); }
   if (e.correct) { sfx.play('cheer'); stage.studio.setMood('good'); stage.host.say('cheer'); }
@@ -344,6 +383,81 @@ $('mStart').onclick = start;
 $('mHowto').onclick = openHowto;
 $('hOk').onclick = closeHowto;
 
+// ── group play: hand-over screen, scoreboard, results ──
+const sideTag = (s) => `<span style="color:${s.color}">${s.icon} ${esc(s.name)}</span>`;
+function boardHTML() {
+  if (!match) return '';
+  const M = match;
+  if (M.mode === 'teams') return M.sides.map((s, i) => `<div class="${M.turn?.side === i && state !== 'handover' ? 'on' : ''}">${sideTag(s)} <b>${s.score + (M.turn?.side === i && session && !session.done ? session.scorer.score : 0)}</b> 分</div>`).join('');
+  const live = session && !session.done ? session.scorer.correct : 0;
+  if (M.mode === 'coop') return `<div>👾 大魔王 <span class="bossbar"><i style="width:${(M.bossHP / M.bossMax) * 100}%"></i></span> ${M.bossHP}/${M.bossMax}</div><div>⭐ 全班答對 <b>${M.sides[0].correct + live}</b> 題</div>`;
+  return `<div>🏃‍♀️ 第 ${M.turn ? M.turn.player : M.turns.length}／${M.turns.length} 棒</div><div>⭐ 全隊答對 <b>${M.sides[0].correct + live}</b> 題</div>`;
+}
+function boardUpdate() { if (match) $('qBoard').innerHTML = boardHTML(); }
+function showHandover(last) {
+  state = 'handover';
+  $('play').hidden = true; $('camview').hidden = true; sfx.setMusic(false); voice.stop();
+  stage.setView(views.idle);
+  const T = match.turn, side = match.side, L = LEVELS[T.level.level];
+  $('hoLast').textContent = last ? `剛才：${last.sideName} 第 ${last.player} 棒 答對 ${last.correct}／${last.total} 題、${last.score} 分` : `${MODES[match.mode].icon} ${MODES[match.mode].title}・共 ${match.turns.length} 棒`;
+  $('hoTitle').innerHTML = match.mode === 'teams' ? `下一位：${sideTag(side)} 第 ${T.player} 位` : `下一位：第 ${T.player} 棒`;
+  $('hoLevel').innerHTML = `這一棒玩 <b>${L.icon} ${L.title}</b>（${T.level.count} 題）。${L.rule}`;
+  $('hoBoard').innerHTML = boardHTML();
+  show('handover');
+  say(`${match.mode === 'teams' ? side.name + '，' : ''}第 ${T.player} 棒準備！`);
+}
+function beginTurn() {
+  if (state !== 'handover' || !match) return;
+  match.begin(); session = match.session;
+  show(null);
+  $('play').hidden = false; $('qPanel').hidden = true; $('qOpts').innerHTML = ''; $('qBanner').hidden = true; $('qRevive').hidden = true;
+  $('hWhoChip').hidden = true; $('hTeamChip').hidden = false;
+  $('hTeam').innerHTML = match.mode === 'teams' ? `${sideTag(match.side)} 第 ${match.turn.player} 位` : `第 ${match.turn.player} 棒`;
+  $('hSource').textContent = settings.input === 'camera' ? '📷 鏡頭' : '⌨️ 鍵盤模擬';
+  $('camview').hidden = settings.input !== 'camera';
+  $('hScore').textContent = '0'; hearts(match.side.hearts); $('hCombo').textContent = '—';
+  $('qBoard').hidden = false; boardUpdate();
+  countdown(() => { state = 'play'; qin.queue = []; });
+}
+function onTurnDone(e) {
+  state = 'turnEnd';
+  boardUpdate();
+  setTimeout(() => { if (state !== 'turnEnd') return; if (match.done) finishMatch(); else showHandover(e.result); }, 2400);
+}
+$('hoGo').onclick = beginTurn;
+$('hoQuit').onclick = () => finishMatch();
+async function finishMatch() {
+  if (!match) return;
+  const R = match.summary(), M = match;
+  state = 'result'; sfx.setMusic(false);
+  $('play').hidden = true; $('camview').hidden = true;
+  let title = '', text = '', stars = 3;
+  if (M.mode === 'teams') {
+    title = `🏆 ${R.ranked[0].icon} ${R.ranked[0].name} 總分最高！`;
+    text = R.ranked.map((s, k) => `${k + 1}. ${sideTag(s)}：${s.score} 分（答對 ${s.correct}／${s.total}）`).join('<br>') + '<br><br>' + R.awards.map((a) => `${a.title}：${sideTag(R.sides[a.side])}`).join('　');
+  } else if (M.mode === 'coop') {
+    stars = R.bossDown ? 3 : R.bossHP <= R.bossMax / 2 ? 2 : 1;
+    title = R.bossDown ? '🎉 全班一起打倒大魔王！' : '👾 大魔王逃走了，下次一定打得倒！';
+    text = `全班答對 <b>${R.correct}</b>／${R.total} 題，大魔王剩 ${R.bossHP}／${R.bossMax}。`;
+  } else {
+    const key = `taikan.quiz.relay.${bank.id}`;
+    let rec = null; try { rec = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
+    const better = !rec || R.correct > rec.correct || (R.correct === rec.correct && R.time < rec.time);
+    if (better) try { localStorage.setItem(key, JSON.stringify({ correct: R.correct, total: R.total, time: R.time, at: Date.now() })); } catch {}
+    stars = R.total ? (R.correct / R.total >= 0.8 ? 3 : R.correct / R.total >= 0.5 ? 2 : 1) : 1;
+    title = better && rec ? '🎉 破紀錄了！' : '🏃‍♀️ 接力完成！';
+    text = `${R.results.length} 棒共答對 <b>${R.correct}</b>／${R.total} 題，用了 ${Math.round(R.time)} 秒。${rec ? `（之前的紀錄：答對 ${rec.correct} 題、${Math.round(rec.time)} 秒）` : '（這是第一次的紀錄）'}`;
+  }
+  $('rTitle').textContent = title;
+  $('rStars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+  $('rText').innerHTML = text;
+  $('rLevels').innerHTML = R.results.map((r) => `<div>${M.mode === 'teams' ? esc(r.sideName) + ' ' : ''}第 ${r.player} 棒 ${LEVELS[r.level.level].icon} ${r.correct}/${r.total}・${r.score} 分</div>`).join('');
+  $('rReview').innerHTML = R.results.flatMap((r) => r.log).map((x) => `<li class="${x.correct ? 'ok' : 'no'}">${x.correct ? '⭕' : '🫧'} ${esc(x.prompt)}${x.sub ? ' ' + esc(x.sub) : ''}<br><b>答案：${esc(x.answer)}</b>${x.explain ? `<div class="ex">${esc(x.explain)}</div>` : ''}</li>`).join('');
+  show('result'); sfx.play('fanfare'); stage.fx.confetti([0, 4, 0], 200, 4);
+  try { for (const s of R.sides) await addRecord({ who: s.name, bank: bank.title, levels: MODES[M.mode].title, diff: DIFFS[settings.diff].label, score: s.score, correct: s.correct, total: s.total, stars, mode: MODES[M.mode].title }); } catch {}
+  match = null; session = null;
+}
+
 // ── records ──
 async function openRecords() {
   state = 'records'; show('records');
@@ -378,6 +492,7 @@ function raiseConfirmed() {
   else if (state === 'menu') start();
   else if (state === 'paused') resume();
   else if (state === 'result') start();
+  else if (state === 'handover') beginTurn();
 }
 
 // ── loop ──
@@ -390,8 +505,8 @@ function loop(now) {
   if (raiseHold !== null) { if (kst.armsUp < 1) raiseHold = null; else if (now - raiseHold > 800) { raiseHold = null; if (state !== 'play') raiseConfirmed(); } }
   sims.ensure();
   const inp = qin.frame(now);
-  if (state === 'play' && session) {
-    for (const e of session.update(dt * SPEED, inp)) {
+  if (state === 'play' && (match || session)) {
+    for (const e of match ? match.update(dt * SPEED, inp) : session.update(dt * SPEED, inp)) {
       if (e.type === 'level') onLevel(e);
       else if (e.type === 'step') onStep(e);
       else if (e.type === 'answer') onAnswer(e);
@@ -403,9 +518,12 @@ function loop(now) {
       else if (e.type === 'revive') onRevive(e);
       else if (e.type === 'revived') onRevived(e);
       else if (e.type === 'say') say(e.text);
-      else if (e.type === 'done') { finish(); break; }
+      else if (e.type === 'done') { if (!match) { finish(); break; } }
+      else if (e.type === 'classHit') { boardUpdate(); flash(e.hp ? `全班打中大魔王！剩 ${e.hp}` : '大魔王倒下了！'); }
+      else if (e.type === 'classBossDown') { stage.fx.confetti([0, 4, 0], 300, 4); sfx.play('cheer'); }
+      else if (e.type === 'turnDone') { onTurnDone(e); break; }
     }
-    if (state === 'play') updatePlay(dt, inp);
+    if (state === 'play' && session && !session.done) updatePlay(dt, inp);
   } else if (stage.view === views.idle) stage.view.update(dt, stage);
   stage.frame(dt);
   if (!$('camview').hidden) { const cv = camCtx.canvas; camCtx.clearRect(0, 0, cv.width, cv.height); drawSkeleton(camCtx, kit.lastPose, { width: 4, color: kst.tracking === 'ok' ? '#63b8ff' : '#ff8a65' }); }
@@ -490,7 +608,7 @@ let stopRevive = null;
 function onRevive(e) {
   const T = e.task.def;
   $('qrTitle').textContent = `❤️ 復活挑戰：${T.title}`;
-  $('qrText').textContent = `${T.text}（⌨️ ${T.key}）`;
+  $('qrText').textContent = `${match && match.mode !== 'relay' ? '全隊一起做！' : ''}${T.text}（⌨️ ${T.key}）${match && match.mode !== 'relay' ? '。老師看到大家都做完，可以按 Y。' : ''}`;
   $('qRevive').hidden = false;
   stopRevive?.(); stopRevive = mountCards($('qrCard'), [{ move: { lean: 'lean', raise: 'raise-both', pump: 'pump' }[e.task.kind], title: T.title, text: T.text }]);
   say('生命用完了，沒關係！做完這個小任務就復活！'); sfx.play('level');
@@ -510,7 +628,7 @@ function onRevived(e) {
 
 requestAnimationFrame(loop);
 await refreshBanks();
-renderLevels(); diffNote(); inputNote();
+renderLevels(); diffNote(); inputNote(); modeOpts();
 $('qLoading').remove();
 ensureInput().catch((err) => { $('hStatus').textContent = '⚠️ 鏡頭沒有啟動（' + camError(err) + '），請按「我懂了」，再到選單改用鍵盤模擬。'; });
 if (params.has('menu')) toMenu(); else openHowto();

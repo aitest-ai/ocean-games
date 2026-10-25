@@ -6,7 +6,7 @@ import { loadBuiltins, esc } from './library.js';
 import { listBanks, saveBank, deleteBank, getBank, shrinkImage, newId, persistent } from './store.js';
 import { toCSV } from './csv.js';
 import { artURL, imageURL, ART_LIST, ART_NAMES } from './art.js';
-import { aiPanelHTML } from './ai.js';
+import { mountAIPanel, parseAIOutput } from './ai.js';
 
 const $ = (id) => document.getElementById(id);
 let builtins = [], mine = [], bank = null, readonly = false, editing = null, pasted = null;
@@ -327,7 +327,18 @@ $('artGrid').onclick = async (e) => {
 };
 
 // ── AI (instructions only; see docs/quiz-ai.md) ──
-$('aiBody').innerHTML = aiPanelHTML();
+mountAIPanel($('aiBody'), {
+  onResult(text, ui) {
+    if (!bank || readonly) { ui.report.innerHTML = '<p class="bad">請先開啟或新增一份「我的題庫」。</p>'; return; }
+    if (!text.trim()) { ui.report.innerHTML = '<p class="muted">還沒有貼上 AI 的回覆。</p>'; return; }
+    const r = parseAIOutput(text, bank.images);
+    const ok = r.bank?.questions.length || 0;
+    for (const q of r.bank?.questions || []) bank.questions.push({ ...q, id: 'q' + newId('') });
+    ui.sum.textContent = ok ? `已加入 ${ok} 題` : '';
+    ui.report.innerHTML = issuesHTML(r.errors, r.warnings) + (ok ? `<p class="ok">✅ 已加入 ${ok} 題到「${esc(bank.title)}」。<b>請到「📋 題目」逐題檢查答案是否正確。</b></p>` : '');
+    if (ok) { ui.clear(); renderList(); changed(); }
+  },
+});
 
 // ── start ──
 builtins = await loadBuiltins('../data/quiz/');

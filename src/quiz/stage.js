@@ -126,25 +126,16 @@ function buildStudio(stage) {
     const b = new THREE.Mesh(coneGeo, m);
     b.position.set(-6 + i * 4, 11, -3); root.add(b); beams.push({ b, ph: i * 1.7 });
   });
-  let mood = 'idle', moodT = 0;
+  let mood = 'idle', moodT = 0, wallT = 1, crowdStill = false;
+  // the light wall is a canvas texture: redraw it 15 times a second on tablets, 30 elsewhere
+  const wallEvery = stage.tier === 'low' ? 1 / 15 : 1 / 30;
   return {
     root, crowd,
     setMood(m) { mood = m; moodT = 0; },
     update(dt, t, calm) {
       moodT += dt;
-      // back wall pattern
-      const g = wall.g, W = 256, H = 128;
-      const hue = mood === 'good' ? 140 : mood === 'bad' ? 200 : mood === 'focus' ? 230 : 265;
-      const grd = g.createLinearGradient(0, 0, W, H);
-      grd.addColorStop(0, `hsl(${hue},70%,22%)`); grd.addColorStop(1, `hsl(${hue + 40},70%,32%)`);
-      g.fillStyle = grd; g.fillRect(0, 0, W, H);
-      for (let i = 0; i < 12; i++) {
-        const x = ((i * 40 + (calm ? 0 : t * 30)) % (W + 80)) - 40;
-        g.fillStyle = `hsla(${hue + i * 12},90%,65%,0.25)`; g.fillRect(x, 0, 14, H);
-      }
-      g.fillStyle = 'rgba(255,240,180,0.85)';
-      for (let i = 0; i < 18; i++) { const x = (i * 53) % W, y = (i * 29) % H, s = 1 + ((Math.sin(t * 3 + i) + 1) * (calm ? 0.3 : 1)); g.fillRect(x, y, s, s); }
-      wall.tex.needsUpdate = true;
+      wallT += dt;
+      if (wallT >= wallEvery) { wallT = 0; drawWall(); }
       bulbs.forEach((b, i) => b.material.color.setHex(((i + Math.floor(t * (mood === 'good' ? 10 : 4))) % 3 === 0) || calm ? 0xfff3b0 : 0x6b5a2a));
       // during a question the spotlights swing onto the player (focus); otherwise they sweep the stage
       beams.forEach(({ b, ph }) => {
@@ -152,9 +143,27 @@ function buildStudio(stage) {
         if (mood === 'focus') { const tz = Math.atan2(b.position.x, 11) * 0.9; b.rotation.z += (tz - b.rotation.z) * 0.05; b.rotation.x += (-0.3 - b.rotation.x) * 0.05; }
         else { b.rotation.z = Math.sin(t * 0.7 + ph) * 0.45 * s; b.rotation.x = Math.cos(t * 0.5 + ph) * 0.25 * s; }
       });
-      const cheer = mood === 'good' && moodT < 2.5;
-      seats.forEach((s, i) => { tmp.position.set(s.x, s.y + (cheer && !calm ? Math.abs(Math.sin(t * 9 + s.ph)) * 0.35 : 0), s.z); tmp.updateMatrix(); crowd.setMatrixAt(i, tmp.matrix); });
-      crowd.instanceMatrix.needsUpdate = true;
+      // the audience only needs new positions while it is cheering (and once more to sit down)
+      const cheer = mood === 'good' && moodT < 2.5 && !calm;
+      if (cheer || !crowdStill) {
+        seats.forEach((s, i) => { tmp.position.set(s.x, s.y + (cheer ? Math.abs(Math.sin(t * 9 + s.ph)) * 0.35 : 0), s.z); tmp.updateMatrix(); crowd.setMatrixAt(i, tmp.matrix); });
+        crowd.instanceMatrix.needsUpdate = true;
+        crowdStill = !cheer;
+      }
+      function drawWall() {
+        const g = wall.g, W = 256, H = 128;
+        const hue = mood === 'good' ? 140 : mood === 'bad' ? 200 : mood === 'focus' ? 230 : 265;
+        const grd = g.createLinearGradient(0, 0, W, H);
+        grd.addColorStop(0, `hsl(${hue},70%,22%)`); grd.addColorStop(1, `hsl(${hue + 40},70%,32%)`);
+        g.fillStyle = grd; g.fillRect(0, 0, W, H);
+        for (let i = 0; i < 12; i++) {
+          const x = ((i * 40 + (calm ? 0 : t * 30)) % (W + 80)) - 40;
+          g.fillStyle = `hsla(${hue + i * 12},90%,65%,0.25)`; g.fillRect(x, 0, 14, H);
+      }
+      g.fillStyle = 'rgba(255,240,180,0.85)';
+      for (let i = 0; i < 18; i++) { const x = (i * 53) % W, y = (i * 29) % H, s = 1 + ((Math.sin(t * 3 + i) + 1) * (calm ? 0.3 : 1)); g.fillRect(x, y, s, s); }
+      wall.tex.needsUpdate = true;
+      }
     },
   };
 }
@@ -256,6 +265,7 @@ class Effects {
       Object.assign(p, { life: rand(1.6, 2.6), x: at[0] + rand(-0.3, 0.3), y: at[1], z: at[2] + rand(-0.3, 0.3), vx: rand(-spread, spread), vy: rand(3, 7), vz: rand(-spread, spread), r: rand(0, 6), vr: rand(-8, 8) });
       if (++k >= count) break;
     }
+    this.alive = true;
   }
   bubbles(at, count = 50, up = 3) {
     let k = 0;
@@ -264,23 +274,27 @@ class Effects {
       Object.assign(p, { life: rand(1.2, 2.4), x: at[0] + rand(-0.8, 0.8), y: at[1], z: at[2] + rand(-0.8, 0.8), vx: rand(-1, 1), vy: rand(1, up), vz: rand(-1, 1), s: rand(0.08, 0.25) });
       if (++k >= count) break;
     }
+    this.alive = true;
   }
   update(dt) {
+    if (!this.alive) return; // nothing flying: no work at all
     const T = this.tmp;
+    let n = 0;
     this.cp.forEach((p, i) => {
       if (p.life <= 0) return;
-      p.life -= dt; p.vy -= 6 * dt; p.vx *= 0.98; p.vz *= 0.98; if (p.vy < -1.5) p.vy = -1.5;
+      n++; p.life -= dt; p.vy -= 6 * dt; p.vx *= 0.98; p.vz *= 0.98; if (p.vy < -1.5) p.vy = -1.5;
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.r += p.vr * dt;
       T.position.set(p.x, p.y, p.z); T.rotation.set(p.r, p.r * 0.7, 0); T.scale.setScalar(p.life > 0 ? 1 : 0); T.updateMatrix();
       this.conf.setMatrixAt(i, T.matrix);
     });
     this.bp.forEach((p, i) => {
       if (p.life <= 0) return;
-      p.life -= dt; p.vy -= 2 * dt;
+      n++; p.life -= dt; p.vy -= 2 * dt;
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       T.position.set(p.x, p.y, p.z); T.rotation.set(0, 0, 0); T.scale.setScalar(p.life > 0 ? p.s * Math.min(p.life * 3, 1) : 0); T.updateMatrix();
       this.bub.setMatrixAt(i, T.matrix);
     });
     this.conf.instanceMatrix.needsUpdate = true; this.bub.instanceMatrix.needsUpdate = true;
+    this.alive = n > 0;
   }
 }

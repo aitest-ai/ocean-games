@@ -20,6 +20,7 @@
     <div class="chip"><span class="lbl">分數</span><b id="hScore">0</b></div>
     <div class="chip"><span class="lbl">生命</span><b id="hHearts">❤️❤️❤️</b></div>
     <div class="chip"><span class="lbl">連對</span><b id="hCombo">—</b></div>
+    <div class="chip" id="hTeamChip" hidden><b id="hTeam"></b></div>
     <div class="chip" id="hWhoChip" hidden><span class="lbl">玩家</span><b id="hWho"></b></div>
     <button class="chip btn" id="hPause" title="暫停（Esc 或 P）">⏸ 暫停</button>
   </div>
@@ -31,7 +32,8 @@
   <div id="qOpts" class="qopts"></div>
   <div id="qHold" class="qhold" hidden><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="bg"/><circle cx="50" cy="50" r="44" class="fg" id="qHoldArc"/></svg><span id="qHoldTxt"></span></div>
   <div id="qFuse" class="qfuse" hidden><i id="qFuseBar"></i><b id="qFuseTxt"></b></div>
-  <div id="qBanner" class="qbanner" hidden></div>
+  <div id="qBanner" class="qbanner" hidden role="status"></div>
+  <div id="qBoard" class="qboard" hidden></div>
   <div id="qExtra" class="qextra" hidden></div>
   <div id="qFlash" class="qflash" hidden></div>
   <div id="qRevive" class="overlay qrevive" hidden><div class="panel small"><h1 id="qrTitle"></h1><p class="sub" id="qrText"></p><div class="howto-grid" id="qrCard"></div><div class="qi-bar big"><i id="qrBar"></i></div><p class="note">剩下 <b id="qrTime"></b>・沒做完也沒關係，答答會送你兩顆愛心</p></div></div>
@@ -44,6 +46,18 @@
   <div class="keys-help" id="hKeys"></div>
 </div>
 <div class="camview" id="camview" hidden title="鏡頭看到的骨架（不顯示影像）"><canvas width="240" height="180"></canvas><span>鏡頭看到的你</span></div>
+
+<!-- 換人（分組、合作、接力） -->
+<div class="overlay" id="handover" hidden>
+  <div class="panel">
+    <p class="qi-num" id="hoLast"></p>
+    <h1 id="hoTitle">下一位</h1>
+    <p class="sub" id="hoLevel"></p>
+    <div id="hoBoard" class="hoboard"></div>
+    <p class="note">🙋 輪到的同學站到膠帶的位置，其他同學退到鏡頭外。準備好就<b>雙手舉高 1 秒</b>，或老師按<b>空白鍵</b>。</p>
+    <div class="actions"><button class="primary" id="hoGo">開始這一棒（空白鍵）</button><button id="hoQuit">結束比賽</button></div>
+  </div>
+</div>
 
 <!-- 怎麼玩（每次打開先出現） -->
 <div class="overlay" id="howto" hidden>
@@ -75,6 +89,13 @@
         <ol id="mLevels" class="levels"></ol>
         <p class="note" id="mLen"></p>
       </section>
+      <section class="span2">
+        <h2>⑥ 玩法</h2>
+        <div class="seg" id="mMode"><button data-v="solo">🧍 單人</button><button data-v="teams">🆚 分組對戰</button><button data-v="coop">🤝 全班合作打大 Boss</button><button data-v="relay">🏃‍♀️ 接力</button></div>
+        <div id="mModeOpts" class="row"></div>
+        <p class="note" id="mModeNote"></p>
+        <details class="room"><summary>🏫 教室怎麼擺（投影＋一台鏡頭）</summary><div id="mRoom"></div></details>
+      </section>
       <section>
         <h2>③ 難度</h2>
         <div class="seg" id="mDiff"></div>
@@ -102,6 +123,8 @@
         <label class="chk"><input type="checkbox" data-opt="music"> 🎵 背景節奏</label>
         <label class="chk"><input type="checkbox" data-opt="voice"> 🗣️ 唸出題目（<span id="mVoiceNote">用裝置內建語音</span>）</label>
         <label class="chk"><input type="checkbox" data-opt="reduceMotion"> 減少閃爍與晃動</label>
+        <label class="chk"><input type="checkbox" data-opt="big"> 📽️ 投影大字（題目、選項放大，隱藏小字資訊）</label>
+        <label class="chk"><input type="checkbox" data-opt="contrast"> ◐ 高對比（深色底白字、不透明面板）</label>
       </section>
     </div>
     <details class="safety" id="mSafety">

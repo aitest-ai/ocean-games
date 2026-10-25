@@ -66,12 +66,15 @@ export class Scorer {
 
 // playlist: [{ level: 'run', count: 4 }, …]; opts: level options (seated, simpleTF, simpleBuzz…)
 export class QuizSession {
-  constructor({ bank, playlist, diff = 'normal', opts = {}, seed = 1, tags = [], difficulties }) {
-    this.rng = makeRng(seed);
+  // deck: share one deck between sessions (group play: no question twice in a match)
+  // hearts: start with the hearts a team has left from its previous turn
+  constructor({ bank, playlist, diff = 'normal', opts = {}, seed = 1, tags = [], difficulties, deck, hearts }) {
+    this.rng = deck ? deck.rng : makeRng(seed);
     this.bank = bank; this.diff = diff; this.opts = opts;
-    this.deck = new Deck(bank.questions, { rng: this.rng, tags, difficulties });
+    this.deck = deck || new Deck(bank.questions, { rng: this.rng, tags, difficulties });
     this.playlist = playlist.filter((p) => LEVELS[p.level] && p.count > 0);
     this.scorer = new Scorer({ combo: opts.combo !== false });
+    if (hearts !== undefined) this.scorer.hearts = hearts;
     this.revives = 0;
     this.li = -1; this.level = null; this.phase = 'start'; this.t = 0; this.done = false;
     this.levelScores = [];
