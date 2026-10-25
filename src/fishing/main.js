@@ -27,7 +27,7 @@ window.fishDB = db;
 
 const mode = createFishingMode(db);
 const { runGame } = await import('../game/shell.js');
-const game = runGame(mode);
+const game = await runGame(mode); // runGame is async since the shell was reworked (#4)
 mode.attach(game);
 
 // the "draw circles" card of the how-to screen: the same puppet, with its right hand circling
