@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>駕駛艙展示・模擬器系列</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./flight.css">
+</head>
+<body class="showcase">
+<canvas id="c"></canvas>
+<div class="loading" id="loading">✈️ 正在產生駕駛艙（貼圖、儀表都在這台裝置上用程式畫）…</div>
+<div class="bar">
+  <div class="grp"><a href="../">← 回首頁</a></div>
+  <div class="grp" id="gTime"><span>時段</span><button data-v="day">☀️ 白天</button><button data-v="dusk">🌇 黃昏</button><button data-v="night">🌙 夜間</button></div>
+  <div class="grp" id="gView"><span>視角</span><button data-v="pilot">駕駛座</button><button data-v="panel">儀表特寫</button><button data-v="left">看左邊</button><button data-v="right">看右邊</button><button data-v="up">看上面</button><button data-v="down">看下面</button></div>
+  <div class="grp" id="gQ"><span>畫質</span><button data-v="low">低（平板）</button><button data-v="mid">中</button><button data-v="rt">高（電腦）</button></div>
+  <div class="grp" id="gMore">
+    <button id="bTest" title="警示燈全部亮 2 秒">🔆 警示燈測試</button>
+    <button id="bDome" aria-pressed="false">💡 頂燈</button>
+    <button id="bFake" aria-pressed="true">🛩️ 儀表假資料</button>
+    <button id="bBody" aria-pressed="false" title="身體往左右傾就轉頭">🧍 體感轉頭</button>
+  </div>
+</div>
+<div class="info" id="info">
+  <h1>🛩️ 通用教練機・駕駛艙展示 <button id="infoToggle">收起</button></h1>
+  <p><b>拖曳畫面</b>（滑鼠或手指）可以轉頭看四周，滾輪可以拉近。儀表現在由「假資料」驅動：飛機在空中慢慢轉彎、爬升、下降，每個指針都會動。</p>
+  <table>
+    <tr><td>基本六表</td><td>空速、姿態、高度（上排）／轉彎協調、航向、爬升率（下排）</td></tr>
+    <tr><td>發動機</td><td>轉速表、左右油量、油溫、油壓、真空、電流，與 8 個警示燈</td></tr>
+    <tr><td>其他</td><td>磁羅盤、無線電、應答機、油門（黑）、混合比（紅）、襟翼、配平輪、燃油選擇器</td></tr>
+  </table>
+  <p>機型是本專案<b>原創</b>的通用教練機，不是任何真實機型。所有幾何、貼圖、錶面文字都由程式產生；3D 程式庫 <a href="../vendor/three/LICENSE">three.js</a>（MIT）。</p>
+  <p id="stat"></p>
+</div>
+<div class="readout" id="readout"></div>
+<div class="perf" id="perf"></div>
+<video id="video" muted playsinline hidden></video>
+<script type="module" src="../src/flight/showcase.js"></script>
+</body>
+</html>

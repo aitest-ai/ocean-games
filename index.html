@@ -57,7 +57,7 @@
   <span class="tag">原型・預覽版</span>
   <h1>🎮 體感系列遊戲</h1>
   <p>國小高年級用平板（或電腦）的鏡頭做運動動作來玩的遊戲：<b>海洋系列</b>（划舟、衝浪、帆船）與新的<b>陸地系列</b>（第一個場地：棒球場）。鏡頭畫面只在裝置上分析，不錄影、不上傳。</p>
-  <p class="jump"><a href="#ocean">🌊 海洋系列</a>　<a href="#land">⚾ 陸地系列</a></p>
+  <p class="jump"><a href="#ocean">🌊 海洋系列</a>　<a href="#land">⚾ 陸地系列</a>　<a href="#sim">✈️ 模擬器系列</a></p>
 </div></div>
 <main>
   <h2 class="pick" id="ocean">🌊 海洋系列：選一款遊戲</h2>
@@ -125,6 +125,19 @@
     </a>
   </div>
 
+  <h2 class="pick" id="sim">✈️ 模擬器系列 <span class="new">新</span></h2>
+  <p class="hint" style="margin-top:-6px">坐在駕駛艙裡，用<b>身體傾斜</b>和<b>雙手</b>開飛機。第一款是原創的「通用教練機」，這一版先開放<b>駕駛艙展示</b>（起飛、降落陸續加入）。</p>
+  <div class="cards games">
+    <a class="card game land" href="flight/cockpit.html">
+      <span class="ico">🛩️</span>
+      <h2>體感飛行：駕駛艙</h2>
+      <img class="thumb" src="docs/img/flight-thumb.jpg" alt="通用教練機的駕駛艙與儀表板（程式生成）" width="560" height="315" loading="lazy">
+      <p>看看飛機駕駛艙：<b>拖曳畫面轉頭</b>看四周，切換<b>白天、黃昏、夜間</b>（夜間儀表會發光）。儀表會跟著假資料一起動。</p>
+      <ul class="tags"><li>👀 這一版只有看</li><li>🪑 可坐著玩</li><li>⚙️ 可切換畫質</li></ul>
+      <span class="go">打開駕駛艙 →</span>
+    </a>
+  </div>
+
   <section class="box land-howto">
     <h2>⚾ 陸地系列怎麼玩（給學生看）</h2>
     <div class="howto-grid" id="landHowto"></div>
@@ -180,6 +193,7 @@
         <li><a href="docs/?doc=status">白話說明與自我測試結果</a></li>
         <li><a href="docs/?doc=taikan">體感輸入層（taikan-kit）說明：事件格式、延遲與誤判處理</a></li>
         <li><a href="docs/?doc=baseball">體感野球企劃（陸地系列）：玩法範圍、開發順序、場地規格出處</a></li>
+        <li><a href="docs/?doc=flight">體感飛行（模擬器系列）：做了什麼、決定與理由、平板實測項目</a></li>
       </ul>
     </section>
     <section class="box">
@@ -195,6 +209,7 @@
   <footer>
     <b>海洋系列</b>以開源專案 <a href="https://github.com/Leonxlnx/open-water">open-water</a>（MIT 授權，© 2026 Leonxlnx）為底座；雷聲、雨聲錄音另依 CC 授權使用，詳見 <a href="assets/audio/CREDITS.md">CREDITS</a>。<br>
     <b>陸地系列</b>的 3D 繪圖使用 <a href="vendor/three/LICENSE">three.js r180</a>（MIT 授權，© 2010-2025 three.js authors）；棒球場的草地、紅土、白線、看台、觀眾、燈塔、記分板與球員全部用程式生成，擊球聲、觀眾聲用程式合成，<b>沒有使用外部圖片、模型或錄音</b>。<br>
+    <b>模擬器系列</b>的駕駛艙、儀表、錶面文字（自己畫的線條字型）、地景全部用程式生成，同樣使用 three.js；<b>沒有使用外部圖片、模型或字型</b>。<br>
     姿態辨識：Google MediaPipe Pose Landmarker（Apache-2.0）。
   </footer>
 </main>
