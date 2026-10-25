@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>題庫編輯器・體感闖關問答</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./editor.css">
+</head>
+<body>
+<header>
+  <h1>✏️ 題庫編輯器 <small>體感闖關問答</small></h1>
+  <nav><a href="./?menu">🎤 回遊戲</a><a href="../docs/?doc=quiz">📘 使用說明與題庫格式</a><a href="../">首頁</a></nav>
+</header>
+<div class="notice" role="note">
+  <b>⚖️ 版權提醒：</b>放進題庫的教材文字與圖片，必須是<b>您自己做的</b>，或是<b>您有權使用</b>的（例如學校已取得授權、作者同意、公共領域、CC0）。
+  課本、參考書、網路上的圖片大多有著作權，不要整段照抄或直接上傳。不要放學生照片或任何個人資料。
+  <span class="muted">內建範例都是本專案原創，可自由使用。</span>
+  <br><b>🔒 隱私：</b>題庫和圖片只存在<b>這台裝置的瀏覽器</b>裡，不會上傳到任何伺服器。換電腦或清除瀏覽器資料會不見，請用「匯出」備份或分享給其他老師。
+  <span id="storeWarn" class="bad"></span>
+</div>
+<main>
+  <aside>
+    <h2>我的題庫</h2>
+    <div class="btns"><button id="newBank" class="primary">＋ 新題庫</button><label class="btn">📂 匯入檔案<input type="file" id="importFile" accept=".json,.csv,.tsv,.txt,application/json,text/csv,text/plain" hidden></label></div>
+    <p class="muted small">可以匯入其他老師分享的 .json 題庫，或 Excel／Google 試算表另存的 .csv。</p>
+    <ul id="myList" class="list"></ul>
+    <h2>內建範例（原創）</h2>
+    <p class="muted small">只能看和試玩；按「複製」變成自己的再修改。</p>
+    <ul id="builtinList" class="list"></ul>
+  </aside>
+  <section id="work">
+    <div id="empty" class="empty">
+      <h2>從這裡開始</h2>
+      <ol>
+        <li>按左邊「<b>＋ 新題庫</b>」，或「<b>複製</b>」一份內建範例來改。</li>
+        <li>在「<b>貼上文字</b>」把題目整批貼進來（最快），或一題一題「<b>＋ 新增一題</b>」。</li>
+        <li>按「<b>試玩</b>」到遊戲裡玩看看；要給別的老師就按「<b>匯出</b>」。</li>
+      </ol>
+      <p class="muted">也可以先下載範本：<a href="#" id="tplCSV">CSV 範本（用 Excel 開）</a>・<a href="#" id="tplTXT">貼上文字範本</a></p>
+    </div>
+    <div id="editor" hidden>
+      <div class="meta">
+        <label>題庫名稱<input id="bTitle" maxlength="40"></label>
+        <label>科目<input id="bSubject" maxlength="20" placeholder="例如 英語"></label>
+        <label>年級<input id="bGrade" maxlength="20" placeholder="例如 3～4 年級"></label>
+        <label>作者（可用暱稱）<input id="bAuthor" maxlength="30"></label>
+        <label class="wide">教材來源與授權<input id="bLicense" maxlength="120" placeholder="例如：自編教材，僅供本校教學使用"></label>
+      </div>
+      <div class="bar">
+        <span id="saveState" class="muted"></span>
+        <span class="grow"></span>
+        <a id="playLink" class="btn primary" href="#">▶ 試玩這個題庫</a>
+        <button id="exportJSON">⬇ 匯出 .json（含圖片）</button>
+        <button id="exportCSV">⬇ 匯出 .csv（給 Excel）</button>
+      </div>
+      <p id="readonly" class="warnbox" hidden>這是內建範例，不能直接修改。<button id="cloneThis">複製成我的題庫</button></p>
+      <nav class="tabs" role="tablist">
+        <button data-tab="list" aria-selected="true">📋 題目（<span id="qCount">0</span>）</button>
+        <button data-tab="paste">📝 貼上文字／試算表</button>
+        <button data-tab="images">🖼️ 圖片</button>
+        <button data-tab="ai">🤖 用 AI 轉題（說明）</button>
+      </nav>
+      <div class="tab" id="tab-list">
+        <div class="btns"><button id="addQ" class="primary">＋ 新增一題</button></div>
+        <div id="form" class="form" hidden></div>
+        <ol id="qList" class="qlist"></ol>
+      </div>
+      <div class="tab" id="tab-paste" hidden>
+        <p>把題目<b>直接貼進來</b>（從 Word、記事本、Google 文件、或 Excel 選好整個表格複製都可以），按「檢查」看有沒有問題，沒問題就加進題庫。</p>
+        <details class="howfmt"><summary>📖 貼上文字的寫法（點開看例子）</summary><pre id="fmtExample"></pre>
+          <ul class="small">
+            <li>每一題中間<b>空一行</b>。題號（1. 、(1)）可寫可不寫。</li>
+            <li>選項用 A. B. C. D. 開頭；正確的選項後面加 <code>*</code>，或另外寫一行 <code>答案：B</code>。</li>
+            <li>是非題：開頭寫 <code>是非：</code>，句子最後寫 <code>○</code> 或 <code>×</code>。</li>
+            <li>配對題：開頭寫 <code>配對：</code>，每行一組 <code>cat = 貓</code>。</li>
+            <li>排序題：開頭寫 <code>排序：</code>，每行一項，<b>照正確順序</b>寫，遊戲會自己打亂。</li>
+            <li>數字題：開頭寫 <code>數字：</code>，加一行 <code>答案：56</code>（錯的選項遊戲會自己出，也可以自己寫）。</li>
+            <li>可以加：<code>提示：</code>、<code>解說：</code>、<code>難度：1～3</code>、<code>標籤：</code>、<code>圖片：檔名</code>（先到「圖片」上傳）。</li>
+          </ul></details>
+        <textarea id="pasteBox" rows="14" placeholder="在這裡貼上題目…"></textarea>
+        <div class="btns"><button id="checkPaste" class="primary">🔍 檢查</button><button id="addPaste" disabled>＋ 加入題庫</button><span id="pasteSum" class="muted"></span></div>
+        <div id="pasteReport"></div>
+      </div>
+      <div class="tab" id="tab-images" hidden>
+        <label class="chk"><input type="checkbox" id="imgOK"> 我確認要上傳的圖片是我自己拍的／畫的，或我有權使用（不是學生照片、不含個人資料）。</label>
+        <div class="btns"><label class="btn primary" id="imgPick">⬆ 上傳圖片（可一次選很多張）<input type="file" id="imgFile" accept="image/*" multiple hidden></label><span class="muted small">圖片會自動縮小（最長邊 800 像素）再存，題目裡用「檔名」引用。</span></div>
+        <div id="imgGrid" class="imggrid"></div>
+        <h3>內建圖庫（本專案用程式畫的，可自由使用）</h3>
+        <p class="muted small">點一下就複製代碼，貼到題目的「圖片」欄，例如 <code>art:clock:3:00</code>。</p>
+        <div id="artGrid" class="artgrid"></div>
+      </div>
+      <div class="tab" id="tab-ai" hidden>
+        <div id="aiBody"><p>這個功能會在之後的版本加入說明：老師可以用自己的 AI 工具，把教材文字轉成本遊戲的題庫格式，再貼回「貼上文字」檢查。</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+<dialog id="dlg"><form method="dialog"><div id="dlgBody"></div><div class="btns" id="dlgBtns"></div></form></dialog>
+<script type="module" src="../src/quiz/editor.js"></script>
+</body>
+</html>

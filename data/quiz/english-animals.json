@@ -1,0 +1,21 @@
+{
+ "format": "taikan-quiz", "version": 1, "id": "sample-english", "builtin": true,
+ "title": "英文單字：動物與顏色", "subject": "英語", "grade": "3～6 年級",
+ "author": "本專案原創範例", "license": "原創內容，學校可自由使用、修改、分享",
+ "questions": [
+  { "type": "image", "q": "這是什麼動物？", "image": "art:animal:cat", "options": ["cat", "dog", "pig", "fish"], "answer": "A", "difficulty": 1, "tags": ["動物"], "explain": "cat 是貓。" },
+  { "type": "image", "q": "這是什麼動物？", "image": "art:animal:rabbit", "options": ["bird", "rabbit", "dog"], "answer": "rabbit", "difficulty": 1, "tags": ["動物"] },
+  { "type": "choice", "q": "dog 是什麼意思？", "options": ["狗", "豬", "鳥", "魚"], "answer": "A", "difficulty": 1, "tags": ["動物"] },
+  { "type": "choice", "q": "「鳥」的英文是？", "options": ["bird", "bear", "bee", "bus"], "answer": "bird", "difficulty": 1, "tags": ["動物"], "hint": "會飛、會唱歌" },
+  { "type": "tf", "q": "fish 會在水裡游泳。", "answer": "○", "difficulty": 1, "tags": ["動物"], "explain": "fish 是魚，魚住在水裡。" },
+  { "type": "tf", "q": "pig 的意思是「兔子」。", "answer": "×", "difficulty": 1, "tags": ["動物"], "explain": "pig 是豬，兔子是 rabbit。" },
+  { "type": "image", "q": "這是什麼顏色？", "image": "art:color:green", "options": ["red", "green", "blue", "yellow"], "answer": "B", "difficulty": 1, "tags": ["顏色"] },
+  { "type": "image", "q": "這是什麼顏色？", "image": "art:color:purple", "options": ["pink", "purple", "brown"], "answer": "purple", "difficulty": 2, "tags": ["顏色"] },
+  { "type": "match", "q": "把英文和中文配對", "pairs": [["red", "紅色"], ["blue", "藍色"], ["yellow", "黃色"], ["black", "黑色"]], "difficulty": 2, "tags": ["顏色"] },
+  { "type": "match", "q": "把動物和牠的叫聲配對", "pairs": [["cat", "meow"], ["dog", "woof"], ["duck", "quack"]], "difficulty": 2, "tags": ["動物"], "explain": "英文裡的狗叫聲常寫成 woof，貓是 meow，鴨子是 quack。" },
+  { "type": "choice", "q": "I have two ___ .（我有兩隻貓）", "options": ["cat", "cats", "cates"], "answer": "cats", "difficulty": 2, "tags": ["文法"], "explain": "兩隻以上要用複數，cat 加 s 變成 cats。" },
+  { "type": "order", "q": "排成正確的句子：我喜歡狗。", "items": ["I", "like", "dogs", "."], "difficulty": 3, "tags": ["文法"] },
+  { "type": "choice", "q": "What color is the sky on a sunny day?", "options": ["blue", "black", "pink"], "answer": "A", "difficulty": 3, "tags": ["顏色"], "explain": "晴天的天空是藍色的。" },
+  { "type": "number", "q": "spider（蜘蛛）有幾隻腳？", "answer": 8, "options": [6, 4, 10], "difficulty": 3, "tags": ["動物"], "explain": "蜘蛛有 8 隻腳，昆蟲才是 6 隻腳。" }
+ ]
+}

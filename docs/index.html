@@ -39,11 +39,12 @@
   <a class="tab" data-doc="status" href="?doc=status">📋 白話說明與測試結果</a>
   <a class="tab" data-doc="taikan" href="?doc=taikan">🧍 輸入層說明</a>
   <a class="tab" data-doc="baseball" href="?doc=baseball">⚾ 體感野球企劃</a>
+  <a class="tab" data-doc="quiz" href="?doc=quiz">🎤 闖關問答</a>
   <a class="home" href="../">← 回首頁</a>
 </div></nav>
 <article id="doc">載入中…</article>
 <script type="module">
-const DOCS = { plan: 'plan.md', status: 'status.md', taikan: '../packages/taikan-kit/README.md', baseball: 'baseball-plan.md' };
+const DOCS = { plan: 'plan.md', status: 'status.md', taikan: '../packages/taikan-kit/README.md', baseball: 'baseball-plan.md', quiz: 'quiz.md' };
 const key = new URLSearchParams(location.search).get('doc') || 'plan';
 for (const a of document.querySelectorAll('nav a.tab')) if (a.dataset.doc === key) a.setAttribute('aria-current', 'page');
 const el = document.getElementById('doc');

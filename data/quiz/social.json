@@ -1,0 +1,19 @@
+{
+ "format": "taikan-quiz", "version": 1, "id": "sample-social", "builtin": true,
+ "title": "社會：認識臺灣與生活安全", "subject": "社會", "grade": "3～6 年級",
+ "author": "本專案原創範例", "license": "原創內容，學校可自由使用、修改、分享",
+ "questions": [
+  { "type": "choice", "q": "臺灣最高的山是？", "options": ["玉山", "雪山", "阿里山", "陽明山"], "answer": "A", "difficulty": 1, "tags": ["地理"], "explain": "玉山主峰高約 3952 公尺，是臺灣最高峰。" },
+  { "type": "choice", "q": "臺灣最長的河流是？", "options": ["濁水溪", "淡水河", "高屏溪"], "answer": "濁水溪", "difficulty": 2, "tags": ["地理"] },
+  { "type": "tf", "q": "臺灣四面環海，是一個島嶼。", "answer": "○", "difficulty": 1, "tags": ["地理"] },
+  { "type": "choice", "q": "從臺灣本島看，澎湖在哪個方向？", "options": ["西邊", "東邊", "北邊"], "answer": "西邊", "difficulty": 2, "tags": ["地理"], "explain": "澎湖在臺灣海峽上，位在臺灣本島的西邊。" },
+  { "type": "match", "q": "把緊急電話配對", "pairs": [["報警", "110"], ["火災、救護車", "119"]], "difficulty": 1, "tags": ["安全"], "explain": "有危險時打 110 找警察；火災或有人受傷打 119。" },
+  { "type": "tf", "q": "過馬路時，綠燈亮了也要先看看左右有沒有車。", "answer": "○", "difficulty": 1, "tags": ["安全"] },
+  { "type": "tf", "q": "在網路上認識的人，可以把家裡地址告訴他。", "answer": "×", "difficulty": 1, "tags": ["安全", "網路"], "explain": "個人資料（地址、電話、學校）不要告訴網路上認識的人。" },
+  { "type": "choice", "q": "地震發生時，在教室裡應該先？", "options": ["趴下、掩護、穩住", "馬上衝出教室", "躲到窗戶旁邊"], "answer": "A", "difficulty": 1, "tags": ["安全", "防災"] },
+  { "type": "order", "q": "垃圾分類的步驟（寶特瓶）", "items": ["倒掉裡面的飲料", "用水沖一沖", "壓扁", "放進回收桶"], "difficulty": 2, "tags": ["環保"] },
+  { "type": "choice", "q": "下面哪一個可以回收？", "options": ["鋁罐", "用過的衛生紙", "吃剩的便當"], "answer": "鋁罐", "difficulty": 1, "tags": ["環保"] },
+  { "type": "number", "q": "一年有幾個月？", "answer": 12, "options": [10, 24, 52], "unit": "個月", "difficulty": 1, "tags": ["生活"] },
+  { "type": "choice", "q": "地圖上通常哪個方向是「北」？", "options": ["上面", "下面", "左邊"], "answer": "上面", "difficulty": 2, "tags": ["地圖"], "explain": "大多數地圖上方是北，也會畫指北針提醒。" }
+ ]
+}
