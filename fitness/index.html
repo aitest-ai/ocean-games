@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>居家徒手訓練教練</title>
+<meta name="description" content="用手機或平板的前鏡頭做徒手訓練：數次數、溫和提示姿勢。畫面只在裝置上分析，不錄影、不上傳。">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../game/game.css">
+<link rel="stylesheet" href="./fitness.css">
+</head>
+<body class="fit">
+
+<!-- 訓練畫面：鏡頭影像（只在這台裝置上顯示）＋骨架 -->
+<main id="stage" aria-label="鏡像畫面">
+  <video id="video" muted playsinline></video>
+  <canvas id="overlay"></canvas>
+  <div class="hud" id="hud" hidden>
+    <div class="hud-tl">
+      <div class="chip ex"><span id="hEx">—</span></div>
+      <div class="chip view"><span class="lbl">視角</span><b id="hView">—</b><span class="conf" id="hViewConf"></span></div>
+    </div>
+    <div class="counter" aria-live="polite"><b id="hCount">0</b><span id="hTarget">/ 10</span><small id="hSides"></small></div>
+    <div class="banner" id="hBanner" hidden></div>
+    <aside class="checks" id="hChecks" aria-label="姿勢檢查"></aside>
+    <div class="bubble" id="hBubble" aria-live="polite"></div>
+    <div class="hud-bl">
+      <span class="chip" id="hSource">⌨️ 鍵盤模擬</span>
+      <button class="chip btn" id="hPause">⏸ 暫停</button>
+      <button class="chip btn" id="hEnd">結束這組</button>
+      <button class="chip btn stop" id="hStop" title="身體不舒服時按這裡">🛑 不舒服，停止</button>
+    </div>
+    <div class="quality" id="hQuality"></div>
+  </div>
+  <div class="simkeys" id="simKeys" hidden></div>
+  <div class="countdown" id="count" hidden></div>
+</main>
+
+<!-- 擺放與校正（疊在畫面下方，看得到自己） -->
+<section class="sheet" id="setup" hidden>
+  <div class="sheet-in">
+    <div class="setup-demo"><canvas id="demoCv" width="300" height="400" aria-hidden="true"></canvas><small id="demoCap"></small></div>
+    <div class="setup-text">
+      <h2 id="sTitle">擺好手機</h2>
+      <p id="sPlace" class="sub"></p>
+      <div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" class="bg"/><circle cx="18" cy="18" r="15.9" class="fg" id="sRing"/></svg><b id="sMsg">請站到鏡頭前面</b></div>
+      <p class="note" id="sStep"></p>
+      <div class="actions"><button id="sSkipRom" hidden>先用預設值</button><button id="sBack">回選單</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 開始前的安全檢查（每次打開都要確認） -->
+<div class="overlay" id="safety">
+  <div class="panel">
+    <h1>開始前：安全檢查</h1>
+    <div class="disclaimer">
+      <p><b>這不是醫療或復健產品，不能取代教練或醫師。</b></p>
+      <ul>
+        <li>有<b>受傷、疼痛、心臟或血管疾病、高血壓、懷孕或產後、剛開過刀</b>，或任何不確定能不能運動的狀況，請<b>先諮詢醫師</b>。</li>
+        <li>運動中<b>任何疼痛、頭暈、胸悶、喘不過氣</b>就立刻停止（畫面上隨時有「🛑 不舒服，停止」按鈕）。</li>
+        <li>鏡頭看到的姿勢只是參考：單一鏡頭沒有深度，有些錯誤看不出來，<b>沒有提示不代表一定正確</b>。</li>
+        <li>未滿 18 歲請在家長同意下使用。</li>
+      </ul>
+    </div>
+    <h2>請確認（全部打勾才能開始）</h2>
+    <div class="checklist" id="safetyList">
+      <label class="chk"><input type="checkbox"> 🧹 周圍淨空：張開雙臂、往前後左右踏一步都碰不到家具、牆壁或人</label>
+      <label class="chk"><input type="checkbox"> 🦶 地面防滑、平坦（不要在地毯邊緣、磁磚濕滑處或樓梯旁）</label>
+      <label class="chk"><input type="checkbox"> 👟 穿上運動鞋（不要只穿襪子）</label>
+      <label class="chk"><input type="checkbox"> 💧 旁邊準備好水，隨時可以喝</label>
+      <label class="chk"><input type="checkbox"> 📱 手機／平板放穩（靠牆或用支架），不會被踢到或掉下來</label>
+    </div>
+    <p class="note">🔒 隱私：鏡頭畫面只在這台裝置上即時分析，<b>不錄影、不上傳</b>；訓練紀錄只存在這台裝置。</p>
+    <div class="actions">
+      <button class="primary" id="safetyOk" disabled>我確認了，繼續</button>
+      <a class="link" href="../">回首頁</a>
+      <a class="link" href="../docs/?doc=fitness" target="_blank">說明文件</a>
+    </div>
+  </div>
+</div>
+
+<!-- 選單 -->
+<div class="overlay" id="menu" hidden>
+  <div class="panel">
+    <h1>🏋️ 居家徒手訓練教練 <span class="badge">階段一：動作測試</span></h1>
+    <p class="sub">選一個動作做一組。鏡頭會幫你<b>數次數</b>，並在看得清楚的時候給你<b>溫和的姿勢提示</b>；看不清楚的項目會直接告訴你「這個角度看不到」，不會亂猜。</p>
+    <div class="exgrid" id="exGrid"></div>
+    <div class="grid">
+      <section>
+        <h2>操作方式</h2>
+        <div class="seg" id="mInput"><button data-v="camera">📷 鏡頭</button><button data-v="keyboard">⌨️ 鍵盤模擬（沒有鏡頭時）</button></div>
+        <p class="note" id="mInputNote"></p>
+      </section>
+      <section>
+        <h2>這一組做幾下</h2>
+        <select id="mReps"></select>
+        <p class="note">先求動作標準，做不完也沒關係，隨時可以按「結束這組」。</p>
+      </section>
+      <section>
+        <h2>畫面與聲音</h2>
+        <label class="chk"><input type="checkbox" data-set="showVideo"> 顯示鏡頭影像（不勾＝只顯示骨架線條）</label>
+        <label class="chk"><input type="checkbox" data-set="sound"> 音效</label>
+      </section>
+      <section>
+        <h2>個人校正</h2>
+        <div id="mCalib" class="note"></div>
+        <label class="chk"><input type="checkbox" id="mRecal"> 這次重新量「舒服的幅度」</label>
+      </section>
+    </div>
+    <div class="actions">
+      <button class="primary" id="mStart">開始</button>
+      <button id="mSafety">安全須知</button>
+      <button id="mClear">清除這台裝置上的紀錄</button>
+      <a class="link" href="../">回首頁</a>
+      <a class="link" href="?debug" id="mDebug">除錯畫面</a>
+    </div>
+    <p class="note" id="mStatus"></p>
+  </div>
+</div>
+
+<!-- 一組結束 -->
+<div class="overlay" id="summary" hidden>
+  <div class="panel small">
+    <h1 id="rTitle">完成！</h1>
+    <div id="rBody"></div>
+    <div class="actions">
+      <button class="primary" id="rAgain">再做一組</button>
+      <button id="rMenu">換動作</button>
+    </div>
+  </div>
+</div>
+
+<!-- 暫停／停止 -->
+<div class="overlay" id="pause" hidden>
+  <div class="panel small">
+    <h1 id="pTitle">暫停</h1>
+    <p class="sub" id="pText">休息一下，喝口水。</p>
+    <div class="actions"><button class="primary" id="pResume">繼續</button><button id="pQuit">回選單</button></div>
+  </div>
+</div>
+
+<aside class="debug" id="debug" hidden></aside>
+<script type="module" src="../src/fitness/main.js"></script>
+</body>
+</html>
