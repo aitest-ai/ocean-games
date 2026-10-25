@@ -10,6 +10,7 @@ import { buildCockpit } from './cockpit.js';
 import { COCKPIT_TIERS } from './materials.js';
 import { createFlightState } from './state.js';
 import { HeadLook } from './look.js';
+import { lightPoints } from './lights.js';
 import { fbmField, rng } from './tex.js';
 import { landMap, fieldTile, groundMaterial } from './terrain.js';
 
@@ -49,13 +50,13 @@ export class FlightWorld {
   buildSky() {
     const S = this.scene;
     this.sky = new THREE.Sky(); this.sky.scale.setScalar(30000); this.sky.material.fog = false; S.add(this.sky);
-    const R = rng(3), n = 1500, pos = new Float32Array(n * 3);
+    const R = rng(3), n = 1200, pos = [], col = [];
     for (let i = 0; i < n; i++) {
-      const th = R() * Math.PI * 2, ph = Math.acos(1 - (R() * 0.9 + 0.08));
-      pos.set([Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th)].map((v) => v * 20000), i * 3);
+      const th = R() * Math.PI * 2, ph = Math.acos(1 - (R() * 0.9 + 0.08)), b = 0.25 + Math.pow(R(), 3) * 0.9, w = R();
+      pos.push(...[Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th)].map((v) => v * 20000));
+      col.push(b * (0.85 + w * 0.15), b * 0.92, b * (1.1 - w * 0.2));
     }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    this.stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    this.stars = lightPoints(pos, col, { px: 2.2, intensity: 0, fog: false });
     S.add(this.stars);
     this.hemi = new THREE.HemisphereLight(0xcfe6ff, 0x4a5a32, 1);
     this.sun = new THREE.DirectionalLight(0xffffff, 3);
@@ -94,7 +95,7 @@ export class FlightWorld {
     const night = name === 'night', dusk = name === 'dusk';
     this.sky.visible = !night;
     this.scene.background = night ? new THREE.Color(0x04070d) : null;
-    this.stars.material.opacity = night ? 0.9 : 0;
+    this.stars.material.uniforms.uIntensity.value = night ? 1 : 0;
     // 夜間：月光（冷色、很弱）當主光
     if (night) { this.sun.color.set(0x9fb4d8); this.sun.intensity = 0.35; this.hemi.color.set(0x23324a); this.hemi.groundColor.set(0x0b0d10); this.hemi.intensity = 0.35; }
     else {
@@ -179,7 +180,10 @@ export class FlightWorld {
     // 2) 駕駛艙（清掉深度再畫，近平面 1.5 公分）
     r.clearDepth();
     cam.near = 0.015; cam.far = 60; cam.layers.set(LAYER_COCKPIT); cam.updateProjectionMatrix();
+    // 背景是純色（夜間）時，three.js 每次 render 都會用背景色清畫面：第二次畫之前先拿掉，不然外面會被蓋掉
+    const bg = this.scene.background; this.scene.background = null;
     r.render(this.scene, cam);
+    this.scene.background = bg;
     cam.layers.enableAll();
   }
 
