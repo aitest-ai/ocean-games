@@ -23,3 +23,33 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05070a; col
 .loading[hidden] { display: none; }
 .shot .bar, .shot .info, .shot .readout, .shot .perf { display: none !important; }
 @media (max-width: 760px) { .showcase .info { max-height: 30vh; } .showcase .readout { display: none; } }
+
+/* ── 遊戲頁（flight/index.html）── */
+.fl-prompt { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); width: min(640px, calc(100vw - 20px)); background: rgba(9, 22, 33, 0.78); border: 1px solid rgba(255, 181, 71, 0.55); border-radius: 14px; padding: 8px 14px; text-align: center; pointer-events: none; }
+.fl-prompt[hidden] { display: none; }
+.fl-prompt > b { display: block; font-size: clamp(17px, 2.6vw, 24px); color: #ffd28a; }
+.fl-prompt span b { color: #ffd28a; }
+.fl-prompt span { display: block; font-size: clamp(13px, 1.8vw, 16px); line-height: 1.45; color: #eef5fa; }
+.fl-prompt small { color: #a9c0d0; }
+.fl-body { position: fixed; left: 10px; bottom: 64px; }
+.fl-body > div { margin: 2px 0; }
+.fl-body .bar i { left: 50%; }
+.fl-ring { position: fixed; left: 0; top: 0; border: 4px solid #ffb547; border-radius: 50%; box-shadow: 0 0 18px rgba(255, 181, 71, 0.8); pointer-events: none; animation: flPulse 1.2s ease-in-out infinite; }
+.fl-ring[hidden] { display: none; }
+@keyframes flPulse { 50% { opacity: 0.45; } }
+.fl-calib { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 24px)); background: rgba(9, 22, 33, 0.92); border: 1px solid rgba(160, 200, 230, 0.35); border-radius: 18px; padding: 16px 20px; text-align: center; }
+.fl-calib[hidden] { display: none; }
+.fl-calib h2 { margin: 0 0 6px; font-size: 22px; color: #ffd28a; }
+.fl-calib h2 small { display: block; font-size: 15px; color: #a9c0d0; font-weight: 600; }
+.fl-calib p { font-size: 20px; line-height: 1.5; margin: 6px 0 12px; }
+.fl-calib .bar { height: 14px; border-radius: 7px; background: rgba(255, 255, 255, 0.12); overflow: hidden; margin-bottom: 8px; }
+.fl-calib .bar i { display: block; height: 100%; background: #ffb547; transition: width 0.1s; }
+.fl-calib > small { color: #a9c0d0; font-size: 13px; }
+.fl-touch { position: fixed; right: 12px; bottom: 70px; display: grid; grid-template-columns: repeat(3, 76px); gap: 8px; pointer-events: auto; }
+.fl-touch[hidden] { display: none; }
+.fl-touch button { font: inherit; font-size: 15px; font-weight: 700; padding: 14px 4px; border-radius: 14px; border: 1px solid rgba(255, 181, 71, 0.6); background: rgba(9, 22, 33, 0.75); color: #fff; touch-action: none; }
+.fl-touch button.ok { background: rgba(255, 181, 71, 0.85); color: #241400; }
+.loading[hidden] { display: none; }
+@media (max-width: 760px) { .fl-prompt { top: 104px; } }
+/* 這款的提示是完整的句子：字小一點、可以換行 */
+#hToast { font-size: clamp(18px, 3.2vw, 32px); white-space: normal; width: min(760px, calc(100vw - 30px)); text-align: center; top: 30%; }

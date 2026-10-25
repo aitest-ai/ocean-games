@@ -153,7 +153,12 @@ export async function runGame(mode, games = []) {
   const canvas = $('c');
   let game;
   try {
-    if (mode.world === 'land') {
+    if (mode.createWorld) {
+      // 遊戲自己帶 3D 世界（例如模擬器系列的駕駛艙＋機場）；介面跟 LandWorld 一樣
+      if (params.get('t')) settings.time = params.get('t');
+      game = await mode.createWorld(canvas, { tier: TIER, time: settings.time || mode.defaultTime || 'day' });
+      mode.setup?.(game, settings);
+    } else if (mode.world === 'land') {
       const { LandWorld } = await import('../land/world.js');
       if (params.get('t')) settings.time = params.get('t'); // ?t=day|dusk|night（測試、截圖用）
       game = new LandWorld(canvas, { tier: TIER, time: settings.time || mode.defaultTime || 'day' });
