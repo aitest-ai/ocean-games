@@ -182,11 +182,15 @@ export function airportScenery(W) {
   root.add(lamps);
   // PAPI：四個燈箱在跑道左側（面向 270°，左邊是南 = +z）
   const papi = [];
+  const glowC = canvas(64), gc = glowC.getContext('2d'), gg = gc.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gg.addColorStop(0, 'rgba(255,255,255,1)'); gg.addColorStop(0.35, 'rgba(255,255,255,0.8)'); gg.addColorStop(1, 'rgba(255,255,255,0)');
+  gc.fillStyle = gg; gc.fillRect(0, 0, 64, 64);
+  const glowT = tex(glowC, { repeat: false });
   { const px = R0.thrX - R0.papiFromThr, box = new THREE.BoxGeometry(1.2, 0.7, 0.8);
     for (let k = 0; k < 4; k++) {
       const z = R0.width / 2 + R0.papiSide + k * 9;
       const b = new THREE.Mesh(box, new THREE.MeshStandardMaterial({ color: 0x2c2c2c })); b.position.set(px, 0.4, z); root.add(b);
-      const lm = new THREE.SpriteMaterial({ color: 0xffffff, depthWrite: false, fog: false });
+      const lm = new THREE.SpriteMaterial({ map: glowT, color: 0xffffff, depthWrite: false, fog: false, blending: THREE.AdditiveBlending });
       const sp = new THREE.Sprite(lm); sp.position.set(px + 0.65, 0.5, z); sp.scale.set(1.6, 1.6, 1); root.add(sp);
       papi.push({ sp, angle: [3.5, 3.17, 2.83, 2.5][k] }); // 每個燈的切換角度（度）：在這個角度以上看是白色
     }
@@ -201,7 +205,7 @@ export function airportScenery(W) {
         const ang = Math.atan2(dy, Math.hypot(dx, dz)) * 180 / Math.PI;
         p.sp.material.color.set(ang > p.angle ? 0xffffff : 0xff2a1a);
         const dist = Math.hypot(dx, dz);
-        const s = Math.max(1.6, dist * 0.004); p.sp.scale.set(s, s, 1); // 遠處也看得到
+        const s = Math.max(1.6, dist * 0.008); p.sp.scale.set(s, s, 1); // 遠處也看得到
       }
     },
     setTime(name) {

@@ -20,9 +20,9 @@ export const CHECKS = {
 };
 
 export const FLIGHT_DIFF = {
-  easy: { label: '簡單', note: '輔助最多：失速保護、自動幫你修正方向、提示最清楚。爬到 500 呎。', assist: 'easy', targetFt: 500, checks: ['asi', 'ai', 'alt'], steerHelp: 0.55, autoRecover: true, hints: 2 },
-  normal: { label: '普通', note: '起飛時飛機會往左偏，要自己往右修。爬到 700 呎。', assist: 'normal', targetFt: 700, checks: ['asi', 'ai', 'alt', 'tach'], steerHelp: 0.15, autoRecover: true, hints: 1 },
-  hard: { label: '挑戰', note: '往左偏更明顯、沒有失速保護、提示比較少。爬到 1000 呎。', assist: 'hard', targetFt: 1000, checks: ['asi', 'ai', 'alt', 'tach', 'vsi', 'fuel'], steerHelp: 0, autoRecover: false, hints: 0 },
+  easy: { label: '簡單', note: '輔助最多：失速保護、電腦幫忙修方向與下降、降落時自動油門、提示最清楚。起飛爬到 500 呎。', assist: 'easy', targetFt: 500, checks: ['asi', 'ai', 'alt'], steerHelp: 0.55, autoRecover: true, hints: 2 },
+  normal: { label: '普通', note: '起飛時飛機會往左偏，要自己修；降落起點偏一點，速度要用機頭控制。起飛爬到 700 呎。', assist: 'normal', targetFt: 700, checks: ['asi', 'ai', 'alt', 'tach'], steerHelp: 0.15, autoRecover: true, hints: 1 },
+  hard: { label: '挑戰', note: '往左偏更明顯、沒有失速保護、降落有亂流、提示比較少。起飛爬到 1000 呎。', assist: 'hard', targetFt: 1000, checks: ['asi', 'ai', 'alt', 'tach', 'vsi', 'fuel'], steerHelp: 0, autoRecover: false, hints: 0 },
 };
 
 export const PHASE_LABEL = { check: '起飛前檢查', power: '加油門', roll: '滑跑', climb: '爬升', reset: '再試一次', done: '完成' };
@@ -33,7 +33,8 @@ export class TakeoffMission {
     this.opts = { tiltOnly: false, autoThrottle: false, skipChecks: false, ...opts };
     this.vr = vr; this.vy = vy;
     this.fdm = new FlightModel(fdmParams, FDM_ASSIST[this.d.assist]);
-    this.checks = this.opts.skipChecks ? [] : this.d.checks.map((k) => ({ key: k, ...CHECKS[k], text: CHECKS[k].text.replace('{target}', this.d.targetFt) }));
+    this.targetFt = this.opts.targetFt ?? this.d.targetFt;
+    this.checks = this.opts.skipChecks ? [] : this.d.checks.map((k) => ({ key: k, ...CHECKS[k], text: CHECKS[k].text.replace('{target}', this.targetFt) }));
     this.ctl = { lean: 0, pitch: 0, handsSeen: true };
     this.stats = { crossSum: 0, crossN: 0, maxCross: 0, rotateKt: null, early: false, climbIn: 0, climbN: 0, stalls: 0, recovers: 0, tailStrikes: 0, retries: 0, time: 0 };
     this.place();
@@ -104,7 +105,7 @@ export class TakeoffMission {
         this.stallT = (this.stallT || 0) + dt;
         if (d.autoRecover || agl < 150) if (this.stallT > 1.5) { f.trim = Math.min(f.trim, f.gamma * 180 / Math.PI + 4); this.stats.recovers++; this.stallT = 0; out.push({ text: '電腦幫你把機頭放低，速度回來了', kind: '' }); }
       } else this.stallT = 0;
-      if (agl >= d.targetFt) { this.throttleCmd = 0.75; this.go('done'); this.done = true; out.push({ text: `到達 ${d.targetFt} 呎！起飛成功`, kind: 'good', cue: 'finish' }); }
+      if (agl >= this.targetFt) { this.throttleCmd = 0.75; this.go('done'); this.done = true; out.push({ text: `到達 ${this.targetFt} 呎！起飛成功`, kind: 'good', cue: 'finish' }); }
     } else if (this.phase === 'reset') {
       elev = 0; ail = 0; this.throttleCmd = 0; this.brake = 1;
       if (this.phaseT > 2.5 && f.kt < 3) { this.place(); this.go('power'); }
@@ -137,7 +138,7 @@ export class TakeoffMission {
       case 'roll':
         if (kt < this.vr) return { title: `滑跑中：${Math.round(kt)} 節`, sub: '<b>身體左右傾</b>，讓飛機保持在跑道中間的白線上。到 <b>55 節</b>再抬頭', inst: 'asi' };
         return { title: this.opts.tiltOnly ? '抬頭！' : '抬頭！雙手抬高', sub: this.opts.tiltOnly ? '電腦幫你抬頭，你負責保持方向' : '雙手一起往上抬（到下巴），機頭抬到姿態儀上第一條線（約 10°）就放回胸前', inst: 'ai' };
-      case 'climb': return { title: `爬升：${Math.round(this.agl)} / ${this.d.targetFt} 呎`, sub: this.opts.tiltOnly ? '電腦控制機頭，你用身體傾斜保持方向' : '保持空速 <b>65～85 節</b>：太慢就雙手放低一點、太快就抬高一點', inst: kt < 62 || kt > 90 ? 'asi' : 'alt' };
+      case 'climb': return { title: `爬升：${Math.round(this.agl)} / ${this.targetFt} 呎`, sub: this.opts.tiltOnly ? '電腦控制機頭，你用身體傾斜保持方向' : '保持空速 <b>65～85 節</b>：太慢就雙手放低一點、太快就抬高一點', inst: kt < 62 || kt > 90 ? 'asi' : 'alt' };
       case 'reset': return { title: '停下來，再試一次', sub: '', inst: null };
       case 'done': return { title: '起飛成功！', sub: '', inst: null };
       default: return null;

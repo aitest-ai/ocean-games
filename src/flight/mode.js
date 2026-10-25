@@ -11,6 +11,7 @@ import { FlightWorld } from './world.js';
 import { airportScenery } from './airport.js';
 import { TRAINER } from './aircraft/trainer.js';
 import { TakeoffMission, FLIGHT_DIFF, PHASE_LABEL } from './mission.js';
+import { LandingMission, CircuitMission, LAND_LABEL } from './landing.js';
 import { BodyControls, Calibrator, DEFAULT_CALIB, patchPuppetYoke } from './controls.js';
 import { TIMES } from '../land/ballpark.js';
 
@@ -23,8 +24,19 @@ function saveCalib(src, c) { try { localStorage.setItem(calibKey(src), JSON.stri
 const LEAD = { camera: 0.1, keyboard: 0.02, replay: 0.1 };
 const VIEW_PILOT = { yaw: 0, pitch: -11 * D, fov: 62 }, VIEW_PANEL = { yaw: -6 * D, pitch: -24 * D, fov: 46 };
 
+// 任務種類
+export const MISSIONS = {
+  takeoff: { label: '🛫 起飛', note: '從跑道頭起飛，爬到指定高度。約 1～2 分鐘。' },
+  landing: { label: '🛬 降落', note: '從 1.8 公里外的最後進場開始，對準跑道、控制下降、拉平、接地、停下來。約 1.5 分鐘。' },
+  circuit: { label: '🔄 起降連飛', note: '起飛 → 左轉回頭 → 順風邊（快轉）→ 再左轉對準跑道 → 降落。約 4 分鐘，玩完請休息一下。' },
+};
+
 const hudExtra = `
   <div class="fl-prompt" id="flPrompt"><b id="flTitle"></b><span id="flSub"></span></div>
+  <div class="widget fl-guide" id="flGuide" hidden>
+    <div class="fl-guide-box"><i class="h"></i><i class="v"></i><b id="flGs" title="下滑道：上 = 太高"></b><b id="flLoc" title="跑道方向：左右"></b></div>
+    <div><b>進場指示</b><br><span id="flGuideT"></span><br><small>菱形在中間 = 剛好<br>PAPI：兩白兩紅 = 剛好</small></div>
+  </div>
   <div class="widget fl-body" id="flBody">
     <div>身體傾斜 <b id="flLeanT">—</b><div class="bar center"><i id="flLean"></i></div></div>
     <div id="flPitchW">雙手（機頭）<b id="flPitchT">—</b><div class="bar center"><i id="flPitch"></i></div></div>
@@ -45,13 +57,13 @@ export function createFlightMode() {
   let W = null, controls = new BodyControls(), calib = null, patched = null;
 
   const mode = {
-    id: 'flight', series: 'sim', title: '體感飛行：起飛', icon: '🛩️',
+    id: 'flight', series: 'sim', title: '體感飛行', icon: '🛩️',
     noTimer: true, defaultTime: 'day',
     diffTitle: '難度', goWord: '開始！',
     seatedLabel: '🪑 坐著玩（只傾斜上半身、在胸前動雙手；這款本來就建議坐著）',
     soundLabel: '發動機與警告聲',
-    intro: '坐在原創的<b>通用教練機</b>駕駛座上：先做起飛前檢查，<b>舉單手</b>推油門，<b>身體左右傾</b>讓飛機保持在跑道中間，到 55 節時<b>雙手抬高</b>抬頭，爬升到指定高度。<a class="link" href="./cockpit.html">（只想看駕駛艙？打開駕駛艙展示）</a>',
-    goal: '把飛機開上天！<b>身體左右傾</b> = 方向（轉彎）、<b>雙手在胸前一起抬高／放低</b> = 機頭往上／往下，手回到胸前就保持。看<b>空速表</b>：到 <b>55 節</b>才抬頭，太早飛不起來；抬太多會<b>失速</b>。<br>🪑 坐著就能玩，雙手只要在胸前動，<b>不用一直舉著</b>。',
+    intro: '坐在原創的<b>通用教練機</b>駕駛座上：<b>身體左右傾</b> = 方向、<b>雙手在胸前抬高／放低</b> = 機頭。三種任務：<b>起飛</b>、<b>降落</b>、<b>起降連飛</b>（在下面選）。<a class="link" href="./cockpit.html">（只想看駕駛艙？打開駕駛艙展示）</a>',
+    goal: '<b>身體左右傾</b> = 方向（轉彎）、<b>雙手在胸前一起抬高／放低</b> = 機頭往上／往下，手回到胸前就保持。<b>起飛</b>：到 <b>55 節</b>才抬頭，太早飛不起來；抬太多會<b>失速</b>。<b>降落</b>：對準跑道，看跑道左邊的 <b>PAPI 燈（兩白兩紅 = 剛好）</b>控制下降，快到地面時雙手慢慢抬高<b>拉平</b>。不穩定時會<b>重飛</b>再來一次。<br>🪑 坐著就能玩，雙手只要在胸前動，<b>不用一直舉著</b>。',
     difficulties: FLIGHT_DIFF,
     options: [
       { key: 'calibEvery', label: '開始前先做「體感校正」（約 15 秒；用鏡頭時建議開著）', default: true },
@@ -77,7 +89,7 @@ export function createFlightMode() {
       if (s.calibEvery && s.input === 'camera') cards.push({ move: 'idle', title: '先做體感校正', text: '照畫面說明：坐好不動 → 往左傾 → 往右傾 → 雙手抬高 → 放低，約 15 秒', seated: '坐著做' });
       cards.push({ move: 'lean', title: '身體傾斜 = 方向', text: '上半身往左／右傾 → 地面上轉向、空中<b>傾斜轉彎</b>。身體回正，機翼就回到水平', seated: '坐著一樣做' });
       if (!s.tiltOnly) cards.push({ move: 'idle', title: '雙手抬高／放低 = 機頭', text: '雙手像握方向盤放在胸前，<b>一起往上抬 = 機頭抬起</b>、往下放 = 機頭往下。手回到胸前就保持（不用一直舉著）', seated: '坐著一樣做', skip: '可以勾「只靠身體傾斜」' });
-      if (!s.autoThrottle || !s.skipChecks) cards.push({ move: 'raise-one', title: '舉單手 = 確認', text: '起飛前檢查看懂了、或推油門時，舉起一隻手', seated: '坐著一樣做', skip: '可以勾「自動推油門」「跳過檢查」' });
+      cards.push({ move: 'raise-one', title: '舉單手 = 確認／重飛', text: '起飛前檢查看懂了、推油門時舉起一隻手。降落時覺得不對勁，舉單手就<b>重飛</b>（再來一次）', seated: '坐著一樣做', skip: '可以勾「自動推油門」「跳過檢查」' });
       cards.push({ move: 'raise-both', title: '雙手舉過頭 1 秒', text: '開始、暫停、繼續（開飛機時雙手只在胸前動，不會誤觸）', seated: '坐著一樣做' });
       return cards;
     },
@@ -93,15 +105,22 @@ export function createFlightMode() {
 
     menu({ grid, game, settings, save }) {
       const sec = document.createElement('section');
-      sec.innerHTML = `<h2>時段與校正</h2>
+      sec.innerHTML = `<h2>任務</h2>
+        <div class="seg" id="flMission">${Object.entries(MISSIONS).map(([k, m]) => `<button data-v="${k}">${m.label}</button>`).join('')}</div>
+        <p class="note" id="flMissionNote"></p>
+        <h2 style="margin-top:12px">時段與校正</h2>
         <div class="seg" id="flTime">${Object.entries(TIMES).map(([k, t]) => `<button data-v="${k}">${{ day: '☀️', dusk: '🌇', night: '🌙' }[k]} ${t.label}</button>`).join('')}</div>
         <div class="row"><button id="flRecal">🔄 清除這台裝置的體感校正</button></div>
         <p class="note" id="flCalNote"></p>`;
-      grid.appendChild(sec);
+      grid.prepend(sec);
       const el = sec.querySelector('#flTime');
       const sync = (v) => { for (const b of el.querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.v === v); };
       sync(settings.time || 'day');
       el.addEventListener('click', (e) => { const v = e.target.closest('button')?.dataset.v; if (v) { sync(v); settings.time = v; game.setTime(v); save(); } });
+      const ms = sec.querySelector('#flMission');
+      const msync = (v) => { for (const b of ms.querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.v === v); sec.querySelector('#flMissionNote').textContent = MISSIONS[v].note; };
+      msync(settings.mission || 'takeoff');
+      ms.addEventListener('click', (e) => { const v = e.target.closest('button')?.dataset.v; if (v) { msync(v); settings.mission = v; save(); mode.newRace(game, settings.diff, settings); } });
       const note = () => { const c = loadCalib('camera'); sec.querySelector('#flCalNote').textContent = c ? `這台裝置已校正過（左傾最大 ${Math.round(c.rollL / D)}°、右傾 ${Math.round(c.rollR / D)}°）。` : '這台裝置還沒用鏡頭校正過。'; };
       sec.querySelector('#flRecal').onclick = () => { try { localStorage.removeItem(calibKey('camera')); } catch {} note(); };
       note();
@@ -121,7 +140,10 @@ export function createFlightMode() {
       const src = s.input === 'camera' ? 'camera' : 'keyboard';
       const saved = loadCalib(src);
       controls = new BodyControls({ calib: saved || DEFAULT_CALIB, lead: LEAD[src] ?? 0.1 });
-      game.mission = new TakeoffMission({ diff: diffKey, opts: { tiltOnly: s.tiltOnly, autoThrottle: s.autoThrottle, skipChecks: s.skipChecks } });
+      const opts = { tiltOnly: s.tiltOnly, autoThrottle: s.autoThrottle, skipChecks: s.skipChecks };
+      game.missionKind = MISSIONS[s.mission] ? s.mission : 'takeoff';
+      game.mission = game.missionKind === 'landing' ? new LandingMission({ diff: diffKey, opts, seed: 1 + Math.floor(Math.random() * 1e6) })
+        : game.missionKind === 'circuit' ? new CircuitMission({ diff: diffKey, opts }) : new TakeoffMission({ diff: diffKey, opts });
       // 鏡頭：每次（或第一次）先校正；鍵盤模擬的人偶動作範圍固定，用預設值就好（網址加 ?calib=1 可以強制）
       const force = new URLSearchParams(location.search).has('calib');
       calib = (src === 'camera' && (s.calibEvery || !saved)) || force ? new Calibrator({ hands: !s.tiltOnly }) : null;
@@ -157,8 +179,9 @@ export function createFlightMode() {
       }
       if (pose) controls.feed(pose, pose.t);
       M.input({ lean: controls.lean, pitch: controls.handsSeen ? controls.pitch : 0 });
-      for (const e of M.step(dt)) out.push(e);
-      if (!controls.handsSeen && !s.tiltOnly && s.input === 'camera' && (M.phase === 'roll' || M.phase === 'climb')) {
+      const k = M.timeScale || 1; // 起降連飛的順風邊會快轉
+      for (let i = 0; i < k; i++) for (const e of M.step(dt)) out.push(e);
+      if (!controls.handsSeen && !s.tiltOnly && s.input === 'camera' && ['roll', 'climb', 'final', 'flare'].includes(M.phase)) {
         game.handsMissT = (game.handsMissT || 0) + dt;
         if (game.handsMissT > 2) { game.handsMissT = -6; out.push({ text: '看不到雙手：請把雙手放在胸前', kind: 'bad' }); }
       } else if (controls.handsSeen) game.handsMissT = 0;
@@ -170,11 +193,12 @@ export function createFlightMode() {
       return out;
     },
 
-    done: (game) => game.mission.done && game.mission.phaseT > 2.5,
+    done: (game) => game.mission.done && (game.mission.phaseT > 2.5 || game.mission.failed),
 
     hud(game) {
       const M = game.mission;
-      return { phase: calib ? '體感校正' : PHASE_LABEL[M.phase] || '—', kt: Math.round(M.fdm.kt), ft: Math.round(Math.max(M.agl, 0)) };
+      const label = (M instanceof TakeoffMission || (M.phase in PHASE_LABEL && !(M.phase in LAND_LABEL))) ? PHASE_LABEL[M.phase] : LAND_LABEL[M.phase];
+      return { phase: calib ? '體感校正' : label || PHASE_LABEL[M.phase] || '—', kt: Math.round(M.fdm.kt), ft: Math.round(Math.max(M.agl, 0)) };
     },
 
     hudExtraUpdate(game, st, s) {
@@ -200,22 +224,35 @@ export function createFlightMode() {
       $('flLeanT').textContent = Math.abs(controls.lean) < 0.05 ? '正' : controls.lean < 0 ? '左' : '右';
       $('flPitchT').textContent = !controls.handsSeen ? '看不到手' : controls.handsRest ? '放在腿上' : Math.abs(controls.pitch) < 0.05 ? '保持' : controls.pitch > 0 ? '抬頭' : '低頭';
       $('flPitchW').hidden = !!s.tiltOnly;
+      // 進場指示：菱形往上 = 太高、往右 = 跑道在右邊（飛機偏左）
+      const dv = !calib && (M.phase === 'final' || M.phase === 'flare') ? M.dev : null;
+      $('flGuide').hidden = !dv;
+      if (dv) {
+        const gs = Math.max(-1, Math.min(1, dv.glide / 1.5)), lc = Math.max(-1, Math.min(1, -dv.loc / 2.5));
+        $('flGs').style.top = `${50 - gs * 42}%`; $('flLoc').style.left = `${50 + lc * 42}%`;
+        $('flGuideT').textContent = `${Math.abs(dv.glide) < 0.4 ? '高度剛好' : dv.glide > 0 ? '太高' : '太低'}・${Math.abs(dv.cross) < 4 ? '對準了' : dv.cross > 0 ? '偏右' : '偏左'}`;
+      }
       $('flTouch').hidden = s.input !== 'keyboard' || game.state !== 'play';
     },
 
     result(game) {
-      const r = game.mission.result(), d = game.mission.d;
-      const tips = [];
-      if (r.center < 70) tips.push('滑跑時身體早一點、小一點地修方向，飛機會比較直。');
-      if (r.rotate < 70) tips.push(r.autoRot ? '下次到 55 節時試著自己雙手抬高。' : '看空速表：到 55 節再抬頭，太早抬不起來。');
-      if (r.climb < 70) tips.push('爬升時看空速表保持 65～85 節：太慢就雙手放低一點。');
-      if (r.stalls) tips.push('機頭抬太高會失速：姿態儀上小飛機在第一條線（10°）附近就好。');
-      if (!tips.length) tips.push('完美！下一步可以試試更高的難度。');
+      const kind = game.missionKind, M = game.mission;
+      if (kind === 'takeoff') return takeoffResult(M);
+      const L = kind === 'circuit' ? M.ld : M;
+      const r = M.result(), lr = kind === 'circuit' ? r.landing : r;
+      if (!L || L.failed || !lr.td) return { title: '今天先練到這裡', stars: 0, html: '重飛了 3 次。沒關係！下次先試「簡單」難度，或勾「只靠身體傾斜」。<br>小提示：看 PAPI 燈，兩白兩紅最剛好；快到地面時雙手慢慢抬高。' };
+      const td = lr.td, tips = [];
+      if (lr.align < 70) tips.push('對準：最後進場時早一點用身體傾斜修正，對著跑道中間的白線。');
+      if (lr.sink < 70) tips.push('下降太快：離地面 30 呎時雙手慢慢抬高（拉平），讓飛機飄一下再落地。');
+      if (lr.speed < 70) tips.push(td.kt > 62 ? '速度太快：進場時雙手抬高一點，讓速度慢下來。' : '速度太慢：進場時雙手放低一點。');
+      if (lr.goArounds) tips.push(`重飛了 ${lr.goArounds} 次：重飛是安全的好決定！`);
+      if (!tips.length) tips.push('漂亮的降落！可以試試更高的難度或「起降連飛」。');
       return {
-        title: r.stars >= 3 ? '漂亮的起飛！' : '起飛成功！',
+        title: r.stars >= 3 ? '完美落地！' : '降落成功！',
         stars: Math.max(r.stars, 1),
-        html: `爬到 ${d.targetFt} 呎・分數 <b>${r.score}</b><br>
-          <small>中心線 ${r.center}・抬頭時機 ${r.rotate}・爬升 ${r.climb}${r.retries ? `・重來 ${r.retries} 次` : ''}${r.stalls ? `・失速警告 ${r.stalls} 次` : ''}</small><br>${tips.join('<br>')}`,
+        html: `分數 <b>${r.score}</b>${kind === 'circuit' ? `（起飛 ${r.takeoff.score}・降落 ${lr.score}）` : ''}<br>
+          <small>接地：每分鐘下降 ${Math.round(td.fpm)} 呎・${Math.round(td.kt)} 節・離中心線 ${Math.abs(td.cross).toFixed(1)} 公尺・離跑道頭 ${Math.round(td.along)} 公尺</small><br>
+          <small>對準 ${lr.align}・下降率 ${lr.sink}・接地速度 ${lr.speed}・落點 ${lr.spot}・進場穩定 ${lr.stable}</small><br>${tips.join('<br>')}`,
       };
     },
 
@@ -235,6 +272,22 @@ export function createFlightMode() {
       return true; // 失速聲由 updateSound 持續發出
     },
   };
+
+  function takeoffResult(M) {
+    const r = M.result(), d = M;
+    const tips = [];
+    if (r.center < 70) tips.push('滑跑時身體早一點、小一點地修方向，飛機會比較直。');
+    if (r.rotate < 70) tips.push(r.autoRot ? '下次到 55 節時試著自己雙手抬高。' : '看空速表：到 55 節再抬頭，太早抬不起來。');
+    if (r.climb < 70) tips.push('爬升時看空速表保持 65～85 節：太慢就雙手放低一點。');
+    if (r.stalls) tips.push('機頭抬太高會失速：姿態儀上小飛機在第一條線（10°）附近就好。');
+    if (!tips.length) tips.push('完美！可以試試「降落」或更高的難度。');
+    return {
+      title: r.stars >= 3 ? '漂亮的起飛！' : '起飛成功！',
+      stars: Math.max(r.stars, 1),
+      html: `爬到 ${d.targetFt} 呎・分數 <b>${r.score}</b><br>
+        <small>中心線 ${r.center}・抬頭時機 ${r.rotate}・爬升 ${r.climb}${r.retries ? `・重來 ${r.retries} 次` : ''}${r.stalls ? `・失速警告 ${r.stalls} 次` : ''}</small><br>${tips.join('<br>')}`,
+    };
+  }
 
   function placeFromFdm(game) {
     const f = game.mission.fdm, s = W.fs;

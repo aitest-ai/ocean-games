@@ -141,7 +141,9 @@ export class FlightModel {
       this.phiDot = (this.phi - phiPrev) / dt;
       this.alpha = this.theta - this.gamma;
       const aDeg = this.alpha / D;
-      const CL = this.CL(aDeg);
+      // 地面效應：離地不到半個翼展（約 5 公尺）時，機翼下面的空氣被「墊住」，升力變大一點（拉平時比較好落地）
+      const ge = this.y < 5 ? 1 + 0.12 * (1 - Math.max(this.y, 0) / 5) : 1;
+      const CL = this.CL(aDeg) * ge;
       const L = q * p.S * CL;
       const Dr = q * p.S * (p.CD0 + p.k * CL * CL + p.flapCD * this.flaps);
       this.V = Math.max(this.V + ((thrust * Math.cos(this.alpha) - Dr) / m - G * Math.sin(this.gamma)) * dt, 3);

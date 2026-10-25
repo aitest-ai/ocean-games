@@ -53,3 +53,14 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #05070a; col
 @media (max-width: 760px) { .fl-prompt { top: 104px; } }
 /* 這款的提示是完整的句子：字小一點、可以換行 */
 #hToast { font-size: clamp(18px, 3.2vw, 32px); white-space: normal; width: min(760px, calc(100vw - 30px)); text-align: center; top: 30%; }
+/* 進場指示（降落時）：方框中間的菱形 = 剛好；上下 = 太高／太低，左右 = 跑道在哪一邊 */
+.fl-guide { position: fixed; left: 10px; bottom: 172px; display: flex; gap: 10px; align-items: center; }
+.fl-guide[hidden] { display: none; }
+.fl-guide-box { position: relative; width: 78px; height: 78px; border-radius: 10px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(160, 200, 230, 0.35); }
+.fl-guide-box i { position: absolute; background: rgba(255, 255, 255, 0.35); }
+.fl-guide-box i.h { left: 6px; right: 6px; top: 50%; height: 2px; margin-top: -1px; }
+.fl-guide-box i.v { top: 6px; bottom: 6px; left: 50%; width: 2px; margin-left: -1px; }
+.fl-guide-box b { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; transform: rotate(45deg); background: #ff5fd2; box-shadow: 0 0 6px rgba(255, 95, 210, 0.8); }
+#flGs { left: 88%; }
+#flLoc { top: 88%; background: #5fd3ff; box-shadow: 0 0 6px rgba(95, 211, 255, 0.8); }
+.fl-guide small { color: #a9c0d0; font-size: 12px; }

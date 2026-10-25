@@ -297,3 +297,101 @@ test('起飛任務：偏出跑道不會墜毀，停下來重來', () => {
   assert.equal(m.phase, 'power'); assert.ok(onRunway(m.fdm.x, m.fdm.z), '回到跑道頭');
   assert.equal(m.result().retries, 1);
 });
+
+// ── 階段三：降落、重飛、起降連飛 ──
+import { LandingMission, CircuitMission, approachDev, APPROACH } from '../src/flight/landing.js';
+
+// 模擬玩家：反應慢 react 秒；最後進場看下滑角與中心線修正，拉平時雙手慢慢抬高
+function landBot(diff, { react = 0.35, opts = {}, circuit = false, bot = 'good', maxT = 700 } = {}) {
+  const m = circuit ? new CircuitMission({ diff, opts }) : new LandingMission({ diff, opts, seed: 7 });
+  const dt = 1 / 30, hist = [];
+  let t = 0;
+  while (!m.done && t < maxT) {
+    const f = m.fdm, fr = m.frame, dv = m.dev || {};
+    hist.push({ t, cross: fr.cross, he: hdgErr(f.heading), kt: f.kt, trim: f.trim, glide: dv.glide ?? 0, agl: m.agl, hdg: f.heading });
+    while (hist.length > 2 && hist[1].t <= t - react) hist.shift();
+    const s = hist[0], ph = m.phase;
+    let lean = 0, want = null;
+    if (bot === 'good') {
+      if (ph === 'roll' || ph === 'rollout') lean = -s.cross / 4 - s.he / 6;
+      else if (ph === 'climb') lean = -s.he / 10;
+      else if (ph === 'turn1' || ph === 'turn2') lean = -1;
+      else if (ph === 'downwind') lean = -(((s.hdg - 90 + 540) % 360) - 180) / 10;
+      else if (ph === 'final' || ph === 'flare') lean = (Math.max(-20, Math.min(20, -s.cross * 0.5)) - s.he) / 12;
+      if (ph === 'roll' && s.kt >= 55) want = 9;
+      if (ph === 'climb') want = s.kt < 68 ? 6 : s.kt > 80 ? 10 : 8;
+      if (['turn1', 'downwind', 'turn2'].includes(ph)) want = Math.max(-4, Math.min(8, 2 + ((ph === 'turn2' ? 420 : 600) - s.agl) * 0.03));
+      if (ph === 'final') want = Math.max(-5, Math.min(4, -0.5 - s.glide * 3 + (s.kt > 72 ? 1 : s.kt < 60 ? -1 : 0)));
+      if (ph === 'flare') want = Math.min(6, 1 + (35 - s.agl) * 0.18);
+    } else if (bot === 'dive') { if (ph === 'final') want = -6; }
+    else if (bot === 'drift') { if (ph === 'final') lean = 0.6; }
+    const pitch = want === null || Math.abs(want - s.trim) < 0.6 ? 0 : Math.sign(want - s.trim);
+    m.input({ lean: Math.max(-1, Math.min(1, lean)), pitch });
+    if ((ph === 'check' || ph === 'power') && m.phaseT > 1.5) m.confirm();
+    for (let i = 0; i < (m.timeScale || 1); i++) { t += dt; m.step(dt); }
+  }
+  return { t, m, r: m.result() };
+}
+
+test('進場偏差：下滑道上 = 0；太高為正；偏右為正', () => {
+  const d = 1000, h = (d + RUNWAY.aimFromThr) * Math.tan(3 * Math.PI / 180);
+  const on = approachDev(RUNWAY.thrX + d, h, 0);
+  assert.ok(Math.abs(on.glide) < 1e-9 && Math.abs(on.loc) < 1e-9);
+  assert.ok(approachDev(RUNWAY.thrX + d, h + 20, 0).glide > 0.5);
+  assert.ok(approachDev(RUNWAY.thrX + d, h, -30).loc > 0, '北邊（面向 270° 的右邊）為正');
+});
+
+test('降落：模擬玩家三種難度都能落地停好、3 星；下降率、接地速度、對準度合理', () => {
+  for (const d of Object.keys(FLIGHT_DIFF)) {
+    const { m, r, t } = landBot(d);
+    assert.ok(m.done && !m.failed, `${d} 完成`);
+    assert.equal(r.stars, 3, `${d} 星星 ${r.stars}（分數 ${r.score}）`);
+    assert.ok(r.td.fpm < 450, `${d} 下降率 ${r.td.fpm}`);
+    assert.ok(r.td.kt > 42 && r.td.kt < 66, `${d} 接地速度 ${r.td.kt}`);
+    assert.ok(Math.abs(r.td.cross) < 4, `${d} 離中心線 ${r.td.cross}`);
+    assert.ok(t < 120, `${d} 花了 ${t.toFixed(0)} 秒`);
+    assert.ok(m.fdm.kt < 3 && m.fdm.onGround, '停下來了');
+  }
+});
+
+test('降落：只靠傾斜模式也能完成', () => {
+  for (const d of Object.keys(FLIGHT_DIFF)) assert.ok(landBot(d, { opts: { tiltOnly: true } }).r.stars >= 2, d);
+});
+
+test('降落：溫和失敗 → 重飛，不會墜毀；重飛 3 次後結束練習', () => {
+  // 一直往下壓 → 太低／不穩定 → 重飛（不會撞地）
+  const dive = landBot('normal', { bot: 'dive' });
+  assert.ok(dive.r.goArounds >= 1 || dive.m.failed, '有重飛');
+  // 一直往右偏 → 沒對準 → 重飛
+  const drift = landBot('normal', { bot: 'drift' });
+  assert.ok(drift.m.failed && drift.r.goArounds === APPROACH.maxGoArounds, '沒對準：重飛 3 次後結束');
+  assert.equal(drift.r.stars, 0);
+  // 從頭到尾不會在跑道外接地
+  assert.equal(drift.m.stats.td, null);
+  // 玩家主動重飛（舉單手）
+  const m = new LandingMission({ diff: 'easy' });
+  for (let i = 0; i < 60; i++) m.step(1 / 30);
+  assert.ok(m.confirm()); assert.equal(m.phase, 'goaround'); assert.equal(m.stats.goArounds, 1);
+  for (let t = 0; t < 40 && m.phase === 'goaround'; t += 1 / 30) m.step(1 / 30);
+  assert.equal(m.phase, 'final', '重飛後重新進場');
+});
+
+test('降落評分：重落地、偏離中心線、太快都會扣分', () => {
+  const base = new LandingMission({ diff: 'normal' });
+  const score = (td) => { base.stats.td = td; base.stats.finalT = 10; base.stats.stableT = 10; base.stats.goArounds = 0; return base.result(); };
+  const good = score({ fpm: 180, kt: 52, cross: 0.5, along: 250, hdg: 0, pitch: 5 });
+  const hard = score({ fpm: 900, kt: 52, cross: 0.5, along: 250, hdg: 0, pitch: 5 });
+  const off = score({ fpm: 180, kt: 52, cross: 8, along: 250, hdg: 6, pitch: 5 });
+  const fast = score({ fpm: 180, kt: 75, cross: 0.5, along: 250, hdg: 0, pitch: 5 });
+  assert.equal(good.stars, 3);
+  for (const r of [hard, off, fast]) assert.ok(r.score < good.score - 10);
+  assert.ok(hard.sink < 30 && off.align < 50 && fast.speed < 50);
+});
+
+test('起降連飛：起飛 → 繞場 → 降落，三種難度都能完成', () => {
+  for (const d of Object.keys(FLIGHT_DIFF)) {
+    const { m, r } = landBot(d, { circuit: true });
+    assert.ok(m.done && !m.failed, `${d} 完成`);
+    assert.ok(r.stars >= 2, `${d} 星星 ${r.stars}（${r.score}）`);
+  }
+});
