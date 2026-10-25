@@ -10,7 +10,11 @@ import { QuizInput, attachSims } from './input.js';
 import { QuizSession } from './session.js';
 import { LEVELS, LEVEL_ORDER } from './levels/index.js';
 import { DIFFS } from './levels/common.js';
-import { VIEWS, LAYOUT, KEYS } from './views/index.js';
+import { VIEWS, LAYOUT, KEYS, cardHint } from './views/index.js';
+import { POSES } from './levels/wall.js';
+import { OBSTACLES } from './levels/dodge.js';
+import { REVIVE_TASKS } from './levels/revive.js';
+import { comboMult } from './session.js';
 import { Sfx, Voice } from './sfx.js';
 import { mountCards } from './howto.js';
 import { allBanks, findBank, esc } from './library.js';
@@ -29,11 +33,13 @@ const SPEED = Math.min(Math.max(Number(params.get('speed')) || 1, 1), 8);
 
 const PRESETS = {
   quick: { label: '⚡ 快速（約 3 分鐘）', list: [['run', 3], ['tf', 3], ['buzz', 2]] },
-  standard: { label: '⭐ 標準（約 5 分鐘）', list: [['run', 4], ['tf', 4], ['buzz', 4]] },
+  standard: { label: '⭐ 標準（約 5 分鐘）', list: [['run', 3], ['tf', 3], ['wall', 3], ['buzz', 3]] },
+  active: { label: '🏃 動態（約 5 分鐘）', list: [['dodge', 3], ['bridge', 2], ['sprint', 3], ['boss', 3]] },
+  boss: { label: '👾 挑戰 Boss（約 6 分鐘）', list: [['run', 3], ['wall', 3], ['tf', 3], ['boss', 4]] },
 };
 const DEFAULTS = {
   bank: 'sample-english', diff: 'easy', input: 'keyboard', sens: 'normal', who: '',
-  seated: false, simpleTF: false, simpleBuzz: false, sound: true, music: false, voice: false, reduceMotion: false,
+  seated: false, simpleTF: false, simpleBuzz: false, combo: true, revive: true, sound: true, music: false, voice: false, reduceMotion: false,
   levels: PRESETS.standard.list.map(([level, count]) => ({ level, count, on: true })), tags: [],
 };
 const settings = loadSettings(DEFAULTS);
@@ -112,7 +118,7 @@ function renderLevels() {
   $('mLevels').innerHTML = settings.levels.map((l, i) => {
     const d = LEVELS[l.level];
     return `<li class="${l.on ? '' : 'off'}" data-i="${i}"><input type="checkbox" ${l.on ? 'checked' : ''} aria-label="使用這一關">
-      <span class="nm">${d.icon} ${d.title}<small>${d.maxOptions === 2 ? '是非（選擇題會變成「答案是…嗎？」）' : `最多 ${d.maxOptions} 個選項`}</small></span>
+      <span class="nm">${d.icon} ${d.title}<small>${d.id === 'tf' ? '是非（選擇題會變成「答案是…嗎？」）' : d.maxOptions === 2 ? '2 選 1（多的選項只留 1 個錯的）' : `最多 ${d.maxOptions} 個選項`}</small></span>
       <select aria-label="題數">${[2, 3, 4, 5, 6].map((n) => `<option ${n === l.count ? 'selected' : ''}>${n}</option>`).join('')}</select>題
       <button data-mv="-1" aria-label="往前">▲</button><button data-mv="1" aria-label="往後">▼</button></li>`;
   }).join('');
@@ -201,13 +207,13 @@ async function start() {
   catch (err) { $('mStatus').textContent = '⚠️ 無法使用鏡頭：' + camError(err) + '。可以先改用鍵盤模擬。'; show('menu'); state = 'menu'; return; }
   const playlist = settings.levels.filter((l) => l.on).map(({ level, count }) => ({ level, count }));
   if (!playlist.length || !bank) return;
-  session = new QuizSession({ bank, playlist, diff: settings.diff, seed: Number(params.get('seed')) || Math.floor(Math.random() * 1e9), tags: settings.tags, opts: { seated: settings.seated, simpleTF: settings.simpleTF, simpleBuzz: settings.simpleBuzz } });
+  session = new QuizSession({ bank, playlist, diff: settings.diff, seed: Number(params.get('seed')) || Math.floor(Math.random() * 1e9), tags: settings.tags, opts: { seated: settings.seated, simpleTF: settings.simpleTF, simpleBuzz: settings.simpleBuzz, combo: settings.combo, revive: settings.revive } });
   show(null);
   $('play').hidden = false; $('qPanel').hidden = true; $('qOpts').innerHTML = ''; $('qBanner').hidden = true;
   $('hWhoChip').hidden = !settings.who; $('hWho').textContent = settings.who;
   $('hSource').textContent = settings.input === 'camera' ? '📷 鏡頭' : '⌨️ 鍵盤模擬';
   $('camview').hidden = settings.input !== 'camera';
-  $('hScore').textContent = '0';
+  $('hScore').textContent = '0'; hearts(3); $('hCombo').textContent = '—'; $('qRevive').hidden = true;
   sfx.play('fanfare');
   countdown(() => { state = 'play'; qin.queue = []; sfx.setMusic(settings.sound && settings.music); });
 }
@@ -251,8 +257,10 @@ function onLevel(e) {
   stopIntro?.(); stopIntro = mountCards($('qiCards'), cards);
   $('qIntro').hidden = false;
   $('hKeys').textContent = (e.def.id === 'tf' && settings.simpleTF ? KEYS.tfSimple : KEYS[e.def.id] || '') + '　Esc 暫停';
-  say(`第 ${e.index + 1} 關：${e.def.title}！準備好了嗎？`);
-  sfx.play('level');
+  say(e.def.id === 'boss' ? '大魔王咕嚕嚕出現了！大家準備好了嗎？' : `第 ${e.index + 1} 關：${e.def.title}！準備好了嗎？`);
+  sfx.play(e.def.id === 'boss' ? 'boss' : 'level');
+  sfx.setMusic(settings.sound && settings.music, e.def.id === 'boss' ? 'boss' : e.def.id === 'sprint' || e.def.id === 'dodge' ? 'fast' : 'happy');
+  $('qExtra').innerHTML = ''; $('qExtra').hidden = !['bridge', 'dodge', 'sprint', 'boss', 'wall'].includes(e.def.id);
 }
 function onStep(e) {
   $('qIntro').hidden = true; stopIntro?.(); stopIntro = null;
@@ -265,17 +273,17 @@ function onStep(e) {
   const u = imageURL(s.image, bank);
   $('qImg').hidden = !u; if (u) $('qImg').src = u;
   stage.view.onStep(stage, lv);
+  stage.studio.setMood('focus');
   // option cards
   const box = $('qOpts');
   const layout = LAYOUT[session.def.id];
   box.className = 'qopts' + (layout === 'row' ? ' row' : '');
   if (s.kind === 'tf') box.innerHTML = `<div class="qopt tfo" data-i="true"><span class="lt">${settings.simpleTF ? '往左傾' : '雙手舉高'}</span>○ 對</div><div class="qopt tfx" data-i="false"><span class="lt">${settings.simpleTF ? '往右傾' : '雙臂交叉'}</span>× 錯</div>`;
-  else box.innerHTML = s.options.map((o, i) => `<div class="qopt c${i}" data-i="${i}"><span class="lt">${LETTER(i)}${laneHint(session.def.id, i, s.options.length)}</span>${imgTag(o.image)}${esc(o.text)}</div>`).join('');
+  else box.innerHTML = s.options.map((o, i) => `<div class="qopt c${i}" data-i="${i}"><span class="lt">${LETTER(i)}${cardHint(session.def.id, lv, i, s.options.length)}</span>${session.def.id === 'wall' ? `<span class="pose">${POSES[lv.poses[i]].icon} ${POSES[lv.poses[i]].name}</span>` : ''}${imgTag(o.image)}${esc(o.text)}</div>`).join('');
   $('qFuse').hidden = session.def.id !== 'buzz';
   $('qHold').hidden = session.def.id !== 'tf';
   voice.say(s.prompt + (sub ? '。' + sub : '') + (s.kind === 'choice' && session.def.id !== 'run' ? '' : ''));
 }
-const laneHint = (lvl, i, n) => (lvl !== 'run' ? '' : n === 3 ? ['・往左', '・站直', '・往右'][i] : ['・往左', '・往右'][i]);
 function onAnswer(e) {
   const s = e.step;
   $('hScore').textContent = session.scorer.score;
@@ -289,17 +297,22 @@ function onAnswer(e) {
   const b = $('qBanner');
   b.className = 'qbanner' + (e.correct ? '' : ' bad');
   b.innerHTML = e.correct
-    ? `<h2>⭕ 答對了！</h2><div class="pts">+${e.points}</div>${s.explain ? `<p>${esc(s.explain)}</p>` : ''}`
+    ? `<h2>⭕ 答對了！</h2><div class="pts">+${e.points}${e.mult > 1 ? `<span class="combo">🔥 ${e.combo} 連對 ×${e.mult}</span>` : ''}</div>${s.explain ? `<p>${esc(s.explain)}</p>` : ''}`
     : `<h2>${e.none ? '⏰ 時間到' : '🫧 可惜！'}</h2><p>正確答案：<b>${esc(s.answerText)}</b></p>${s.explain ? `<p>${esc(s.explain)}</p>` : ''}`;
   b.hidden = false;
   sfx.play(e.correct ? 'right' : 'wrong');
+  hearts(e.hearts); $('hCombo').textContent = e.combo >= 2 ? `🔥${e.combo}` : '—';
+  if (e.correct && comboMult(e.combo) > comboMult(e.combo - 1)) { setTimeout(() => sfx.play('combo'), 300); flash(`🔥 ${e.combo} 連對！之後每題 ×${comboMult(e.combo)}`); }
   if (e.correct) { sfx.play('cheer'); stage.studio.setMood('good'); stage.host.say('cheer'); }
   else { setTimeout(() => sfx.play('splash'), 350); stage.studio.setMood('bad'); stage.host.say('oops'); }
-  if (e.correct && session.def.id !== 'run') stage.fx.confetti([0, 3.5, 1.2], 120, 2.5);
-  if (!e.correct && session.def.id !== 'run') stage.fx.bubbles([0, 0.6, 1.6], 50, 4);
+  if (e.correct && ['tf', 'buzz'].includes(session.def.id)) stage.fx.confetti([0, 3.5, 1.2], 120, 2.5);
+  if (!e.correct && ['tf', 'buzz'].includes(session.def.id)) stage.fx.bubbles([0, 0.6, 1.6], 50, 4);
   say(pick(e.correct ? HOST.right : e.none ? HOST.none : HOST.wrong));
   voice.say(e.correct ? '答對了' : '正確答案是' + s.answerText);
 }
+function hearts(n) { $('hHearts').textContent = settings.revive ? '❤️'.repeat(n) + '🤍'.repeat(Math.max(3 - n, 0)) : '—'; }
+let flashTimer;
+function flash(text) { const el = $('qFlash'); el.textContent = text; el.hidden = false; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); clearTimeout(flashTimer); flashTimer = setTimeout(() => (el.hidden = true), 1600); }
 let sayTimer;
 function say(text) { const el = $('qSay'); el.textContent = text; el.hidden = false; clearTimeout(sayTimer); sayTimer = setTimeout(() => (el.hidden = true), 2600); }
 function onLevelDone(e) {
@@ -318,7 +331,7 @@ async function finish() {
   const r = session.summary();
   $('rTitle').textContent = r.stars === 3 ? '🏆 闖關大成功！' : r.stars === 2 ? '🎉 闖關完成！' : '👏 完成全部關卡！';
   $('rStars').textContent = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
-  $('rText').innerHTML = `${settings.who ? esc(settings.who) + '：' : ''}答對 <b>${r.correct}</b>／${r.total} 題，總分 <b>${r.score}</b> 分`;
+  $('rText').innerHTML = `${settings.who ? esc(settings.who) + '：' : ''}答對 <b>${r.correct}</b>／${r.total} 題，總分 <b>${r.score}</b> 分${r.maxCombo >= 3 ? `・最多 <b>${r.maxCombo}</b> 連對 🔥` : ''}${r.revives ? `・復活 ${r.revives} 次 ❤️` : ''}`;
   $('rLevels').innerHTML = r.levels.map((l) => `<div>${LEVELS[l.level].icon} ${LEVELS[l.level].title}：${l.skipped ? '跳過' : `${l.correct}/${l.total}・${l.score} 分`}</div>`).join('');
   $('rReview').innerHTML = r.log.map((x) => `<li class="${x.correct ? 'ok' : 'no'}">${x.correct ? '⭕' : '🫧'} ${esc(x.prompt)}${x.sub ? ' ' + esc(x.sub) : ''}<br><b>答案：${esc(x.answer)}</b>${x.explain ? `<div class="ex">${esc(x.explain)}</div>` : ''}</li>`).join('');
   show('result');
@@ -384,6 +397,11 @@ function loop(now) {
       else if (e.type === 'answer') onAnswer(e);
       else if (e.type === 'levelDone') onLevelDone(e);
       else if (e.type === 'sfx') sfx.play(e.name);
+      else if (e.type === 'bonus') { flash(e.text || `+${e.points}`); sfx.play('coin'); $('hScore').textContent = session.scorer.score; }
+      else if (e.type === 'penalty') { flash(`🫧 掉下去了 −${e.points}`); $('hScore').textContent = session.scorer.score; stage.host.say('oops'); }
+      else if (e.type === 'hit' || e.type === 'bossAttack') { views.boss.fire(e.type); sfx.play(e.type === 'hit' ? 'hit' : 'splash'); }
+      else if (e.type === 'revive') onRevive(e);
+      else if (e.type === 'revived') onRevived(e);
       else if (e.type === 'say') say(e.text);
       else if (e.type === 'done') { finish(); break; }
     }
@@ -403,6 +421,8 @@ function loop(now) {
 
 function updatePlay(dt, inp) {
   const lv = session.level;
+  if (inp.events.some((e) => e.type === 'jump')) views.dodge.jump();
+  if (session.phase === 'revive') { updateRevive(); stage.view.update(dt, stage, lv, inp); return; }
   if (session.phase === 'between' || !lv) { stage.view.update?.(dt, stage, lv, inp); return; }
   if (lv.phase === 'intro') { $('qiBar').style.width = Math.min(lv.t / lv.introTime, 1) * 100 + '%'; stage.view.update(dt, stage, lv, inp); return; }
   stage.view.update(dt, stage, lv, inp);
@@ -435,6 +455,57 @@ function updatePlay(dt, inp) {
     $('qFuseBar').style.width = (lv.phase === 'answer' ? lv.fuseLeft : 0) * 100 + '%';
     $('qFuseTxt').textContent = lv.phase !== 'answer' ? '' : lv.stage === 'fuse' ? '🙌 雙手舉高搶答！' : `選好了就舉一隻手（${Math.ceil(lv.chooseLeft)} 秒）`;
   }
+  if (id === 'boss' && lv.phase === 'answer') for (let i = 0; i < cards.length; i++) cards[i].classList.toggle('sel', lv.cursor === i);
+  if (id === 'wall' && lv.phase === 'answer') for (let i = 0; i < cards.length; i++) cards[i].classList.toggle('sel', lv.poses[i] === lv.pose);
+  if ((id === 'dodge' || id === 'sprint') && lv.phase === 'answer') for (let i = 0; i < cards.length; i++) cards[i].classList.toggle('sel', inp.side === (i ? 'right' : 'left'));
+  if (id === 'bridge' && lv.phase === 'answer') for (let i = 0; i < cards.length; i++) cards[i].classList.toggle('sel', lv.answer === i);
+  extraMeters(id, lv, inp);
+}
+
+// level-specific meters (balance needle, obstacle warning, race, Boss health, current pose)
+function extraMeters(id, lv, inp) {
+  const el = $('qExtra');
+  if (el.hidden) return;
+  let html = '';
+  if (id === 'bridge') {
+    const th = Math.max(-1, Math.min(1, lv.theta || 0)), wind = lv.g || 0;
+    html = `<div class="meter"><b>平衡</b><div class="bal"><span class="zone"></span><i style="left:${50 + th * 50}%"></i></div><small>${Math.abs(th) > 0.55 ? (th > 0 ? '⚠️ 快往左傾！' : '⚠️ 快往右傾！') : '穩穩的 👍'}　風：${wind > 0.05 ? '→' : wind < -0.05 ? '←' : '·'}</small></div>`;
+  } else if (id === 'dodge') {
+    const o = lv.phase === 'answer' && lv.coming;
+    html = o ? `<div class="warn">${OBSTACLES[o.kind].icon} ${o.kind === 'swing' ? `軟墊從${o.side === 'left' ? '左' : '右'}邊來：往${o.side === 'left' ? '右' : '左'}歪！` : OBSTACLES[o.kind].name}</div>` : (lv.phase === 'answer' && lv.t > lv.window - 3.5 ? '<div class="warn">🚪 答案門快到了：往左或往右傾！</div>' : '');
+  } else if (id === 'sprint') {
+    const max = Math.max(lv.dist || 0, lv.rival || 0, 1);
+    html = `<div class="meter race"><div>🏃 你 <i style="width:${Math.round(((lv.dist || 0) / max) * 150)}px"></i> <b>${Math.round(lv.dist || 0)} m</b>${lv.turbo > 0 ? ' 🚀' : ''}</div><div>🤖 喀喀 <i class="rv" style="width:${Math.round(((lv.rival || 0) / max) * 150)}px"></i> <b>${Math.round(lv.rival || 0)} m</b></div><small>雙手擺動越快跑越快（擺手力道 ${Math.round((inp.pump || 0) * 100)}%）</small></div>`;
+  } else if (id === 'boss') {
+    html = `<div class="meter"><b>👾 咕嚕嚕</b><div class="hp">${'<span class="on"></span>'.repeat(Math.max(lv.hp, 0))}${'<span></span>'.repeat(lv.maxHP - Math.max(lv.hp, 0))}</div><small>${lv.phase === 'answer' ? `Boss 蓄力中… ${Math.ceil(lv.timeLeft)} 秒` : ''}</small></div>`;
+  } else if (id === 'wall' && lv.phase === 'answer') {
+    const p = lv.pose;
+    html = `<div class="meter"><b>你現在的姿勢</b><div class="pose-now">${p ? POSES[p].icon + ' ' + POSES[p].name : '（還沒擺）'}</div></div>`;
+  }
+  if (el._html !== html) { el.innerHTML = html; el._html = html; }
+}
+
+// 復活挑戰 overlay
+let stopRevive = null;
+function onRevive(e) {
+  const T = e.task.def;
+  $('qrTitle').textContent = `❤️ 復活挑戰：${T.title}`;
+  $('qrText').textContent = `${T.text}（⌨️ ${T.key}）`;
+  $('qRevive').hidden = false;
+  stopRevive?.(); stopRevive = mountCards($('qrCard'), [{ move: { lean: 'lean', raise: 'raise-both', pump: 'pump' }[e.task.kind], title: T.title, text: T.text }]);
+  say('生命用完了，沒關係！做完這個小任務就復活！'); sfx.play('level');
+}
+function updateRevive() {
+  const r = session.revive;
+  $('qrBar').style.width = r.progress * 100 + '%';
+  $('qrTime').textContent = `${Math.max(0, Math.ceil(r.limit - r.t))} 秒`;
+}
+function onRevived(e) {
+  stopRevive?.(); stopRevive = null;
+  $('qRevive').hidden = true; hearts(e.hearts);
+  flash(e.success ? `復活成功！❤️❤️❤️ +${e.points}` : '答答幫你加油！❤️❤️');
+  say(e.success ? '復活成功！繼續闖關！' : '沒關係，答答送你兩顆愛心！');
+  if (e.success) stage.fx.confetti([0, 3, 1], 120, 2.5);
 }
 
 requestAnimationFrame(loop);

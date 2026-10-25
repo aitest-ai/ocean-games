@@ -18,6 +18,8 @@
     <div class="chip"><span class="lbl">關卡</span><b id="hLevel">—</b></div>
     <div class="chip"><span class="lbl">題目</span><b id="hStep">—</b></div>
     <div class="chip"><span class="lbl">分數</span><b id="hScore">0</b></div>
+    <div class="chip"><span class="lbl">生命</span><b id="hHearts">❤️❤️❤️</b></div>
+    <div class="chip"><span class="lbl">連對</span><b id="hCombo">—</b></div>
     <div class="chip" id="hWhoChip" hidden><span class="lbl">玩家</span><b id="hWho"></b></div>
     <button class="chip btn" id="hPause" title="暫停（Esc 或 P）">⏸ 暫停</button>
   </div>
@@ -30,6 +32,9 @@
   <div id="qHold" class="qhold" hidden><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="bg"/><circle cx="50" cy="50" r="44" class="fg" id="qHoldArc"/></svg><span id="qHoldTxt"></span></div>
   <div id="qFuse" class="qfuse" hidden><i id="qFuseBar"></i><b id="qFuseTxt"></b></div>
   <div id="qBanner" class="qbanner" hidden></div>
+  <div id="qExtra" class="qextra" hidden></div>
+  <div id="qFlash" class="qflash" hidden></div>
+  <div id="qRevive" class="overlay qrevive" hidden><div class="panel small"><h1 id="qrTitle"></h1><p class="sub" id="qrText"></p><div class="howto-grid" id="qrCard"></div><div class="qi-bar big"><i id="qrBar"></i></div><p class="note">剩下 <b id="qrTime"></b>・沒做完也沒關係，答答會送你兩顆愛心</p></div></div>
   <div id="qSay" class="qsay" hidden></div>
   <div id="qIntro" class="overlay qintro" hidden><div class="panel"><p class="qi-num" id="qiNum"></p><h1 id="qiTitle"></h1><p class="sub" id="qiRule"></p><div class="howto-grid" id="qiCards"></div><div class="qi-bar"><i id="qiBar"></i></div></div></div>
   <div class="hud-bottom">
@@ -86,6 +91,8 @@
         <label class="chk"><input type="checkbox" data-opt="seated"> 🪑 坐著玩（不用蹲、不用跳）</label>
         <label class="chk"><input type="checkbox" data-opt="simpleTF"> ○× 改成「往左傾＝○、往右傾＝×」</label>
         <label class="chk"><input type="checkbox" data-opt="simpleBuzz"> 搶答改成「舉一隻手就算」</label>
+        <label class="chk"><input type="checkbox" data-opt="combo"> 🔥 連續答對加分（3 連對 ×1.2、5 連對 ×1.5、8 連對 ×2）</label>
+        <label class="chk"><input type="checkbox" data-opt="revive"> ❤️ 生命與復活挑戰（答錯 3 次做個小動作就復活，不會出局）</label>
         <div class="row"><span>靈敏度</span><select id="mSens"><option value="low">低（動作要大）</option><option value="normal">中</option><option value="high">高（小動作也算）</option></select></div>
       </section>
       <section>
@@ -104,7 +111,8 @@
         <li>玩家離鏡頭 <b>1.5～2.5 公尺</b>，張開雙臂轉一圈碰不到人、桌角、牆。</li>
         <li>鏡頭前只站（坐）<b>一個人</b>；排隊的同學站在鏡頭照不到的兩側。</li>
         <li>動作<b>不用大</b>：身體歪一下、手舉過頭就夠了。可以<b>坐在椅子上</b>，只動上半身。</li>
-        <li>這款<b>不需要跑、跳</b>：選路靠身體傾斜，不要真的往旁邊跑。</li>
+        <li>選路靠<b>身體傾斜</b>，不要真的往旁邊跑；「原地衝刺」只要<b>擺手臂</b>，腳不用動。</li>
+        <li>「閃避障礙」的低欄只要<b>小跳一下</b>（雙腳離地一點點）；不想跳請勾「坐著玩」，會改成舉手和傾斜。</li>
         <li>一輪約 3～6 分鐘；頭暈、手痠就停下來，每人連續玩不超過 5 分鐘。</li>
         <li>看不到人時遊戲會自動暫停。🔒 鏡頭畫面只在這台裝置即時分析，不錄影、不上傳。</li>
       </ul>

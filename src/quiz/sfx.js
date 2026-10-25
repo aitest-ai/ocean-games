@@ -48,16 +48,23 @@ export class Sfx {
       cheer: () => this.noise(t, 1.4, { vol: 0.12, freq: 1800, q: 0.5, sweep: 0.8 }),
       count: () => this.tone(660, t, 0.15, { type: 'sine', vol: 0.15 }),
       go: () => this.tone(990, t, 0.35, { type: 'sine', vol: 0.18 }),
+      bump: () => { this.tone(120, t, 0.25, { type: 'triangle', vol: 0.22, slide: 0.7 }); this.noise(t, 0.12, { vol: 0.12, freq: 300, q: 1, type: 'lowpass' }); },
+      coin: () => { this.tone(988, t, 0.08, { type: 'square', vol: 0.06 }); this.tone(1319, t + 0.07, 0.25, { type: 'square', vol: 0.06 }); },
+      combo: () => [659, 784, 988, 1319].forEach((f, i) => this.tone(f, t + i * 0.05, 0.2, { type: 'triangle', vol: 0.12 })),
+      drum: () => { for (let i = 0; i < 14; i++) this.noise(t + i * 0.045, 0.05, { vol: 0.08 + i * 0.008, freq: 180, q: 1, type: 'lowpass' }); },
+      hit: () => { this.noise(t, 0.2, { vol: 0.25, freq: 600, q: 0.8 }); this.tone(220, t, 0.3, { type: 'square', vol: 0.1, slide: 0.5 }); },
+      boss: () => { this.tone(98, t, 1.2, { type: 'sawtooth', vol: 0.09, slide: 0.8 }); this.tone(147, t + 0.3, 1.0, { type: 'sawtooth', vol: 0.06, slide: 0.8 }); },
     };
     S[name]?.();
   }
   // a quiet four-bar beat that loops while a level runs
-  setMusic(on) {
+  setMusic(on, mood = 'happy') {
     clearInterval(this.loop); this.loop = null;
     if (!on || !this.ctx) return;
-    const bass = [131, 131, 165, 175, 131, 131, 196, 175];
+    // happy: major and bouncy; boss: minor and lower; fast: the race levels
+    const bass = mood === 'boss' ? [110, 110, 131, 123, 110, 110, 98, 104] : [131, 131, 165, 175, 131, 131, 196, 175];
     let i = 0;
-    const beat = 0.24;
+    const beat = mood === 'fast' ? 0.19 : mood === 'boss' ? 0.28 : 0.24;
     this.loop = setInterval(() => {
       if (this.ctx.state !== 'running') return;
       const t = this.ctx.currentTime + 0.02;

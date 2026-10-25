@@ -3,7 +3,7 @@
 // few points). Then choose: each lean moves the highlight one option left / right, raising ONE hand
 // confirms. If the choosing time runs out, the highlighted option is the answer.
 // Fuse burnt out without a buzz: the answer is shown, no points (and no other penalty).
-import { StepLevel, readTime, PREFER, prepareSteps } from './common.js';
+import { StepLevel, readTime, PREFER, prepareSteps, cursorStep } from './common.js';
 
 const FUSE = 9, CHOOSE = 8;
 
@@ -30,14 +30,7 @@ class Buzz extends StepLevel {
       return null;
     }
     this.chooseT += dt;
-    for (const e of inp.events) {
-      if (e.type === 'lean' && e.side !== 'center') {
-        const c = Math.min(Math.max(this.cursor + (e.side === 'left' ? -1 : 1), 0), n - 1);
-        if (c !== this.cursor) { this.cursor = c; this.moved = true; events.push({ type: 'sfx', name: 'step' }); }
-      }
-      // confirming takes one hand (the both-hands buzz must have come down first; the recognizer re-arms)
-      if (e.type === 'raise' && e.side !== 'both' && this.chooseT > 0.3) return { choice: this.cursor, bonus: this.fuseLeft };
-    }
+    if (cursorStep(this, inp, events, n)) return { choice: this.cursor, bonus: this.fuseLeft };
     if (this.chooseT >= this.chooseWindow) return { choice: this.cursor, bonus: this.fuseLeft };
     return null;
   }

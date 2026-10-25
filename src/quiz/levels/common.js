@@ -74,3 +74,30 @@ export class StepLevel {
     return events;
   }
 }
+
+// what the player did most over the last `ms` milliseconds (null values are ignored)
+export class Majority {
+  constructor(ms = 500) { this.ms = ms; this.h = []; }
+  push(t, v) { this.h.push({ t, v }); while (this.h.length && t - this.h[0].t > this.ms) this.h.shift(); }
+  best() {
+    const c = new Map();
+    for (const { v } of this.h) if (v !== null && v !== undefined) c.set(v, (c.get(v) || 0) + 1);
+    let b = null, n = 0;
+    for (const [v, k] of c) if (k > n) { b = v; n = k; }
+    return b;
+  }
+  clear() { this.h.length = 0; }
+}
+
+// choose with a cursor: each lean moves the highlight one step, raising ONE hand confirms
+// (shared by 倒數搶答 and the Boss level)
+export function cursorStep(lv, inp, events, n) {
+  for (const e of inp.events) {
+    if (e.type === 'lean' && e.side !== 'center') {
+      const c = Math.min(Math.max(lv.cursor + (e.side === 'left' ? -1 : 1), 0), n - 1);
+      if (c !== lv.cursor) { lv.cursor = c; lv.moved = true; events.push({ type: 'sfx', name: 'step' }); }
+    }
+    if (e.type === 'raise' && e.side !== 'both' && lv.chooseT > 0.3) return true;
+  }
+  return false;
+}

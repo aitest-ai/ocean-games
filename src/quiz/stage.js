@@ -134,7 +134,7 @@ function buildStudio(stage) {
       moodT += dt;
       // back wall pattern
       const g = wall.g, W = 256, H = 128;
-      const hue = mood === 'good' ? 140 : mood === 'bad' ? 200 : 265;
+      const hue = mood === 'good' ? 140 : mood === 'bad' ? 200 : mood === 'focus' ? 230 : 265;
       const grd = g.createLinearGradient(0, 0, W, H);
       grd.addColorStop(0, `hsl(${hue},70%,22%)`); grd.addColorStop(1, `hsl(${hue + 40},70%,32%)`);
       g.fillStyle = grd; g.fillRect(0, 0, W, H);
@@ -146,7 +146,12 @@ function buildStudio(stage) {
       for (let i = 0; i < 18; i++) { const x = (i * 53) % W, y = (i * 29) % H, s = 1 + ((Math.sin(t * 3 + i) + 1) * (calm ? 0.3 : 1)); g.fillRect(x, y, s, s); }
       wall.tex.needsUpdate = true;
       bulbs.forEach((b, i) => b.material.color.setHex(((i + Math.floor(t * (mood === 'good' ? 10 : 4))) % 3 === 0) || calm ? 0xfff3b0 : 0x6b5a2a));
-      beams.forEach(({ b, ph }) => { const s = calm ? 0.1 : 1; b.rotation.z = Math.sin(t * 0.7 + ph) * 0.45 * s; b.rotation.x = Math.cos(t * 0.5 + ph) * 0.25 * s; });
+      // during a question the spotlights swing onto the player (focus); otherwise they sweep the stage
+      beams.forEach(({ b, ph }) => {
+        const s = calm ? 0.1 : 1;
+        if (mood === 'focus') { const tz = Math.atan2(b.position.x, 11) * 0.9; b.rotation.z += (tz - b.rotation.z) * 0.05; b.rotation.x += (-0.3 - b.rotation.x) * 0.05; }
+        else { b.rotation.z = Math.sin(t * 0.7 + ph) * 0.45 * s; b.rotation.x = Math.cos(t * 0.5 + ph) * 0.25 * s; }
+      });
       const cheer = mood === 'good' && moodT < 2.5;
       seats.forEach((s, i) => { tmp.position.set(s.x, s.y + (cheer && !calm ? Math.abs(Math.sin(t * 9 + s.ph)) * 0.35 : 0), s.z); tmp.updateMatrix(); crowd.setMatrixAt(i, tmp.matrix); });
       crowd.instanceMatrix.needsUpdate = true;
