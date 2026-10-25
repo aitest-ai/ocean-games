@@ -1,6 +1,8 @@
 // 居家徒手訓練教練（fitness/index.html 的進入點）
 //
-// 流程：安全檢查 → 選單 → 擺好手機＋校正（站直量基準、第一次再量舒服的幅度）→ 倒數 → 做一組 → 結果
+// 兩種模式：
+//   冒險模式（adventure.js）：關卡 → 校正 → 暖身 → 主訓練（技能打怪）→ 收操 → 結果與本機進度
+//   自由練習：安全檢查 → 選單 → 擺好手機＋校正（站直量基準、第一次再量舒服的幅度）→ 倒數 → 做一組 → 結果
 // 輸入：kit.on('pose') 的原始關節點 → 動作分析器（packages/taikan-kit/src/exercise/）→ 次數、提示、可信度。
 // 沒有鏡頭時用「鍵盤模擬」：按鍵讓合成人體做動作，走跟鏡頭一樣的辨識流程。
 import { createTaikan } from '../../packages/taikan-kit/src/index.js';
@@ -10,6 +12,7 @@ import { drawBody, fitRect, groupStatus } from './mirror.js';
 import { renderDebug } from './debug.js';
 import { Sfx } from './audio.js';
 import { load, save, loadProfile, saveTarget, clearAll } from './store.js';
+import { createAdventure } from './adventure.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -17,7 +20,7 @@ const DEBUG = params.has('debug');
 const REP_CHOICES = { squat: [5, 8, 10, 12, 15], jack: [10, 15, 20, 30], legRaise: [5, 8, 10, 12] };
 const SET_LIMIT_MS = 4 * 60 * 1000; // 一組最多 4 分鐘（鼓勵休息）
 
-const settings = { input: 'camera', exercise: 'squat', showVideo: true, sound: true, reps: { squat: 10, jack: 20, legRaise: 8 }, ...load('settings', {}) };
+const settings = { mode: 'adventure', calm: false, input: 'camera', exercise: 'squat', showVideo: true, sound: true, reps: { squat: 10, jack: 20, legRaise: 8 }, ...load('settings', {}) };
 if (params.get('input') === 'keyboard') settings.input = 'keyboard';
 const persist = () => save('settings', settings);
 
@@ -36,7 +39,7 @@ window.fitness = { get analyzer() { return analyzer; }, get calibrator() { retur
 if (DEBUG) { document.body.classList.add('has-debug'); $('debug').hidden = false; $('mDebug').href = '?'; $('mDebug').textContent = '關閉除錯畫面'; }
 
 // ── 畫面切換 ──
-const OVERLAYS = ['safety', 'menu', 'summary', 'pause'];
+const OVERLAYS = ['safety', 'menu', 'summary', 'pause', 'advResult'];
 function show(id) {
   for (const o of OVERLAYS) $(o).hidden = o !== id;
   $('setup').hidden = id !== 'setup';
@@ -46,7 +49,7 @@ function show(id) {
 // ── 安全檢查 ──
 const boxes = [...document.querySelectorAll('#safetyList input')];
 for (const b of boxes) b.onchange = () => { $('safetyOk').disabled = !boxes.every((x) => x.checked); };
-$('safetyOk').onclick = () => { save('safetyAck', new Date().toISOString().slice(0, 10)); phase = 'menu'; show('menu'); };
+$('safetyOk').onclick = () => { save('safetyAck', new Date().toISOString().slice(0, 10)); phase = 'menu'; show('menu'); adventure.buildMenu(); };
 $('mSafety').onclick = () => { phase = 'safety'; show('safety'); };
 
 // ── 選單 ──
@@ -69,12 +72,20 @@ function buildMenu() {
     syncMenu();
   };
   seg('mInput', settings.input, (v) => { settings.input = v; persist(); syncMenu(); });
+  seg('mMode', settings.mode, (v) => { settings.mode = v; persist(); syncMode(); });
+  syncMode();
   for (const box of document.querySelectorAll('[data-set]')) {
     box.checked = !!settings[box.dataset.set];
     box.onchange = () => { settings[box.dataset.set] = box.checked; sfx.on = settings.sound; persist(); };
   }
   $('mReps').onchange = (e) => { settings.reps[settings.exercise] = Number(e.target.value); persist(); };
   syncMenu();
+}
+function syncMode() {
+  const adv = settings.mode === 'adventure';
+  $('advMenu').hidden = !adv; $('practiceMenu').hidden = adv;
+  document.body.classList.toggle('practice', !adv);
+  if (adv) adventure.buildMenu();
 }
 function seg(id, value, onPick) {
   const el = $(id);
@@ -121,15 +132,16 @@ $('mClear').onclick = () => {
 };
 
 // ── 開始一組 ──
-$('mStart').onclick = startSet;
+$('mStart').onclick = () => (settings.mode === 'adventure' ? adventure.start() : startSet());
 $('rAgain').onclick = startSet;
 $('rMenu').onclick = toMenu;
 $('sBack').onclick = toMenu;
-$('pQuit').onclick = toMenu;
-$('hEnd').onclick = () => endSet('manual');
+$('pQuit').onclick = () => { if (phase === 'paused' && pausedFrom === 'adv') { show(null); phase = 'adv'; adventure.stop(); } else toMenu(); };
+$('hEnd').onclick = () => (phase === 'adv' ? adventure.endSet() : endSet('manual'));
 $('hPause').onclick = () => pause('暫停', '休息一下、喝口水，準備好再繼續。');
 $('pResume').onclick = resume;
 $('hStop').onclick = () => {
+  if (phase === 'adv') { adventure.stop(); return; }
   endSet('stop');
   $('rTitle').textContent = '先停下來休息';
   $('rBody').innerHTML = `<p class="sub">做得對：<b>不舒服就停</b>是最重要的安全規則。</p>
@@ -138,14 +150,15 @@ $('hStop').onclick = () => {
     <li>關節或肌肉疼痛：今天先不要再練這個動作，之後仍會痛請諮詢醫師或物理治療師。</li></ul>`;
 };
 
-async function ensureInput() {
+async function ensureInput(ex = settings.exercise) {
   const want = settings.input;
   if (want === 'keyboard') {
     if (kit.source !== 'keyboard' || !sim) {
-      sim = new FitnessSim({ exercise: settings.exercise, onInfo: (t) => bubble(t, 'praise', '鍵盤模擬') });
+      sim = new FitnessSim({ exercise: ex, onInfo: (t) => bubble(t, 'praise', '鍵盤模擬') });
       await kit.use(sim);
     }
-    sim.setExercise(settings.exercise);
+    sim.setExercise(ex);
+    syncSimLabels();
     sim.setView(0); // 先面向鏡頭量站姿
     $('video').classList.add('hide');
   } else {
@@ -162,30 +175,42 @@ function aspectNow() {
   return sim?.aspect ?? 0.75;
 }
 
-async function startSet() {
+// 開啟輸入（鏡頭或鍵盤模擬）；失敗時在選單說明原因，回傳 false
+async function tryInput(ex) {
   persist();
   await sfx.enable();
   $('mStatus').textContent = '';
-  try { await ensureInput(); }
+  try { await ensureInput(ex); return true; }
   catch (err) {
     phase = 'menu'; show('menu');
     $('mStatus').textContent = '⚠️ 無法使用鏡頭：' + (err.name === 'NotAllowedError' ? '請在瀏覽器允許使用鏡頭' : err.name === 'NotFoundError' ? '找不到鏡頭' : err.message) + '。可以先改用鍵盤模擬。';
-    return;
+    return false;
   }
-  const d = EXERCISES[settings.exercise];
-  const prof = loadProfile();
-  const needRom = !!d.calib && ($('mRecal').checked || prof.targets[d.calib.key] == null);
-  calibrator = new Calibrator({ exercise: d.id, rom: needRom, emit: onCalibEvent });
+}
+
+// 擺放與校正畫面（自由練習與冒險模式共用）
+function setupScreen({ title, place, step, demo, skipRom = false }) {
   analyzer = null; recent = null;
   phase = 'setup';
   show('setup');
   $('hud').hidden = true;
-  $('sTitle').textContent = `${d.icon} ${d.name}：擺好手機`;
-  $('sPlace').innerHTML = d.placement;
-  $('sStep').textContent = needRom ? '第 1 步：面向鏡頭站直不動 2 秒　第 2 步：做幾下「舒服幅度」的動作' : '面向鏡頭站直不動 2 秒，就會開始。';
-  $('sSkipRom').hidden = true;
+  $('sTitle').textContent = title;
+  $('sPlace').innerHTML = place;
+  $('sStep').textContent = step;
+  $('sSkipRom').hidden = !skipRom;
+  $('sRing').style.strokeDashoffset = 100;
+  const d = EXERCISES[demo];
   setupDemo = makeDemo($('demoCv'), d.id);
-  $('demoCap').textContent = `手機放${VIEW_NAMES[d.bestView]}時，畫面會像這樣`;
+  $('demoCap').textContent = `手機放${VIEW_NAMES[d.bestView]}時，${d.name}會像這樣`;
+}
+
+async function startSet() {
+  if (!(await tryInput())) return;
+  const d = EXERCISES[settings.exercise];
+  const prof = loadProfile();
+  const needRom = !!d.calib && ($('mRecal').checked || prof.targets[d.calib.key] == null);
+  calibrator = new Calibrator({ exercise: d.id, rom: needRom, emit: onCalibEvent });
+  setupScreen({ title: `${d.icon} ${d.name}：擺好手機`, place: d.placement, step: needRom ? '第 1 步：面向鏡頭站直不動 2 秒　第 2 步：做幾下「舒服幅度」的動作' : '面向鏡頭站直不動 2 秒，就會開始。', demo: d.id });
   logLine(`開始：${d.name}（${needRom ? '量站姿＋舒服幅度' : '量站姿'}）`);
 }
 let setupDemo = null;
@@ -282,8 +307,10 @@ function updateCounter() {
   } else { $('hCount').textContent = r.total; $('hTarget').textContent = `/ ${target}`; $('hSides').textContent = ''; }
 }
 
+let pausedFrom = null;
 function pause(title, text) {
-  if (phase !== 'train' && phase !== 'count') return;
+  if (phase !== 'train' && phase !== 'count' && phase !== 'adv') return;
+  pausedFrom = phase;
   phase = 'paused';
   clearInterval(beginCountdown.timer); $('count').hidden = true;
   $('pTitle').textContent = title; $('pText').textContent = text;
@@ -292,8 +319,8 @@ function pause(title, text) {
 function resume() {
   if (phase !== 'paused') return;
   show(null);
-  analyzer.counter.interrupt(); // 回來後要先站好才開始算
-  phase = 'train';
+  analyzer?.counter.interrupt(); // 回來後要先站好才開始算
+  phase = pausedFrom === 'adv' ? 'adv' : 'train';
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause('暫停', '切到別的畫面時自動暫停。'); });
 
@@ -347,10 +374,12 @@ function syncSimLabels() {
 }
 
 // ── 骨架資料進來 ──
+let lastPoseAt = 0;
 kit.on('pose', (pose) => {
-  lastPose = pose;
+  lastPose = pose; lastPoseAt = performance.now();
   const aspect = aspectNow();
   if (phase === 'setup' && calibrator) calibrator.feed(pose, { aspect });
+  else if (phase === 'adv' && analyzer) frame = analyzer.feed(pose, { aspect });
   else if ((phase === 'train' || phase === 'count') && analyzer) {
     frame = analyzer.feed(pose, { aspect });
     if (phase === 'train' && performance.now() - setStart > SET_LIMIT_MS) endSet('time');
@@ -395,8 +424,12 @@ async function startSetReplay() {
 // ── 每一格畫面 ──
 const cv = $('overlay'), ctx = cv.getContext('2d');
 let lastDebug = 0;
+let lastNow = performance.now();
 function loop(now) {
   requestAnimationFrame(loop);
+  const dt = Math.min((now - lastNow) / 1000, 0.1);
+  lastNow = now;
+  if (phase === 'adv') adventure.update(dt);
   const W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2);
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -418,11 +451,11 @@ function loop(now) {
   }
   if (lastPose && phase !== 'menu' && phase !== 'safety') {
     let status = {};
-    if (analyzer && (phase === 'train' || phase === 'count')) status = groupStatus(analyzer.checkList(), now - recentAt < 2500 ? recent : null);
+    if (analyzer && (phase === 'train' || phase === 'count' || phase === 'adv')) status = groupStatus(analyzer.checkList(), now - recentAt < 2500 ? recent : null);
     let kp = lastPose.kp;
     // 用分析器平滑過的關節畫（比較不抖），座標換回正規化
     const pts = frame?.pts;
-    if (pts && analyzer && phase !== 'setup') { const a = aspectNow(); kp = {}; for (const [n, p] of Object.entries(pts)) kp[n] = { x: p.x / a, y: p.y, v: p.v }; }
+    if (pts && analyzer && phase !== 'setup' && frame && now - lastPoseAt < 300) { const a = aspectNow(); kp = {}; for (const [n, p] of Object.entries(pts)) kp[n] = { x: p.x / a, y: p.y, v: p.v }; }
     drawBody(ctx, kp, rect, { status, labels: DEBUG ? debugLabels(frame?.f) : null });
   }
   if (phase === 'menu') for (const d of demos) d.draw(now);
@@ -432,7 +465,7 @@ function loop(now) {
     $('sRing').style.strokeDashoffset = 100 - st.progress * 100;
     if (st.msg !== $('sMsg').textContent) $('sMsg').textContent = st.msg;
   }
-  if (phase === 'train' || phase === 'count') hudUpdate();
+  if (phase === 'train' || phase === 'count' || (phase === 'adv' && analyzer)) hudUpdate();
   if (DEBUG && now - lastDebug > 120) {
     lastDebug = now;
     renderDebug($('debug'), { analyzer, frame: analyzer ? frame : null, log, calib: phase === 'setup' ? calibrator?.state() : null, source: kit.source, kit });
@@ -478,6 +511,22 @@ function statusText(code) {
   if (code === 'wrongView') { const d = analyzer.def; return `${d.name}要${VIEW_NAMES[d.bestView]}對著鏡頭才看得到，請${d.bestView === 'side' ? '轉成側身' : '轉向鏡頭'}`; }
   return map[code] || '';
 }
+
+// ── 冒險模式 ──
+const app = {
+  $, kit, sfx, settings, show, bubble, logLine, setupScreen, syncSim: syncSimLabels,
+  ensureInput: (ex) => tryInput(ex),
+  get sim() { return sim; }, get phase() { return phase; }, setPhase: (p) => { phase = p; },
+  setAnalyzer: (a) => { analyzer = a; frame = null; recent = null; }, setCalibrator: (c) => { calibrator = c; },
+  get calibrator() { return calibrator; }, get frame() { return frame; }, get lastPose() { return lastPose; },
+  onRepVisual(e) {
+    recent = e.results; recentAt = performance.now();
+    if (e.type === 'rep') { const c = document.querySelector('.counter'); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+    if (e.type === 'rep' && e.quality != null) $('hQuality').innerHTML = `上一下：<b>${Math.round(e.quality * 100)}</b> 分${e.good ? ' 👍' : ''}`;
+  },
+};
+const adventure = createAdventure(app);
+window.fitness.adventure = adventure;
 
 // ── 啟動 ──
 buildMenu();

@@ -58,6 +58,16 @@ export function standSpec() {
   };
 }
 
+// 上半身的方向（示範人偶要把手的位置換成「上半身座標」）
+export function torsoFrame(spec) {
+  const cp = Math.cos(spec.pitch || 0), sp = Math.sin(spec.pitch || 0);
+  const cr = Math.cos(spec.roll || 0), sr = Math.sin(spec.roll || 0);
+  const up = norm([sr * cp, cr * cp, sp]);
+  let lat = norm(cross(up, [0, 0, 1]));
+  if (len(lat) < 0.5) lat = [1, 0, 0];
+  return { up, lat, fwd: norm(cross(lat, up)) };
+}
+
 export function buildJoints(spec, scale = 1) {
   const P = spec.pelvis;
   const cp = Math.cos(spec.pitch || 0), sp = Math.sin(spec.pitch || 0);
@@ -156,6 +166,65 @@ export const MOTIONS = {
     const j = buildJoints(spec);
     spec.lHand = add(j.leftHip, [0.06, 0.06, 0.04]); spec.rHand = add(j.rightHip, [-0.06, 0.06, 0.04]);
     spec.lElbow = [1, 0, -0.6]; spec.rElbow = [-1, 0, -0.6];
+    return spec;
+  } },
+  // ── 暖身、收操（示範人偶與鍵盤模擬用；不計次數） ──
+  march: { ms: 1200, make(u) {
+    const spec = standSpec(), a = Math.sin(2 * Math.PI * u), lift = (x) => Math.max(x, 0);
+    const kl = lift(a) * 0.16, kr = lift(-a) * 0.16;
+    spec.lFoot = [0.13, BODY.ankle + kl, 0.02 + kl * 0.6]; spec.rFoot = [-0.13, BODY.ankle + kr, 0.02 + kr * 0.6];
+    spec.pelvis = [0, HIP_Y - 0.01 - Math.abs(a) * 0.01, 0];
+    spec.lHand = armHand(spec, 1, 8, 5 - a * 30); spec.rHand = armHand(spec, -1, 8, 5 + a * 30);
+    return spec;
+  } },
+  armCircle: { ms: 1600, make(u) {
+    const spec = standSpec(), a = 2 * Math.PI * u;
+    spec.lHand = armHand(spec, 1, 90 + 25 * Math.sin(a), 25 * Math.cos(a));
+    spec.rHand = armHand(spec, -1, 90 + 25 * Math.sin(a), 25 * Math.cos(a));
+    return spec;
+  } },
+  sideReach: { ms: 5000, make(u) {
+    const spec = standSpec(), sd = u < 0.5 ? 1 : -1, s = bump(u < 0.5 ? u * 2 : u * 2 - 1);
+    spec.roll = -sd * 18 * DEG * s;
+    spec.lFoot = [0.2, BODY.ankle, 0.02]; spec.rFoot = [-0.2, BODY.ankle, 0.02];
+    if (sd === 1) { spec.lHand = armHand(spec, 1, 10 + 160 * s, 5); spec.rHand = null; }
+    else { spec.rHand = armHand(spec, -1, 10 + 160 * s, 5); spec.lHand = null; }
+    return spec;
+  } },
+  // 大腿前側伸展：side 那隻腳往後彎、腳跟靠近屁股，同側手抓腳踝
+  quad: { ms: 4000, make(u, o = {}) {
+    const spec = standSpec(), sd = o.side === 'right' ? -1 : 1, s = smooth(Math.min(u * 10, 1));
+    const foot = [sd * 0.13, BODY.ankle + 0.55 * s, 0.02 - 0.28 * s];
+    if (sd === 1) { spec.lFoot = foot; spec.lKnee = [0, -1, 0.2]; } else { spec.rFoot = foot; spec.rKnee = [0, -1, 0.2]; }
+    const j = buildJoints(spec);
+    const grab = add(sd === 1 ? j.leftAnkle : j.rightAnkle, [0, 0.02, -0.02]);
+    if (sd === 1) spec.lHand = mix3(buildJoints(standSpec()).leftWrist, grab, s); else spec.rHand = mix3(buildJoints(standSpec()).rightWrist, grab, s);
+    spec[sd === 1 ? 'rHand' : 'lHand'] = armHand(spec, -sd, 60, 10);
+    return spec;
+  } },
+  hamstring: { ms: 4000, make(u) {
+    const spec = standSpec(), s = smooth(Math.min(u * 10, 1)), th = 25 * DEG * s;
+    spec.lFoot = [0.13, BODY.ankle + 0.03 * s, 0.02 + 0.35 * s];
+    spec.rFoot = [-0.13, BODY.ankle, -0.05 * s];
+    spec.rKnee = [0, 0, 1];
+    spec.pelvis = [0, HIP_Y - 0.06 * s, -0.12 * s];
+    spec.pitch = th + 15 * DEG * s;
+    const j = buildJoints(spec);
+    const knee = add(j.leftHip.map((v, i) => (v + spec.lFoot[i]) / 2), [0, 0.03, 0.02]);
+    spec.lHand = add(knee, [0.03, 0.02, 0]); spec.rHand = add(knee, [-0.07, 0.02, 0]);
+    return spec;
+  } },
+  shoulder: { ms: 5000, make(u) {
+    const spec = standSpec(), sd = u < 0.5 ? 1 : -1, s = bump(u < 0.5 ? u * 2 : u * 2 - 1);
+    const j = buildJoints(spec);
+    const chestOpp = add(sd === 1 ? j.rightShoulder : j.leftShoulder, [-sd * 0.12, -0.05, 0.12]);
+    if (sd === 1) { spec.lHand = mix3(j.leftWrist, chestOpp, s); spec.rHand = mix3(j.rightWrist, add(j.leftElbow, [0, 0.0, 0.18]), s); }
+    else { spec.rHand = mix3(j.rightWrist, chestOpp, s); spec.lHand = mix3(j.leftWrist, add(j.rightElbow, [0, 0.0, 0.18]), s); }
+    return spec;
+  } },
+  breathe: { ms: 5000, make(u) {
+    const spec = standSpec(), s = bump(u);
+    spec.lHand = armHand(spec, 1, 10 + 160 * s, 8); spec.rHand = armHand(spec, -1, 10 + 160 * s, 8);
     return spec;
   } },
   // ── 不該算次數的動作（測試「亂動不能亂計次」） ──

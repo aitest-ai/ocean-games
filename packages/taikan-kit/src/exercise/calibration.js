@@ -14,7 +14,8 @@ const STAND_MS = 2000;
 const ROM_TIMEOUT_MS = 40000;
 
 export class Calibrator {
-  constructor({ exercise = 'squat', aspect = 0.75, rom = true, emit = () => {} } = {}) {
+  // base：已經量過站姿（同一次訓練裡第二個動作），直接量舒服幅度
+  constructor({ exercise = 'squat', aspect = 0.75, rom = true, base = null, emit = () => {} } = {}) {
     this.def = typeof exercise === 'string' ? EXERCISES[exercise] : exercise;
     this.aspect = aspect;
     this.emit = emit;
@@ -26,11 +27,13 @@ export class Calibrator {
     this.result = null;
     this.msg = '請站到鏡頭前面';
     this.progress = 0;
+    if (base) { this.baseline = base; this.pendingRom = true; }
   }
 
   feed(pose, { aspect } = {}) {
     if (this.phase === 'done') return this.state();
     const t = pose?.t ?? 0;
+    if (this.pendingRom) { this.pendingRom = false; if (this.wantRom) this.startRom(t); else { this.finish(t, false); return this.state(); } }
     if (this.phase === 'stand') this.feedStand(pose, aspect ?? pose?.aspect ?? this.aspect, t);
     else if (this.phase === 'rom') this.feedRom(pose, aspect, t);
     return this.state();
