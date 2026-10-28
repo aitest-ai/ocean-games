@@ -216,7 +216,7 @@ export function createFishingMode(db) {
         if (e.type === 'raise' && e.side !== 'both' && performance.now() - card.shownAt > 1500) closeCatchCard(card.rec.release?.required ? 'release' : 'keep');
         return;
       }
-      if (S.phase === 'ready' && !s.autoCast && (e.type === 'swing' || e.type === 'paddle')) {
+      if (S.phase === 'ready' && !s.autoCast && (e.type === 'swing' || e.type === 'paddle') && !(reel.side || reel.value > 0.15)) { // 正在畫圈（捲線）時不算甩竿
         // a sideways swing aims toward its direction; an overhead stroke goes straight
         const off = e.type === 'swing' ? (e.dir === 'left' ? -0.22 : 0.22) : e.side === 'left' ? -0.08 : e.side === 'right' ? 0.08 : 0;
         const c = S.cast(e.strength ?? 0.7, S.aim + off);
@@ -238,7 +238,9 @@ export function createFishingMode(db) {
       if (S.phase === 'reveal') game.timeLeft += dt;
       else if (S.busy && game.timeLeft - dt < 0.3) { game.timeLeft = 0.3 + dt; if (!game.lastOne) { game.lastOne = true; out.push({ text: '最後一條！', kind: 'good' }); } }
       // fewer actions during the fight → fewer false triggers while drawing circles
-      const dis = [...mode.disabledActions(s), ...(S.phase === 'fight' ? ['paddle', 'swing'] : [])].join();
+      // 辨識器是各遊戲共用的，這裡只留釣魚需要的手勢：划槳／揮臂只用來「甩竿」，
+      // 所以只有「準備甩竿」時開著；等魚、咬餌、拉扯、看圖鑑時一律關掉，手畫圈就不會被誤認成划槳
+      const dis = [...mode.disabledActions(s), ...(S.phase === 'ready' ? [] : ['paddle', 'swing'])].join();
       if (dis !== lastDisabled) { lastDisabled = dis; game.kit.setDisabled(dis.split(',').filter(Boolean)); }
       const r = reel.value; // updated on every pose (see attach), not every frame
       const input = { reel: s.autoReel ? 0 : r, brace: s.autoBrace ? null : st.crouch || 0, lean: st.lean || 0 };
