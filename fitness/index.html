@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>居家徒手訓練教練</title>
+<meta name="description" content="用手機或平板的前鏡頭做徒手訓練：數次數、溫和提示姿勢。畫面只在裝置上分析，不錄影、不上傳。">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../game/game.css">
+<link rel="stylesheet" href="./fitness.css">
+</head>
+<body class="fit">
+
+<!-- 訓練畫面：鏡頭影像（只在這台裝置上顯示）＋骨架 -->
+<main id="stage" aria-label="鏡像畫面">
+  <video id="video" muted playsinline></video>
+  <canvas id="overlay"></canvas>
+  <div class="hud" id="hud" hidden>
+    <div class="hud-tl">
+      <div class="chip ex"><span id="hEx">—</span></div>
+      <div class="chip view"><span class="lbl">視角</span><b id="hView">—</b><span class="conf" id="hViewConf"></span></div>
+    </div>
+    <div class="counter" aria-live="polite"><b id="hCount">0</b><span id="hTarget">/ 10</span><small id="hSides"></small></div>
+    <div class="banner" id="hBanner" hidden></div>
+    <aside class="checks" id="hChecks" aria-label="姿勢檢查"></aside>
+    <div class="bubble" id="hBubble" aria-live="polite"></div>
+    <div class="hud-bl">
+      <span class="chip" id="hSource">⌨️ 鍵盤模擬</span>
+      <button class="chip btn" id="hPause">⏸ 暫停</button>
+      <button class="chip btn" id="hEnd">結束這組</button>
+      <button class="chip btn stop" id="hStop" title="身體不舒服時按這裡">🛑 不舒服，停止</button>
+    </div>
+    <div class="quality" id="hQuality"></div>
+  </div>
+  <div class="simkeys" id="simKeys" hidden></div>
+  <div class="countdown" id="count" hidden></div>
+</main>
+
+<!-- 擺放與校正（疊在畫面下方，看得到自己） -->
+<section class="sheet" id="setup" hidden>
+  <div class="sheet-in">
+    <div class="setup-demo"><canvas id="demoCv" width="300" height="400" aria-hidden="true"></canvas><small id="demoCap"></small></div>
+    <div class="setup-text">
+      <h2 id="sTitle">擺好手機</h2>
+      <p id="sPlace" class="sub"></p>
+      <div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" class="bg"/><circle cx="18" cy="18" r="15.9" class="fg" id="sRing"/></svg><b id="sMsg">請站到鏡頭前面</b></div>
+      <p class="note" id="sStep"></p>
+      <div class="actions"><button id="sSkipRom" hidden>先用預設值</button><button id="sBack">回選單</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 開始前的安全檢查（每次打開都要確認） -->
+<div class="overlay" id="safety">
+  <div class="panel">
+    <h1>開始前：安全檢查</h1>
+    <div class="disclaimer">
+      <p><b>這不是醫療或復健產品，不能取代教練或醫師。</b></p>
+      <ul>
+        <li>有<b>受傷、疼痛、心臟或血管疾病、高血壓、懷孕或產後、剛開過刀</b>，或任何不確定能不能運動的狀況，請<b>先諮詢醫師</b>。</li>
+        <li>運動中<b>任何疼痛、頭暈、胸悶、喘不過氣</b>就立刻停止（畫面上隨時有「🛑 不舒服，停止」按鈕）。</li>
+        <li>鏡頭看到的姿勢只是參考：單一鏡頭沒有深度，有些錯誤看不出來，<b>沒有提示不代表一定正確</b>。</li>
+        <li>未滿 18 歲請在家長同意下使用。</li>
+      </ul>
+    </div>
+    <h2>請確認（全部打勾才能開始）</h2>
+    <div class="checklist" id="safetyList">
+      <label class="chk"><input type="checkbox"> 🧹 周圍淨空：張開雙臂、往前後左右踏一步都碰不到家具、牆壁或人</label>
+      <label class="chk"><input type="checkbox"> 🦶 地面防滑、平坦（不要在地毯邊緣、磁磚濕滑處或樓梯旁）</label>
+      <label class="chk"><input type="checkbox"> 👟 穿上運動鞋（不要只穿襪子）</label>
+      <label class="chk"><input type="checkbox"> 💧 旁邊準備好水，隨時可以喝</label>
+      <label class="chk"><input type="checkbox"> 📱 手機／平板放穩（靠牆或用支架），不會被踢到或掉下來</label>
+    </div>
+    <p class="note">🔒 隱私：鏡頭畫面只在這台裝置上即時分析，<b>不錄影、不上傳</b>；訓練紀錄只存在這台裝置。</p>
+    <div class="actions">
+      <button class="primary" id="safetyOk" disabled>我確認了，繼續</button>
+      <a class="link" href="../">回首頁</a>
+      <a class="link" href="../docs/?doc=fitness" target="_blank">說明文件</a>
+    </div>
+  </div>
+</div>
+
+<!-- 選單 -->
+<div class="overlay" id="menu" hidden>
+  <div class="panel">
+    <h1>🏋️ 居家徒手訓練教練</h1>
+    <div class="seg modes" id="mMode"><button data-v="adventure">⚔️ 冒險模式</button><button data-v="practice">🎯 自由練習（單一動作）</button></div>
+    <div id="advMenu">
+      <p class="sub" id="aWelcome"></p>
+      <div class="advgrid">
+        <section class="levels">
+          <div class="seg" id="aKind"><button data-v="levels">👾 冒險關卡</button><button data-v="plan">📅 訓練計畫</button></div>
+          <div id="aLevelBox"><h2>關卡（完整做完一關才會解鎖下一關）</h2><div id="aLevels"></div></div>
+          <div id="aPlanBox" hidden><h2>訓練計畫（每週 3 次、4 週，次數慢慢增加）</h2><div id="aPlans"></div></div>
+          <h2 style="margin-top:10px">難度（只改次數）</h2><div class="seg" id="aDiff"></div><p class="note" id="aDiffNote"></p></section>
+        <section><h2>今天的任務</h2><ul class="quests" id="aQuests"></ul>
+          <h2>本週</h2><div class="week" id="aWeek"></div><p class="note" id="aWeekNote"></p>
+          <h2>個人最佳</h2><div class="note" id="aBests"></div></section>
+      </div>
+      <p class="note">每一關都是：<b>暖身（約 2 分鐘，不能跳過）→ 主訓練（每一組是一招技能，組間休息）→ 收操伸展（約 2 分鐘，不能跳過）</b>。做完預定次數一定能打倒怪獸；動作越標準，傷害和星星越多。</p>
+    </div>
+    <div id="practiceMenu" hidden>
+    <p class="sub">選一個動作做一組。鏡頭會幫你<b>數次數</b>，並在看得清楚的時候給你<b>溫和的姿勢提示</b>；看不清楚的項目會直接告訴你「這個角度看不到」，不會亂猜。<br><small>自由練習沒有暖身與收操，請自己先熱身。</small></p>
+    <div class="exgrid" id="exGrid"></div>
+    </div>
+    <div class="grid">
+      <section>
+        <h2>操作方式</h2>
+        <div class="seg" id="mInput"><button data-v="camera">📷 鏡頭</button><button data-v="keyboard">⌨️ 鍵盤模擬（沒有鏡頭時）</button></div>
+        <p class="note" id="mInputNote"></p>
+      </section>
+      <section class="pr-only">
+        <h2>這一組做幾下</h2>
+        <select id="mReps"></select>
+        <p class="note">先求動作標準，做不完也沒關係，隨時可以按「結束這組」。</p>
+      </section>
+      <section>
+        <h2>畫面與聲音</h2>
+        <label class="chk"><input type="checkbox" data-set="showVideo"> 顯示鏡頭影像（不勾＝只顯示骨架線條）</label>
+        <label class="chk"><input type="checkbox" data-set="sound"> 音效</label>
+      </section>
+      <section>
+        <h2>無障礙與省電</h2>
+        <label class="chk"><input type="checkbox" data-set="lowImpact"> 低衝擊（不跳：開合跳改左右踏步、高抬腿改抬膝踏步）</label>
+        <label class="chk"><input type="checkbox" data-set="calm"> 減少動畫與閃爍</label>
+        <label class="chk"><input type="checkbox" data-set="big"> 大字</label>
+        <label class="chk"><input type="checkbox" data-set="lite"> 省電（不顯示 3D 示範人偶，改用簡單線條）</label>
+        <label class="chk pr-only"><input type="checkbox" data-set="experimental"> 顯示實驗動作（地板：棒式、伏地挺身、臀橋）</label>
+        <div class="row"><span>體重（粗估熱量用，可不填）</span><input type="number" id="mWeight" min="25" max="250" step="1" inputmode="numeric" style="width:6em"> 公斤</div>
+      </section>
+      <section>
+        <h2>個人校正</h2>
+        <div id="mCalib" class="note"></div>
+        <label class="chk"><input type="checkbox" id="mRecal"> 這次重新量「舒服的幅度」</label>
+      </section>
+    </div>
+    <div class="actions">
+      <button class="primary" id="mStart">開始</button>
+      <button id="mHistory">📈 成績與歷史</button>
+      <button id="mSafety">安全須知</button>
+      <button id="mClear">清除這台裝置上的紀錄</button>
+      <a class="link" href="../">回首頁</a>
+      <a class="link" href="?debug" id="mDebug">除錯畫面</a>
+    </div>
+    <p class="note" id="mStatus"></p>
+  </div>
+</div>
+
+<!-- 冒險模式：訓練中 -->
+<div class="adv" id="adv" hidden>
+  <div class="adv-top">
+    <div class="steps" id="aSteps"></div>
+    <div class="mon"><b id="aMon"></b><div class="hp"><i id="aHp"></i></div><small id="aHpTxt"></small></div>
+  </div>
+  <canvas id="coachCv" aria-label="示範人偶與怪獸"></canvas>
+  <canvas id="coach2d" width="400" height="330" aria-label="示範動作（簡單線條）" hidden></canvas>
+  <div class="combo" id="aCombo"></div>
+  <div class="charge" id="aCharge" hidden><span>蓄力</span><div class="bar"><i id="aChargeBar"></i></div></div>
+  <div class="routine" id="aRoutine" hidden>
+    <small id="aRtKind"></small>
+    <h2 id="aRtTitle"></h2>
+    <div class="timer" id="aRtTime"></div>
+    <p id="aRtTip"></p>
+    <p class="presence" id="aRtState"></p>
+    <div class="actions" id="aRestBtns"><button id="aRestSkip">我準備好了</button><button id="aRestMore">多休息 15 秒</button></div>
+    <div class="actions"><button class="stopbtn" id="aStop">🛑 不舒服，停止</button></div>
+  </div>
+  <div class="floaters" id="aFloat"></div>
+</div>
+
+<!-- 成績與歷史 -->
+<div class="overlay" id="history" hidden>
+  <div class="panel">
+    <h1>📈 成績與歷史</h1>
+    <div id="histBody"></div>
+    <div class="actions"><button class="primary" id="histClose">關閉</button><button id="histExport">下載我的紀錄（只存到這台裝置）</button></div>
+  </div>
+</div>
+
+<!-- 冒險模式：結果 -->
+<div class="overlay" id="advResult" hidden>
+  <div class="panel small">
+    <h1 id="arTitle"></h1>
+    <div class="stars" id="arStars"></div>
+    <div id="arBody"></div>
+    <div class="actions"><button class="primary" id="arNext">下一關</button><button id="arMenu">回選單</button></div>
+  </div>
+</div>
+
+<!-- 一組結束 -->
+<div class="overlay" id="summary" hidden>
+  <div class="panel small">
+    <h1 id="rTitle">完成！</h1>
+    <div id="rBody"></div>
+    <div class="actions">
+      <button class="primary" id="rAgain">再做一組</button>
+      <button id="rMenu">換動作</button>
+    </div>
+  </div>
+</div>
+
+<!-- 暫停／停止 -->
+<div class="overlay" id="pause" hidden>
+  <div class="panel small">
+    <h1 id="pTitle">暫停</h1>
+    <p class="sub" id="pText">休息一下，喝口水。</p>
+    <div class="actions"><button class="primary" id="pResume">繼續</button><button id="pQuit">回選單</button></div>
+  </div>
+</div>
+
+<aside class="debug" id="debug" hidden></aside>
+<script type="module" src="../src/fitness/main.js"></script>
+</body>
+</html>

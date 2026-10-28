@@ -9,6 +9,8 @@
 | `land/ballpark.html` | 棒球場展示：白天／黃昏／夜間、各視角、畫質切換 |
 | `src/land/` | 陸地系列：少棒球場場地底座（`ballpark.js`、尺寸 `dims.js`、程式生成貼圖 `textures.js`）、球員人偶 `figure.js`、three.js 世界 `world.js` |
 | `src/game/batting.js`、`batting-logic.js` | 打擊練習（規則可在 node 測試） |
+| `fitness/`、`src/fitness/` | 🏋️ 居家徒手訓練教練（成人、青少年在家練）：鏡頭數次數、溫和提示姿勢，說明見 `docs/fitness.md` |
+| `packages/taikan-kit/src/exercise/` | 健身動作分析（新增的獨立模組，不改原本的辨識器）：關節角度、次數狀態機、視角與可信度、個人校正、合成人體 |
 | `src/game/shell.js` | 共用遊戲外殼：選單、怎麼玩動畫、HUD、暫停／結算、畫質分級；海洋遊戲用海面（載具浮在海上、鏡頭跟隨），`world: 'land'` 的遊戲用棒球場 |
 | `src/game/kayak.js`、`surf.js`、`sail.js` | 各遊戲（外殼的 mode）；規則與物理在 `logic.js`、`surf-logic.js`、`sail-logic.js`（可在 node 測試） |
 | `packages/taikan-kit/` | 體感輸入層（可獨立抽出）：鏡頭姿態 → 動作事件；鍵盤／預錄模擬；姿態模型自架於 `vendor/mediapipe/`。說明見其 README |
