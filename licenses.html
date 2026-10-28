@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第三方授權</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg: #071521; --panel: #0f2536; --panel2: #15324a; --line: #23465f; --text: #eaf3f9; --muted: #9fb7c9; --accent: #ffb547; --blue: #6fc0ff; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.7 system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  a { color: var(--blue); overflow-wrap: anywhere; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: clamp(26px, 5vw, 36px); line-height: 1.25; margin: 8px 0 4px; }
+  h2 { font-size: 21px; margin: 0 0 8px; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin-top: 16px; }
+  dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 15px; }
+  dt { color: var(--muted); }
+  dd { margin: 0; }
+  p { margin: 8px 0; }
+  .small { font-size: 14px; color: var(--muted); }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--accent); font-weight: 700; font-size: 15px; }
+  pre { white-space: pre-wrap; background: var(--panel2); border-radius: 10px; padding: 12px; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+  .back { color: var(--accent); font-weight: 700; text-decoration: none; }
+  @media (max-width: 520px) { dl { grid-template-columns: 1fr; } dt { margin-top: 6px; } }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← 回首頁</a>
+  <h1>第三方授權</h1>
+  <p class="lead">本平台使用了以下由他人創作、以開放授權釋出的程式、模型與素材。感謝這些作者。<br>
+  未列在這裡的畫面、音效與程式，都是本平台自行製作（包含用程式即時合成的雨聲與大部分雷聲）。</p>
+
+  <section>
+    <h2>open-water（海面與天氣畫面引擎）</h2>
+    <dl>
+      <dt>作者</dt><dd>Leonxlnx</dd>
+      <dt>來源</dt><dd><a href="https://github.com/Leonxlnx/open-water">github.com/Leonxlnx/open-water</a></dd>
+      <dt>授權</dt><dd>MIT License</dd>
+      <dt>用在</dt><dd>海面、天空、天氣的畫面與海浪、風聲合成；首頁背景圖也是由它算出來的畫面</dd>
+    </dl>
+    <details><summary>授權條款全文</summary>
+<pre>MIT License
+
+Copyright (c) 2026 Leonxlnx
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+    </details>
+  </section>
+
+  <section>
+    <h2>MediaPipe Tasks Vision（姿態辨識程式）</h2>
+    <dl>
+      <dt>作者</dt><dd>Google LLC（MediaPipe 專案）</dd>
+      <dt>版本</dt><dd>@mediapipe/tasks-vision 0.10.21（未經修改）</dd>
+      <dt>來源</dt><dd><a href="https://github.com/google-ai-edge/mediapipe">github.com/google-ai-edge/mediapipe</a></dd>
+      <dt>授權</dt><dd>Apache License 2.0</dd>
+      <dt>用在</dt><dd>在您的裝置上從鏡頭畫面算出身體關節位置（影像不會離開裝置）</dd>
+    </dl>
+    <p class="small">授權條款全文（含 MediaPipe 內含元件的聲明）：<a href="packages/taikan-kit/vendor/mediapipe/LICENSE">LICENSE</a>，或 <a href="https://www.apache.org/licenses/LICENSE-2.0">apache.org/licenses/LICENSE-2.0</a></p>
+  </section>
+
+  <section>
+    <h2>Pose Landmarker Lite 姿態模型（BlazePose GHUM 3D）</h2>
+    <dl>
+      <dt>作者</dt><dd>Google LLC（MediaPipe 專案）</dd>
+      <dt>檔案</dt><dd>pose_landmarker_lite.task（float16，第 1 版，未經修改）</dd>
+      <dt>來源</dt><dd><a href="https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker">ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker</a></dd>
+      <dt>授權</dt><dd>Apache License 2.0（依官方模型說明書 <a href="https://storage.googleapis.com/mediapipe-assets/Model%20Card%20BlazePose%20GHUM%203D.pdf">Model Card BlazePose GHUM 3D</a>）</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>雷聲錄音</h2>
+    <dl>
+      <dt>作品</dt><dd><a href="https://commons.wikimedia.org/wiki/File:Rhumphries_-_rbh-thunder-storm.ogg">Rhumphries - rbh-thunder-storm.ogg</a></dd>
+      <dt>作者</dt><dd>RHumphries</dd>
+      <dt>出處</dt><dd>Wikimedia Commons</dd>
+      <dt>授權</dt><dd><a href="https://creativecommons.org/licenses/by/3.0/deed.zh_TW">創用 CC 姓名標示 3.0（CC BY 3.0）</a></dd>
+      <dt>修改</dt><dd>擷取四個片段、加上淡入淡出、調整音量、轉成 MP3</dd>
+      <dt>用在</dt><dd>海景展示中的遠方雷聲</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>marked（文件頁的排版程式）</h2>
+    <dl>
+      <dt>作者</dt><dd>MarkedJS、Christopher Jeffrey</dd>
+      <dt>版本</dt><dd>12.0.2</dd>
+      <dt>來源</dt><dd><a href="https://github.com/markedjs/marked">github.com/markedjs/marked</a></dd>
+      <dt>授權</dt><dd>MIT License</dd>
+      <dt>用在</dt><dd>說明文件頁面（遊戲本身不會用到）</dd>
+    </dl>
+    <details><summary>授權條款全文</summary>
+<pre>MIT License
+
+Copyright (c) 2018+, MarkedJS (https://github.com/markedjs/)
+Copyright (c) 2011-2018, Christopher Jeffrey (https://github.com/chjj/)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.</pre>
+    </details>
+  </section>
+
+  <section>
+    <h2>字型與圖示</h2>
+    <p>本平台沒有附帶字型檔或表情符號圖檔：文字與 🛶🏄⛵ 等圖示，都是用您裝置內建的字型顯示，所以在不同裝置上看起來會略有不同。</p>
+  </section>
+
+  <p class="small">若您認為本頁有遺漏或錯誤，請與我們聯絡（聯絡方式待補）。最後更新：2026 年 10 月。</p>
+</main>
+</body>
+</html>

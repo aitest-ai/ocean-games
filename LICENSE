@@ -21,4 +21,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 The audio recordings in assets/audio are not covered by this license; see
-assets/audio/CREDITS.md for their authors and Creative Commons licenses.
+assets/audio/CREDITS.md for their authors and Creative Commons licenses, and
+docs/licenses.md for every third-party component.

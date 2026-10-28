@@ -1,9 +1,25 @@
-// Sound: procedural sea wash, whitecap hiss, gusting wind and rain fizz, plus recorded rain and
-// thunder. Every modulation is a deterministic function of time, so the same engine renders the
+// Sound: procedural sea wash, whitecap hiss, gusting wind and rain fizz; a synthesized rain bed and
+// thunder (synth.js), plus four recorded distant thunder rolls (CC BY 3.0, see docs/licenses.md).
+// Every modulation is a deterministic function of time, so the same engine renders the
 // live mix (AudioContext) and the offline soundtrack of the film (OfflineAudioContext).
+import { synthRain, synthThunder } from './synth.js';
 
-const THUNDER_FILES = ['thunder_a', 'thunder_b', 'thunder_c', 'thunder_d', 'thunder_e', 'thunder_f'];
+const RECORDED = ['thunder_a', 'thunder_b', 'thunder_c', 'thunder_d'];
+const THUNDER_FILES = [...RECORDED, 'thunder_e', 'thunder_f']; // e, f: synthesized rolls
+// synthesized thunder: thunder_close (a strike a few hundred metres off) and two distant rolls
+const SYNTH_THUNDER = {
+  thunder_close: { dist: 350, seed: 1, seconds: 22, energy: 0.75 },
+  thunder_e: { dist: 2600, seed: 2, seconds: 20, energy: 0.75 },
+  thunder_f: { dist: 4200, seed: 3, seconds: 24, energy: 0.75 },
+};
+const SYNTH_RATE = 24000; // rain and thunder carry little above 8 kHz: half the work at 24 kHz
 const BASE = new URL('../../assets/audio/', import.meta.url);
+
+function toBuffer(ctx, chs, sampleRate) {
+  const buf = ctx.createBuffer(chs.length, chs[0].length, sampleRate);
+  chs.forEach((d, ch) => buf.getChannelData(ch).set(d));
+  return buf;
+}
 
 function hash(n) { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
 function vnoise(t) { const i = Math.floor(t), f = t - i, u = f * f * (3 - 2 * f); return hash(i) * (1 - u) + hash(i + 1) * u; }
@@ -63,13 +79,26 @@ export class AudioEngine {
   }
 
   async loadBuffers(ctx) {
-    const names = ['rain_heavy', ...THUNDER_FILES, 'thunder_close'];
-    await Promise.all(names.map(async (n) => {
+    this.buffers.rain_heavy = toBuffer(ctx, synthRain(SYNTH_RATE), SYNTH_RATE);
+    await Promise.all(RECORDED.map(async (n) => {
       try {
         const res = await fetch(new URL(`${n}.mp3`, BASE));
         this.buffers[n] = await ctx.decodeAudioData(await res.arrayBuffer());
       } catch (e) { console.warn('audio', n, e); }
     }));
+    // synthesized thunder takes ~0.2 s each: offline renders make it now; live play makes it at the
+    // first strike, one per task (that strike and any before they are ready use a recorded roll),
+    // so games without lightning never pay for it
+    this.makeThunder = (n) => { this.buffers[n] = toBuffer(ctx, synthThunder(SYNTH_RATE, SYNTH_THUNDER[n]), SYNTH_RATE); };
+    this.pendingThunder = Object.keys(SYNTH_THUNDER);
+    if (typeof OfflineAudioContext !== 'undefined' && ctx instanceof OfflineAudioContext) this.synthesizeThunder(false);
+  }
+
+  synthesizeThunder(spread = true) {
+    const names = this.pendingThunder || [];
+    this.pendingThunder = null;
+    if (!spread) names.forEach(this.makeThunder);
+    else names.forEach((n, i) => setTimeout(() => this.makeThunder(n), 50 + i * 300));
   }
 
   // Build the graph on a context (live or offline).
@@ -99,7 +128,7 @@ export class AudioEngine {
     this.wind = chain(loop(pink, 1.03), this.windBP, gain());
     this.whistleBP = filt('bandpass', 1900, 9);
     this.whistle = chain(loop(white, 1.0), this.whistleBP, gain());
-    // rain: recorded downpour bed + fizz of drops on water
+    // rain: synthesized downpour bed + fizz of drops on water
     if (this.buffers.rain_heavy) {
       this.rainLP = filt('lowpass', 3000, 0.5);
       this.rainBed = chain(loop(this.buffers.rain_heavy), this.rainLP, gain());
@@ -202,9 +231,10 @@ export class AudioEngine {
   thunder(at, dist, power = 1, seed = Math.random(), until = Infinity) {
     const ctx = this.ctx;
     if (!ctx || at + dist / 343 > until - 0.6) return;
+    if (this.pendingThunder) this.synthesizeThunder();
     const close = dist < 2200 && this.buffers.thunder_close;
     const name = close ? 'thunder_close' : THUNDER_FILES[Math.floor(seed * THUNDER_FILES.length) % THUNDER_FILES.length];
-    const buf = this.buffers[name];
+    const buf = this.buffers[name] || this.buffers[RECORDED[Math.floor(seed * RECORDED.length) % RECORDED.length]];
     if (!buf) return;
     const src = ctx.createBufferSource();
     src.buffer = buf;
