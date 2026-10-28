@@ -113,9 +113,11 @@ test('人離開畫面 → status lost；回來 → ok', () => {
 test('預錄檔（fixtures）都能播放並得到預期動作', () => {
   for (const f of readdirSync(new URL('../fixtures/', import.meta.url)).filter((n) => n.endsWith('.json'))) {
     const clip = JSON.parse(readFileSync(new URL('../fixtures/' + f, import.meta.url)));
-    const { actions } = run(clip.frames.map(unpackPose));
+    // options：例如打擊模式的預錄檔要開 sideOk；expectTypes：只比對這幾種事件（人偶影像經 MediaPipe 的骨架會有些傾斜等雜訊事件）
+    const { actions } = run(clip.frames.map(unpackPose), clip.options || {});
     const got = {};
-    for (const e of actions) { const k = e.type + (e.side ? ':' + e.side : '') + (e.dir ? ':' + e.dir : '') + (e.on !== undefined ? ':' + e.on : ''); got[k] = (got[k] || 0) + 1; }
+    for (const e of actions) {
+      if (clip.expectTypes && !clip.expectTypes.includes(e.type)) continue; const k = e.type + (e.side ? ':' + e.side : '') + (e.dir ? ':' + e.dir : '') + (e.on !== undefined ? ':' + e.on : ''); got[k] = (got[k] || 0) + 1; }
     assert.deepEqual(got, clip.expect, f);
   }
 });
@@ -160,4 +162,35 @@ test('沒開側身模式時，側身站仍維持原本行為（看不到兩肩�
   const { actions, r } = run(sidePoses(), {});
   assert.equal(count(actions, 'bat'), 0);
   assert.equal(r.state.tracking, 'lost');
+});
+
+// 揮棒延遲：fixtures/mp-bat-*.json 是 three.js 人偶揮棒影像經 MediaPipe（30 fps）算出的骨架，
+// 檔案裡記著真實的「雙手開始往前加速」時間（onsets）與擊球時間（contacts）
+test('揮棒起動 batStart：人偶揮棒後 260 毫秒內送出，而且比 bat 早或同時；收棒不會再觸發', () => {
+  for (const n of ['mp-bat-front', 'mp-bat-side', 'mp-bat-side-seated']) {
+    const clip = JSON.parse(readFileSync(new URL(`../fixtures/${n}.json`, import.meta.url)));
+    const { actions } = run(clip.frames.map(unpackPose), { sideOk: true });
+    const starts = actions.filter((e) => e.type === 'batStart'), bats = actions.filter((e) => e.type === 'bat');
+    assert.equal(starts.length, clip.onsets.length, n + ' batStart 次數');
+    assert.equal(bats.length, clip.onsets.length, n + ' bat 次數');
+    clip.onsets.forEach((on, i) => {
+      const lag = starts[i].time - on;
+      assert.ok(lag >= 0 && lag <= 260, `${n} 第 ${i + 1} 次 batStart 延遲 ${lag} ms`);
+      assert.ok(starts[i].time <= bats[i].time, n + ' batStart 要比 bat 早');
+      assert.ok(bats[i].time - on <= 300, `${n} 第 ${i + 1} 次 bat 延遲 ${bats[i].time - on} ms`);
+      assert.ok(Math.abs(bats[i].onset - on) <= 120, `${n} bat.onset ${bats[i].onset} 應接近真實起動 ${on}`);
+    });
+  }
+});
+
+test('側身站＋抖動與小動作：不會觸發揮棒起動', () => {
+  const rnd = ((s) => () => ((s = (s * 16807) % 2147483647) / 2147483647))(7);
+  const poses = sidePoses({ swingAt: 99999, durationMs: 6000, fps: 30 }).map((p) => {
+    const kp = {};
+    const wob = 0.012 * Math.sin(p.t / 300);   // 手在肩膀旁邊小幅晃動（等球時）
+    for (const [k, v] of Object.entries(p.kp)) kp[k] = { ...v, x: v.x + (rnd() - 0.5) * 0.008 + (k.includes('Wrist') || k.includes('Elbow') ? wob : 0), y: v.y + (rnd() - 0.5) * 0.008 };
+    return { t: p.t, kp };
+  });
+  const { actions } = run(poses, { sideOk: true });
+  assert.equal(count(actions, 'batStart') + count(actions, 'bat'), 0);
 });

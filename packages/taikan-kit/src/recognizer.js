@@ -10,6 +10,7 @@ import { OneEuro } from './filter.js';
 import { visible } from './pose.js';
 
 const SENSITIVITY = { low: 1.25, normal: 1, high: 0.8 };
+export const FAST_WRIST = { minCutoff: 3.5, beta: 20 };
 const TRACKED = ['nose', 'leftShoulder', 'rightShoulder', 'leftElbow', 'rightElbow', 'leftWrist', 'rightWrist', 'leftHip', 'rightHip'];
 const HINTS = {
   ok: '',
@@ -36,7 +37,14 @@ export class Recognizer {
 
   setSensitivity(s) { this.sensitivity = s; this.k = SENSITIVITY[s] ?? 1; }
   setDisabled(list) { this.disabled = new Set(list); }
-  setSideOk(v) { this.sideOk = !!v; }
+  setSideOk(v) { this.sideOk = !!v; this.filters = {}; }
+
+  // 去抖動濾波器。打擊模式（sideOk）的手腕用比較「快」的設定：MediaPipe 本身已經平滑過，
+  // 再濾太重會讓揮棒晚 1～2 格（約 30～60 毫秒）才被看出來；其他關節與其他遊戲維持原設定
+  makeFilter(name) {
+    const fast = this.sideOk && name.endsWith('Wrist') ? { minCutoff: FAST_WRIST.minCutoff, beta: FAST_WRIST.beta } : {};
+    return { x: new OneEuro(fast), y: new OneEuro(fast) };
+  }
 
   reset() {
     this.filters = {};
@@ -53,6 +61,7 @@ export class Recognizer {
     this.jump = { armed: true, at: -1e9 };
     this.crouching = false; this.crouchSince = null;
     this.leanSide = 'center';
+    this.batStill = null; this.batStarted = null; this.lastBat = null; this.batDir = null;
     this.state = { tracking: 'lost', hint: HINTS.lost, calibrated: false, lean: 0, leanSide: 'center', crouch: 0, crouching: false, armsUp: 0, hands: null };
     this.debug = {};
   }
@@ -97,7 +106,7 @@ export class Recognizer {
     for (const name of TRACKED) {
       const k = kp[name];
       if (!visible(k, 0.4)) continue;
-      const f = (this.filters[name] ||= { x: new OneEuro(), y: new OneEuro() });
+      const f = (this.filters[name] ||= this.makeFilter(name));
       p[name] = { x: f.x.filter(k.x, t), y: f.y.filter(k.y, t) };
     }
     // 側身時只剩一邊的肩膀：兩邊都用那一個點
@@ -291,29 +300,90 @@ export class Recognizer {
   // 雙手揮棒：兩隻手腕靠在一起（握棒的樣子），一起快速水平揮過。比單手揮臂的門檻低一點、
   // 觸發早一點（打擊要抓時機）；送出 bat 之後 0.4 秒內不再算單手 swing，一次揮棒只算一個事件。
   detectBat(f) {
-    if (this.disabled.has('bat') || !(this.sideOk ? f.mid : f.hl && f.hr)) return;
+    if (this.disabled.has('bat') || !(this.sideOk ? f.mid : f.hl && f.hr)) { this.batStill = null; return; }
+    const t = f.t;
+    // 最近 0.2 秒一直是雙手靠在一起（單手揮過另一隻手旁邊不算）；側身時遠側的手被擋住，只看得到一隻也算
+    let grip = true;
+    for (let i = this.hist.length - 1; i >= 0 && t - this.hist[i].t <= 200; i--) {
+      const h = this.hist[i];
+      const apart = h.hl && h.hr && Math.hypot(h.hl.x - h.hr.x, h.hl.y - h.hr.y) > 0.6;
+      if (this.sideOk ? !h.mid || apart : !h.hl || !h.hr || apart) { grip = false; break; }
+    }
+    this.trackBatStill(f);
+    if (!grip) return;
     const q = this.ago(80);
     if (!q.mid) return;
-    const dt = Math.max((f.t - q.t) / 1000, 1e-3);
+    const dt = Math.max((t - q.t) / 1000, 1e-3);
     const vx = (f.mid.x - q.mid.x) / dt, vy = (f.mid.y - q.mid.y) / dt;
+    this.debug.batVx = +vx.toFixed(2);
+    const dir = vx < 0 ? 'left' : 'right';
+    // 打擊模式（sideOk）：揮完把手收回來的那一下不算新的揮棒
+    const isReturn = () => this.isBatReturn(t);
+    this.detectBatStart(f);
     // 位移從最近 0.3 秒內「往回拉最遠」的位置算起（揮棒前會先把手往後帶）
-    // 也要求最近 0.2 秒一直是雙手靠在一起（單手揮過另一隻手旁邊不算）
     let hi = -1e9, lo = 1e9;
-    for (let i = this.hist.length - 1; i >= 0 && f.t - this.hist[i].t <= 300; i--) {
-      const h = this.hist[i], m = h.mid;
-      if (f.t - h.t <= 200 && (this.sideOk ? !h.mid || (h.hl && h.hr && Math.hypot(h.hl.x - h.hr.x, h.hl.y - h.hr.y) > 0.6) : !h.hl || !h.hr || Math.hypot(h.hl.x - h.hr.x, h.hl.y - h.hr.y) > 0.6)) return;
+    for (let i = this.hist.length - 1; i >= 0 && t - this.hist[i].t <= 300; i--) {
+      const m = this.hist[i].mid;
       if (m) { hi = Math.max(hi, m.x); lo = Math.min(lo, m.x); }
     }
-    const travel = vx < 0 ? f.mid.x - hi : f.mid.x - lo;
-    this.debug.batVx = +vx.toFixed(2);
-    if (Math.abs(vx) >= 2.6 * this.k && Math.abs(travel) >= 0.6 * this.k && Math.abs(vx) > 1.3 * Math.abs(vy) && this.can('bat', f.t)) {
-      this.cool['swing-left'] = this.cool['swing-right'] = f.t + 400;
-      this.cool.swingBlock = f.t + 300;
+    let travel = vx < 0 ? f.mid.x - hi : f.mid.x - lo;
+    // 側身站時鏡頭從投手方向看，手是「往前＋往下」斜斜地揮：方向可以斜一點，位移也算斜的那段
+    let dirOk = Math.abs(vx) > 1.3 * Math.abs(vy);
+    if (this.sideOk) {
+      dirOk = Math.abs(vx) >= 0.6 * Math.abs(vy) && vy > -Math.abs(vx);
+      const r0 = this.batStill?.pos;
+      if (r0 && t - this.batStill.until <= 600) travel = Math.sign(travel || vx) * Math.max(Math.abs(travel), Math.hypot(f.mid.x - r0.x, f.mid.y - r0.y));
+    }
+    if (Math.abs(vx) >= 2.6 * this.k && Math.abs(travel) >= 0.6 * this.k && dirOk && !isReturn() && this.can('bat', t)) {
+      this.cool['swing-left'] = this.cool['swing-right'] = t + 400;
+      this.cool.swingBlock = t + 300;
       // 揮棒高度：雙手中點相對兩肩（高於肩 = 高、到胸口 = 中、更低 = 低）
       const height = f.mid.y < -0.1 ? 'high' : f.mid.y < 0.6 ? 'mid' : 'low';
-      this.fire({ type: 'bat', dir: vx < 0 ? 'left' : 'right', height, strength: +clamp(Math.abs(vx) / 7, 0.2, 1).toFixed(2) }, f.t, 600);
+      const st = this.batStarted && this.batStarted.dir === dir && t - this.batStarted.t < 800 ? this.batStarted : null;
+      this.lastBat = { t, dir };
+      this.batDir = dir;
+      this.fire({ type: 'bat', dir, height, strength: +clamp(Math.abs(vx) / 7, 0.2, 1).toFixed(2), onset: Math.round(st ? st.onset : this.batStill?.until ?? t), early: !!st }, t, 600);
     }
   }
+
+  // 雙手「停住」的位置與時間：揮棒前會在肩膀旁邊停一下（預備姿勢）。揮棒起動就從這裡算
+  trackBatStill(f) {
+    const q = this.ago(60);
+    if (!q.mid || q === f) return;
+    const dt = Math.max((f.t - q.t) / 1000, 1e-3);
+    const v = Math.hypot(f.mid.x - q.mid.x, f.mid.y - q.mid.y) / dt;
+    const S = this.batStill;
+    if (v < 1.0) {
+      if (!S || S.moved) this.batStill = { since: f.t, until: f.t, pos: f.mid, moved: false };
+      else { S.until = f.t; S.pos = f.mid; }
+      if (this.batStarted && f.t - this.batStarted.t > 300) this.batStarted = null;
+    } else if (S) S.moved = true;
+    this.debug.batSpeed = +v.toFixed(2);
+  }
+
+  // 揮棒起動（batStart）：雙手從預備姿勢開始「快速往前」的第一、二格就送出，不等揮到一半。
+  // 給遊戲提早開始播人物揮棒動畫用；真正的擊球時間仍以 bat 事件為準。
+  detectBatStart(f) {
+    const S = this.batStill, t = f.t;
+    if (!S || t - S.until > 350) return;
+    const r0 = S.pos;
+    if (r0.y < -0.9 || r0.y > 1.0) return; // 預備姿勢要在肩膀到胸口之間（舉高手、手放下時不算）
+    const q = this.ago(60);
+    if (!q.mid) return;
+    const dt = Math.max((t - q.t) / 1000, 1e-3);
+    const v = Math.hypot(f.mid.x - q.mid.x, f.mid.y - q.mid.y) / dt;
+    const dx = f.mid.x - r0.x, dy = f.mid.y - r0.y, d = Math.hypot(dx, dy);
+    if (d < 0.22 * this.k || v < 2.0 * this.k || Math.abs(dx) < 0.35 * d || dy < -0.4 * d) return;
+    const dir = dx < 0 ? 'left' : 'right';
+    // 已經知道這位玩家往哪邊揮（上一次 bat 的方向）：反方向的是「往後拉」的預備動作，不算起動
+    if (this.batDir && dir !== this.batDir) return;
+    if (this.batStarted?.dir === dir || this.isBatReturn(t) || !this.can('batStart-' + dir, t) || this.disabled.has('batStart')) return;
+    this.batStarted = { t, dir, onset: S.until };
+    this.fire({ type: 'batStart', dir, onset: Math.round(S.until) }, t, 600, 'batStart-' + dir);
+  }
+
+  // 打擊模式：揮完 1.3 秒內的大動作是「收棒」回到預備姿勢（側身時收棒的方向、位置都跟揮棒很像，只能用時間分）
+  isBatReturn(t) { return !!(this.sideOk && this.lastBat && t - this.lastBat.t < 1300); }
 
   // 揮臂：手腕快速水平移動（揮棒、揮手、甩繩）
   detectSwing(f) {

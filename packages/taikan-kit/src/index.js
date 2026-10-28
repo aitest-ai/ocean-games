@@ -19,7 +19,7 @@ export { KEYPOINTS, packPose, unpackPose, fromMediaPipe } from './pose.js';
 export { describe, ACTION_NAMES } from './labels.js';
 export { drawSkeleton } from './draw.js';
 
-export const ACTIONS = ['paddle', 'lean', 'raise', 'jump', 'swing', 'crouch', 'bat'];
+export const ACTIONS = ['paddle', 'lean', 'raise', 'jump', 'swing', 'crouch', 'bat', 'batStart'];
 
 export function createTaikan({ sensitivity = 'normal', disabled = [], sideOk = false } = {}) {
   const bus = new Emitter();

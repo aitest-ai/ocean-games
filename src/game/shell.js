@@ -175,8 +175,10 @@ export async function runGame(mode, games = []) {
 
   const kit = createTaikan({ sensitivity: settings.sens, sideOk: !!mode.usesBat }); // 打擊：側身站也能辨識
   window.kit = kit;
-  // the two-handed bat swing only reaches games that ask for it (otherwise it would swallow `swing`)
-  const syncDisabled = () => kit.setDisabled([...mode.disabledActions(settings), ...(mode.usesBat ? [] : ['bat'])]);
+  // the two-handed bat swing (and its early "swing started" signal) only reaches games that ask for it,
+  // otherwise it would swallow `swing`; enforced here so a mode calling kit.setDisabled itself keeps it too
+  if (!mode.usesBat) { const set = kit.setDisabled; kit.setDisabled = (list) => set([...list, 'bat', 'batStart']); }
+  const syncDisabled = () => kit.setDisabled(mode.disabledActions(settings));
   syncDisabled();
   game.kit = kit;
 
@@ -254,7 +256,7 @@ export async function runGame(mode, games = []) {
       if (settings.input === 'camera' && kit.source !== 'camera') {
         $('mStart').disabled = true;
         const status = (t) => { $('mStatus').textContent = t; $('hStatus').textContent = t; };
-        try { await kit.useCamera({ video: $('video'), onStatus: status }); }
+        try { await kit.useCamera({ video: $('video'), onStatus: status, ...mode.cameraInput }); } // 例：打擊只追蹤 1 人
         finally { $('mStart').disabled = false; }
       } else if (settings.input === 'keyboard' && kit.source !== 'keyboard') await kit.useKeyboard(mode.keyboard);
     })();
