@@ -10,6 +10,11 @@ const clamp = (x, a, b) => Math.min(Math.max(x, a), b);
 // 各種輸入「動作開始 → 事件送出」的延遲（秒）。判定時把揮棒時間往前推這麼多。
 //   鍵盤／畫面按鈕：按下去後模擬人偶要 0.36 秒才揮到一半；鏡頭：事件在雙手揮到身體前面時送出，再加拍攝運算約 0.1 秒
 const LATENCY = { keyboard: 0.36, camera: 0.1, replay: 0.1 };
+// 揮棒測試量到的時間偏差（秒），依輸入方式（鏡頭／鍵盤）分開存在這台裝置上
+const calibKey = (game) => `taikan-batting-calib-${game.kit?.source || 'keyboard'}`;
+function loadCalib(game) { try { const v = Number(localStorage.getItem(calibKey(game))); return Number.isFinite(v) ? clamp(v, -0.6, 0.6) : 0; } catch { return 0; } }
+function saveCalib(game, v) { try { localStorage.setItem(calibKey(game), String(v)); } catch { /* 沒有儲存空間也沒關係 */ } }
+const CALIB_PITCHES = 5, CALIB_MAX = 9;
 const BATTER_X = FIELD.plateWidth / 2 + FIELD.boxGap + FIELD.box[0] / 2 + 0.05;
 
 // ── 人偶的關鍵姿勢（右打者；左打者整個鏡像） ──
@@ -40,6 +45,7 @@ export const batting = {
   difficulties: DIFFICULTY,
   soundLabel: '球場聲音（觀眾、擊球聲）',
   options: [
+    { key: 'calibTest', label: '開始前先做「揮棒測試」（5 球，量你的揮棒快慢並自動校正，建議開著）', default: true },
     { key: 'autoSwing', label: '自動揮棒（只看球，練習分辨好球、壞球）' },
     { key: 'autoCalib', label: '自動校正揮棒時機（依你前幾球的快慢調整，建議開著）', default: true },
   ],
@@ -63,7 +69,7 @@ export const batting = {
 
   howto(s) {
     const cards = [];
-    if (!s.autoSwing) cards.push({ move: 'bat', title: '雙手一起揮棒', text: '兩隻手<b>靠在一起</b>像握著球棒放在肩膀旁邊，<b>球快到本壘時，雙手一起往前揮過身體</b>。雙手揮過身體的那一下就是擊球的瞬間', seated: '坐著也行：只轉上半身揮', skip: '做不到可以改選「自動揮棒」' });
+    if (!s.autoSwing) cards.push({ move: 'bat', title: '雙手一起揮棒', text: '兩隻手<b>靠在一起</b>像握著球棒放在肩膀旁邊，<b>球快到本壘時，雙手一起往前揮過身體</b>。雙手揮過身體的那一下就是擊球的瞬間。<b>正面站、或像打者一樣側身站都可以</b>（鏡頭和畫面在你正前方：側身時臉轉向畫面看球，身體和雙手都要在鏡頭裡）', seated: '坐著也行：只轉上半身揮', skip: '做不到可以改選「自動揮棒」' });
     if (s.autoSwing) cards.push({ move: 'idle', title: '自動揮棒', text: '遊戲會自動揮棒。看球的位置，猜猜看是<b>好球</b>還是<b>壞球</b>！', seated: '坐著看就好' });
     cards.push({ move: 'raise-both', title: '雙手舉高 1 秒', text: '開始、暫停、繼續', seated: '坐著一樣做' });
     return cards;
@@ -136,7 +142,10 @@ export const batting = {
     game.diff = d;
     game.session = new Session(d);
     game.timeLeft = 999;
-    game.calib = 0;
+    game.calibBase = loadCalib(game);           // 上次測試量到的值（沒做過＝0）
+    game.calib = game.calibBase;
+    B.cal = s.calibTest && !s.autoSwing ? { n: 0, tries: 0, es: [], done: false } : null; // 揮棒測試進行中
+    if (B.cal) game.calib = 0;                   // 測試時不套用任何校正，量「原始」的偏差
     B.phase = 'ready'; B.phaseT = 0; B.pitch = null; B.swing = null; B.hit = null; B.called = false; B.lastE = null;
     B.ball.visible = B.shadow.visible = B.ring.visible = false;
     B.zone.visible = d.assist;
@@ -152,9 +161,10 @@ export const batting = {
     // 只認雙手一起揮（bat）：事件送出的那一刻＝雙手揮過身體＝擊球瞬間
     if (e.type !== 'bat') return;
     if (B.swing && game.clock - B.swing.at < 0.6) return;
+    if (B.cal && B.swing?.missRecorded) return; // 測試球每球只收一次揮棒（再揮也不算）
     const delay = Math.max(0, (performance.now() - e.time) / 1000);
     const lat = LATENCY[e.source] ?? 0.1;
-    startSwing(game, s, game.clock - delay - lat + (s.autoCalib ? game.calib : 0), e.strength ?? 0.7);
+    startSwing(game, s, game.clock - delay - lat + game.calib, e.strength ?? 0.7);
   },
 
   update(game, dt0, st, s) {
@@ -169,12 +179,15 @@ export const batting = {
     B.phaseT += dt;
     const S = game.session;
     if (B.phase === 'ready') {
+      if (B.cal && (B.cal.n >= CALIB_PITCHES || B.cal.tries >= CALIB_MAX)) finishCalib(game, out);
       if (S.done) { B.phase = 'end'; return out; }
-      if (B.phaseT > d.gap - 0.9 && !B.readySaid) { B.readySaid = true; out.push({ text: S.n === 0 ? '準備好了嗎？' : `第 ${S.n + 1} 球`, kind: '' }); }
-      if (B.phaseT > d.gap) { B.phase = 'windup'; B.phaseT = 0; B.readySaid = false; B.swing = null; B.hit = null; B.called = false; B.cam.mode = 'bat'; }
+      const gap = B.cal ? 2.2 : d.gap;
+      if (B.phaseT > gap - 0.9 && !B.readySaid) { B.readySaid = true; out.push({ text: B.cal ? (B.cal.tries === 0 ? '揮棒測試：球到圈圈、聽到「嗒」就雙手揮！' : `測試第 ${B.cal.n + 1} 球`) : S.n === 0 ? '準備好了嗎？' : `第 ${S.n + 1} 球`, kind: '' }); }
+      if (B.phaseT > gap) { B.phase = 'windup'; B.phaseT = 0; B.readySaid = false; B.swing = null; B.hit = null; B.called = false; B.cam.mode = 'bat'; }
     } else if (B.phase === 'windup') {
       if (B.phaseT >= RELEASE_AT) {
-        B.pitch = makePitch(d, Math.random);
+        B.pitch = makePitch(B.cal ? { ...DIFFICULTY.easy } : d, Math.random);
+        B.tickDone = false;
         B.pitch.at = game.clock;
         B.phase = 'flight'; B.phaseT = 0;
         B.ball.visible = B.shadow.visible = true;
@@ -191,11 +204,17 @@ export const batting = {
       if (!B.hit || !B.hit.shown) {
         const tMitt = p.T + (MITT_Z - PLATE_Z) / p.vel(p.T)[2];
         const pos = p.pos(Math.min(t, B.hit ? p.T : tMitt));
+        // 過了本壘板，球直直飛向捕手手套（不再繼續往下掉到地上）
+        if (!B.hit && t > p.T) {
+          const u = clamp((t - p.T) / (tMitt - p.T), 0, 1), py = p.pos(p.T)[1];
+          pos[1] = py + (clamp(py - 0.08, 0.4, 1.1) - py) * u;
+        }
         B.ball.position.set(...pos);
+        if (B.cal && !B.tickDone && t >= p.T) { B.tickDone = true; game.cue('tick'); }
         if (pos[2] <= MITT_Z + 0.01 && !B.inMitt) { B.inMitt = true; game.cue('mitt'); }
       }
       // 好球帶與時機圈
-      if (d.assist && !B.hit) {
+      if ((d.assist || B.cal) && !B.hit) {
         const u = clamp(1 - t / p.T, 0, 1);
         B.ring.visible = t < p.T + 0.05;
         B.ring.position.set(p.target[0], p.target[1], PLATE_Z);
@@ -210,7 +229,9 @@ export const batting = {
         if (B.hit.fly.result !== 'foul' || B.hit.fly.dist > 15) B.cam.mode = 'follow';
       }
       // 沒揮棒：球進手套後判好壞球
-      if (!B.swing && t > p.T + 0.75) {
+      if (!B.swing && t > p.T + 0.75 && B.cal) {
+        B.cal.tries++; out.push({ text: '沒偵測到揮棒，再來一球', kind: 'bad' }); endPitch(game, 'calib');
+      } else if (!B.swing && t > p.T + 0.75) {
         const kind = p.strike ? 'looking' : 'take';
         S.record(kind, { kmh: p.kmh });
         out.push({ text: LABEL[kind] + (SCORE[kind] ? ` +${SCORE[kind]}` : ''), kind: kind === 'take' ? 'good' : 'bad', cue: kind === 'take' ? 'pass' : null });
@@ -250,6 +271,7 @@ export const batting = {
 
   hud(game) {
     const S = game.session;
+    if (game.bat.cal) return { pitch: `揮棒測試 ${Math.min(game.bat.cal.n + 1, CALIB_PITCHES)} / ${CALIB_PITCHES}`, hits: 0, score: 0 };
     return { pitch: `${Math.min(S.n + (game.bat.phase === 'ready' || game.bat.phase === 'end' ? 0 : 1), S.d.pitches)} / ${S.d.pitches}`, hits: S.hits, score: S.score };
   },
   hudExtraUpdate(game) {
@@ -267,7 +289,7 @@ export const batting = {
     return {
       title: S.hits >= S.d.pitches * 0.5 ? '打得好！' : '練習完成！',
       stars: S.stars(),
-      html: `${S.d.pitches} 球中打出 <b>${S.hits}</b> 支安打・分數 <b>${S.score}</b><br>${parts}<br>${tip}${game.calib ? `<br><small>自動校正：揮棒時間調整了 ${Math.round(game.calib * 1000)} 毫秒</small>` : ''}`,
+      html: `${S.d.pitches} 球中打出 <b>${S.hits}</b> 支安打・分數 <b>${S.score}</b><br>${parts}<br>${tip}${game.calib ? `<br><small>揮棒校正：把你的揮棒時間調整了 ${Math.round(game.calib * 1000)} 毫秒</small>` : ''}`,
     };
   },
 
@@ -342,12 +364,21 @@ function startSwing(game, s, contactClock, strength, auto = false) {
   const e = contactClock - (p.at + p.T);
   // 太早太多（球還沒出手就揮）不算這一球，讓學生再揮一次
   if (e < -0.6) { B.swing = null; game.bat.missToast = { text: '太早了，等球來再揮', kind: 'bad' }; return; }
+  if (B.cal) {
+    B.cal.tries++;
+    B.cal.es.push(e); B.cal.n++;
+    timingWidget(e, d);
+    B.swing.missRecorded = true;          // 測試球不計分，揮完就換下一球
+    game.cue('whoosh');
+    B.missToast = { text: `測試 ${B.cal.n}/${CALIB_PITCHES}：你${Math.abs(e) < 0.04 ? '很準' : e < 0 ? '早了' : '晚了'}${Math.abs(e) < 0.04 ? '' : ` ${Math.abs(e).toFixed(2)} 秒`}`, kind: Math.abs(e) < 0.08 ? 'good' : '' };
+    return;
+  }
   const tPlate = p.at + p.T;
   const wait = Math.max(0, tPlate - game.clock);   // 球還要多久才到本壘板
   const j = judgeSwing(e, d, { strength, lefty: !!s.lefty, pitch: p });
   B.lastE = e;
   timingWidget(e, d);
-  if (s.autoCalib && !auto && Math.abs(e) < 0.45) game.calib = clamp(game.calib - e * 0.3, -0.12, 0.12);
+  if (s.autoCalib && !auto && Math.abs(e) < 0.45) game.calib = clamp(game.calib - e * 0.3, game.calibBase - 0.12, game.calibBase + 0.12);
   if (!j.contact) {
     game.session.record('miss', { e });
     B.swing.missRecorded = true;
@@ -366,9 +397,29 @@ function startSwing(game, s, contactClock, strength, auto = false) {
   B.missToast = { text: word, kind: Math.abs(e) < d.window * 0.35 ? 'good' : '' };
 }
 
+function finishCalib(game, out) {
+  const B = game.bat, cal = B.cal;
+  const es = cal.es.filter((x) => Math.abs(x) < 0.55).sort((a, b) => a - b);
+  B.cal = null;
+  if (es.length < 3) {
+    game.calibBase = loadCalib(game); game.calib = game.calibBase;
+    out.push({ text: '測試沒偵測到足夠的揮棒，沿用上次的校正（沒做過就是預設值）。可以到選單重新測試', kind: 'bad' });
+    return;
+  }
+  const med = es[Math.floor(es.length / 2)];
+  const spread = Math.max(...es) - Math.min(...es);
+  game.calibBase = clamp(-med, -0.6, 0.6);
+  game.calib = game.calibBase;
+  saveCalib(game, game.calibBase);
+  B.calibReport = { shift: game.calibBase, spread, n: es.length };
+  out.push({ text: `測試完成：你平均${med < 0 ? '早' : '晚'}了 ${Math.abs(med).toFixed(2)} 秒，已自動校正${spread > 0.35 ? '（每次差很多，揮棒節奏再穩定一點會更準）' : ''}。開始正式打擊！`, kind: 'good' });
+  game.park.scoreboard.update({ title: '打擊練習', right: game.diff.label, big: '⚾ PLAY BALL', cells: [['安打', '0'], ['球數', `0 / ${game.diff.pitches}`], ['分數', '0']] });
+}
+
 function endPitch(game, kind) {
   const B = game.bat, S = game.session;
   B.phase = 'result'; B.phaseT = 0; B.ring.visible = false;
+  if (kind === 'calib') return;
   if (kind === 'looking') scoreboard(game, '好球', kind);
   else if (kind === 'take') scoreboard(game, '壞球', kind);
   if (S.done) B.ring.visible = false;

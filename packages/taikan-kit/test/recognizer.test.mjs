@@ -126,3 +126,38 @@ test('兩個人同時入鏡超過 1 秒 → status crowd；離開後恢復 ok', 
   const seq = status.filter((e) => e.tracking).map((e) => e.tracking);
   assert.deepEqual(seq.slice(-2), ['crowd', 'ok']);
 });
+
+// 側身站（打棒球的站姿）：兩肩疊在一起，遠側的肩、髖、手被擋住（可信度很低）
+function sidePoses({ swingAt = 1800, fps = 20, durationMs = 3200, hideFarWrist = true } = {}) {
+  const poses = [];
+  for (let t = 0; t <= durationMs; t += 1000 / fps) {
+    const u = Math.min(Math.max((t - swingAt) / 250, 0), 1);           // 揮棒 0.25 秒：手從身後揮到身前
+    const hx = 0.4 + 0.22 * u, hy = 0.5 - 0.03 * Math.sin(u * Math.PI);
+    const kp = {
+      nose: { x: 0.5, y: 0.25, v: 0.9 },
+      leftShoulder: { x: 0.5, y: 0.35, v: 0.95 }, rightShoulder: { x: 0.505, y: 0.35, v: 0.15 },
+      leftHip: { x: 0.5, y: 0.62, v: 0.9 }, rightHip: { x: 0.5, y: 0.62, v: 0.1 },
+      leftElbow: { x: hx - 0.02, y: 0.45, v: 0.8 }, rightElbow: { x: hx - 0.02, y: 0.45, v: 0.2 },
+      leftWrist: { x: hx, y: hy, v: 0.9 }, rightWrist: { x: hx + 0.01, y: hy, v: hideFarWrist ? 0.1 : 0.9 },
+    };
+    poses.push({ t, kp });
+  }
+  return poses;
+}
+
+test('側身站：只看得到一邊的肩與手，也能認出雙手揮棒，而且不會變成「看不到你」', () => {
+  const { actions, status } = run(sidePoses(), { sideOk: true });
+  assert.equal(count(actions, 'bat'), 1);
+  assert.ok(!status.some((e) => e.tracking === 'lost'), '不該判成看不到人');
+});
+
+test('側身站：沒揮棒時不會亂觸發', () => {
+  const { actions } = run(sidePoses({ swingAt: 99999 }), { sideOk: true });
+  assert.equal(count(actions, 'bat'), 0);
+});
+
+test('沒開側身模式時，側身站仍維持原本行為（看不到兩肩＝看不到人）', () => {
+  const { actions, r } = run(sidePoses(), {});
+  assert.equal(count(actions, 'bat'), 0);
+  assert.equal(r.state.tracking, 'lost');
+});

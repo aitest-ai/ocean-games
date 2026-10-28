@@ -173,7 +173,7 @@ export async function runGame(mode, games = []) {
   game.scale = params.has('scale') ? Number(params.get('scale')) : TIER === 'low' ? 0.7 : TIER === 'mid' ? Math.min(devicePixelRatio || 1, 1) : Math.min(devicePixelRatio || 1, 1.5);
   game.resize();
 
-  const kit = createTaikan({ sensitivity: settings.sens });
+  const kit = createTaikan({ sensitivity: settings.sens, sideOk: !!mode.usesBat }); // 打擊：側身站也能辨識
   window.kit = kit;
   // the two-handed bat swing only reaches games that ask for it (otherwise it would swallow `swing`)
   const syncDisabled = () => kit.setDisabled([...mode.disabledActions(settings), ...(mode.usesBat ? [] : ['bat'])]);
