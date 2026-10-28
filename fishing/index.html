@@ -22,6 +22,7 @@
   <div id="hExtra"></div>
   <div class="arrow" id="hArrow" hidden><div class="tri"></div><span id="hDist"></span></div>
   <div class="toast" id="hToast"></div>
+  <div class="touch-btns" id="hTouch" hidden></div>
   <div class="hud-bottom">
     <div class="input-chip">
       <span id="hSource">⌨️ 鍵盤模擬</span>
@@ -56,7 +57,7 @@
     <p class="sub" id="mIntro"></p>
     <div class="grid">
       <section>
-        <h2>難度（天氣）</h2>
+        <h2 id="mDiffTitle">難度（天氣）</h2>
         <div class="seg" id="mDiff"></div>
         <p class="note" id="mDiffNote"></p>
       </section>
@@ -72,7 +73,7 @@
         <h2>動作調整（做不到的動作可以跳過）</h2>
         <div id="mOptions"></div>
         <div id="mCommon">
-          <label class="chk"><input type="checkbox" data-opt="seated"> 🪑 坐著玩（關閉跳躍，蹲低改成身體往前彎）</label>
+          <label class="chk"><input type="checkbox" data-opt="seated"> <span id="mSeatedLabel">🪑 坐著玩（關閉跳躍，蹲低改成身體往前彎）</span></label>
         </div>
         <div class="row"><span>靈敏度</span>
           <select id="mSens"><option value="low">低（動作要大）</option><option value="normal">中</option><option value="high">高（小動作也算）</option></select>
@@ -86,13 +87,13 @@
         <p class="note">換畫質會重新載入頁面。畫面卡頓時請選「低」。</p>
         <div id="mCommon2">
           <label class="chk"><input type="checkbox" data-opt="reduceMotion"> 減少晃動（容易暈的同學請勾）</label>
-          <label class="chk"><input type="checkbox" data-opt="sound"> 海浪與風聲</label>
+          <label class="chk"><input type="checkbox" data-opt="sound"> <span id="mSoundLabel">海浪與風聲</span></label>
         </div>
       </section>
     </div>
     <details class="safety" id="mSafety">
       <summary>⚠️ 開始前安全檢查（用鏡頭時必看）</summary>
-      <ul>
+      <ul id="mSafetyList">
         <li>平板<b>橫放</b>、固定在桌上或支架上，鏡頭大約在胸口高度。</li>
         <li>玩家離平板 <b>1.5～2.5 公尺</b>，張開雙臂轉一圈碰不到人、桌角、牆。</li>
         <li>一台平板前面只站（坐）<b>一個人</b>，其他同學在旁邊排隊、不要入鏡。</li>
@@ -107,7 +108,7 @@
       <button id="mHowto">❓ 怎麼玩</button>
       <button data-open-fridge>🧊 冰箱與圖鑑</button>
       <a class="link" href="../">回首頁</a>
-      <span class="other-games">其他遊戲：<a data-g="kayak" href="../game/?g=kayak">🛶 划舟</a> <a data-g="surf" href="../game/?g=surf">🏄 衝浪</a> <a data-g="sail" href="../game/?g=sail">⛵ 帆船</a></span>
+      <span id="mOther" hidden></span><span class="other-games">其他遊戲：<a data-g="kayak" href="../game/?g=kayak">🛶 划舟</a> <a data-g="surf" href="../game/?g=surf">🏄 衝浪</a> <a data-g="sail" href="../game/?g=sail">⛵ 帆船</a></span>
     </div>
     <p class="note" id="mStatus"></p>
   </div>
