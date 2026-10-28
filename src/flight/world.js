@@ -32,7 +32,7 @@ export class FlightWorld {
     this.camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 1, 40000);
     this.camera.layers.enableAll();
     this.scale = 1; this.time = 0; this.onFrame = null;
-    this.state = createFlightState();
+    this.fs = createFlightState(); // 飛行狀態物件（不叫 state：遊戲外殼用 game.state 表示畫面狀態）
 
     // 飛機（世界座標：x = 東、y = 上、-z = 北）
     this.aircraft = new THREE.Group(); this.aircraft.name = 'aircraft';
@@ -58,6 +58,11 @@ export class FlightWorld {
     }
     this.stars = lightPoints(pos, col, { px: 2.2, intensity: 0, fog: false });
     S.add(this.stars);
+    // 著陸燈（從機翼照向前下方，夜間才開；只照外面的世界）
+    this.landingLight = new THREE.SpotLight(0xfff2dc, 0, 450, 0.32, 0.55, 0);
+    this.landingLight.position.set(0, 1.3, -0.6);
+    this.landingLight.target.position.set(0, -1.5, -80);
+    this.aircraft.add(this.landingLight, this.landingLight.target);
     this.hemi = new THREE.HemisphereLight(0xcfe6ff, 0x4a5a32, 1);
     this.sun = new THREE.DirectionalLight(0xffffff, 3);
     this.sunTarget = new THREE.Object3D();
@@ -96,6 +101,7 @@ export class FlightWorld {
     this.sky.visible = !night;
     this.scene.background = night ? new THREE.Color(0x04070d) : null;
     this.stars.material.uniforms.uIntensity.value = night ? 1 : 0;
+    this.landingLight.intensity = night ? 6 : dusk ? 2 : 0;
     // 夜間：月光（冷色、很弱）當主光
     if (night) { this.sun.color.set(0x9fb4d8); this.sun.intensity = 0.35; this.hemi.color.set(0x23324a); this.hemi.groundColor.set(0x0b0d10); this.hemi.intensity = 0.35; }
     else {
@@ -150,7 +156,7 @@ export class FlightWorld {
   frame(dt) {
     this.time += dt;
     this.onFrame?.(dt);
-    const s = this.state;
+    const s = this.fs;
     this.cockpit.update(s, dt);
     this.look.update(dt);
     // 駕駛員視角：眼睛位置 + 轉頭

@@ -62,7 +62,7 @@ toggle('bBody', false, async (on) => {
 });
 
 // ── 假資料：慢慢轉彎、爬升、下降，發動機正常運轉 ──
-const S = W.state;
+const S = W.fs;
 const pos = new THREE.Vector3(1500, 460, 2000);
 let ft = Number(params.get('seed')) || 0, alt = 1500, hdg = 300, fuelL = 21.5, fuelR = 22.3, prevRoll = 0;
 Object.assign(S, { onGround: false, master: true, throttle: 0.72, mixture: 0.85, flaps: 0, rpm: 2350, oilT: 185, oilP: 68, vac: 5.0, amps: 3, fuelL, fuelR });
