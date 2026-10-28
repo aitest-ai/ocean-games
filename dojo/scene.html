@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>道場場景預覽</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0806; color: #f3ece2; font: 15px/1.5 system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  .bar { position: fixed; left: 10px; right: 10px; top: 10px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .bar button, .bar a { font: inherit; background: rgba(20, 14, 10, 0.82); color: inherit; border: 1px solid rgba(255, 230, 200, 0.25); border-radius: 10px; padding: 7px 12px; cursor: pointer; text-decoration: none; }
+  .bar button[aria-pressed="true"] { background: #e2a74b; color: #2a1800; font-weight: 700; }
+  #info { position: fixed; left: 10px; bottom: 10px; background: rgba(20, 14, 10, 0.82); border-radius: 8px; padding: 4px 10px; font-size: 13px; color: #cdbfae; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar">
+  <span>畫質：</span>
+  <button data-q="low">低（平板）</button><button data-q="mid">中</button><button data-q="rt">高（電腦）</button>
+  <span>　地板：</span>
+  <button data-f="tatami">榻榻米</button><button data-f="wood">木地板</button>
+  <span>　鏡頭：</span>
+  <button data-v="room">全景</button><button data-v="bag">沙包</button><button data-v="dummy">木樁人</button>
+  <button id="hitBag">👊 打沙包</button><button id="hitDummy">👊 打木樁</button>
+  <a href="./">← 回道場</a>
+</div>
+<div id="info">載入中…</div>
+<script type="module">
+import { createDojo } from '../src/dojo/scene.js';
+const params = new URLSearchParams(location.search);
+const q = params.get('q') || ((matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1) ? 'low' : 'mid');
+const f = params.get('floor') || 'tatami';
+for (const b of document.querySelectorAll('[data-q]')) { b.setAttribute('aria-pressed', b.dataset.q === q); b.onclick = () => { params.set('q', b.dataset.q); location.search = params; }; }
+for (const b of document.querySelectorAll('[data-f]')) { b.setAttribute('aria-pressed', b.dataset.f === f); b.onclick = () => { params.set('floor', b.dataset.f); location.search = params; }; }
+const info = document.getElementById('info');
+const dojo = await createDojo(document.getElementById('c'), { tier: q, floor: f, onProgress: (t) => (info.textContent = t) });
+window.dojo = dojo;
+dojo.scale = params.has('scale') ? Number(params.get('scale')) : q === 'low' ? 0.7 : Math.min(devicePixelRatio || 1, 1.5);
+const view = params.get('view') || 'room';
+dojo.focus(view);
+for (const b of document.querySelectorAll('[data-v]')) { b.setAttribute('aria-pressed', b.dataset.v === view); b.onclick = () => { dojo.focus(b.dataset.v); for (const x of document.querySelectorAll('[data-v]')) x.setAttribute('aria-pressed', x === b); }; }
+let side = 'left';
+document.getElementById('hitBag').onclick = () => { dojo.hitBag(side = side === 'left' ? 'right' : 'left', 0.8); };
+document.getElementById('hitDummy').onclick = () => { dojo.hitDummy(side = side === 'left' ? 'right' : 'left', 0.8); };
+let last = performance.now(), avg = 1 / 60;
+function loop(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  avg += (dt - avg) * 0.05;
+  dojo.frame(dt);
+  info.textContent = `畫質 ${{ low: '低', mid: '中', rt: '高' }[q]}・${Math.round(1 / avg)} 格/秒・${Math.round(dojo.tris / 1000)}k 三角形・貼圖產生 ${dojo.texMs} 毫秒・場景與貼圖全部自製`;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

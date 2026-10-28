@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>體感武術：道場</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../game/game.css">
+<link rel="stylesheet" href="./dojo.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- 遊戲中 HUD -->
+<div id="hud" hidden>
+  <div class="hud-top">
+    <div class="chip"><span class="lbl" id="hStepNo">第 1 段</span><b id="hStep">準備</b></div>
+    <div class="chip"><span class="lbl">這段</span><b id="hStepInfo">—</b></div>
+    <button class="chip btn" id="hSkip" title="跳過這一段（舉單手 1.5 秒也可以）">⏭ 跳過這段</button>
+    <button class="chip btn" id="hPause" title="暫停（雙手舉高也可以）">⏸ 暫停</button>
+  </div>
+  <div class="dj-demo"><canvas width="260" height="300"></canvas><span>👀 跟著做</span></div>
+  <div class="dj-you"><canvas width="260" height="300"></canvas><span id="hYouLbl">鏡頭看到的你（只有線條）</span></div>
+  <div class="dj-meter" id="hMeter" hidden>
+    <div class="lbl">蹲的深度</div>
+    <div class="bar"><i id="hDepth"></i><b id="hTarget"></b></div>
+    <div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" class="bg"/><circle cx="18" cy="18" r="15.5" class="fg" id="hHold"/></svg><span id="hHoldTxt">0</span></div>
+    <div class="lbl">做對的秒數</div>
+  </div>
+  <div class="dj-feedback" id="hFb"></div>
+  <div class="dj-beat" id="hBeat" hidden><div class="ring" id="hBeatRing"></div><div class="core" id="hBeatTxt">左拳</div></div>
+  <div class="toast" id="hToast"></div>
+  <div class="hud-bottom">
+    <div class="input-chip">
+      <span id="hSource">⌨️ 鍵盤模擬</span>
+      <span class="dot" id="hDot"></span>
+      <span id="hAction">—</span>
+    </div>
+    <div class="dj-safety">⚠️ 只對沙包、木樁出拳，旁邊不要有人</div>
+    <div class="perf" id="hPerf"></div>
+  </div>
+  <div class="keys-help" id="hKeys"></div>
+</div>
+
+<!-- 載入中 -->
+<div class="overlay" id="loading"><div class="panel small"><h1>🥋 道場</h1><p class="sub" id="lText">正在準備道場…</p></div></div>
+
+<!-- 怎麼玩 -->
+<div class="overlay" id="howto" hidden>
+  <div class="panel">
+    <h1>怎麼玩：體感武術・道場</h1>
+    <p class="sub">看左邊的示範人偶，<b>跟著做</b>：蹲馬步、出拳打沙包和木樁。系統會看你的動作打分數，並用口語提醒你（例如「再蹲低一點」）。</p>
+    <div class="howto-grid" id="hCards"></div>
+    <p class="note">👀 畫面像照鏡子：你出左拳，人偶也出畫面左邊的拳。🪑 坐在椅子上也能玩（選單勾「坐著玩」）。</p>
+    <p class="note">🔒 這是<b>體感運動遊戲</b>，不是武術課：動作經過簡化，不宣稱任何訓練、健身或功夫教學效果。</p>
+    <p class="note" id="hStatus"></p>
+    <div class="actions"><button class="primary" id="hOk">我懂了（或雙手舉高）</button></div>
+  </div>
+</div>
+
+<!-- 選單 -->
+<div class="overlay" id="menu" hidden>
+  <div class="panel">
+    <h1>🥋 體感武術：道場</h1>
+    <p class="sub">跟著示範人偶<b>蹲馬步</b>、<b>出拳</b>打沙包和木樁人。一場約 1.5～3 分鐘。<span class="proto">可行性原型</span></p>
+    <div class="grid">
+      <section>
+        <h2>難度（強度）</h2>
+        <div class="seg" id="mDiff"></div>
+        <p class="note" id="mDiffNote"></p>
+      </section>
+      <section>
+        <h2>操作方式</h2>
+        <div class="seg" id="mInput">
+          <button data-v="keyboard">⌨️ 鍵盤／滑鼠模擬</button>
+          <button data-v="camera">📷 鏡頭體感</button>
+        </div>
+        <p class="note" id="mInputNote"></p>
+      </section>
+      <section>
+        <h2>動作調整（做不到的可以跳過）</h2>
+        <label class="chk"><input type="checkbox" data-opt="seated"> 🪑 坐著玩（坐姿馬步＋出拳，不用站）</label>
+        <label class="chk"><input type="checkbox" data-opt="noStance"> 不做馬步（只出拳）</label>
+        <label class="chk"><input type="checkbox" data-opt="noPunch"> 不出拳（只蹲馬步）</label>
+        <label class="chk"><input type="checkbox" data-opt="knee"> 🧪 提膝（實驗，預設關閉；踢腿不做）</label>
+        <div class="row"><span>靈敏度</span>
+          <select id="mSens"><option value="low">低（動作要大）</option><option value="normal">中</option><option value="high">高（小動作也算）</option></select>
+        </div>
+      </section>
+      <section>
+        <h2>畫面與聲音</h2>
+        <div class="seg" id="mQuality">
+          <button data-v="low">低（平板）</button><button data-v="mid">中</button><button data-v="rt">高（電腦）</button>
+        </div>
+        <div class="seg" id="mFloor" style="margin-top:6px">
+          <button data-v="tatami">榻榻米</button><button data-v="wood">木地板</button>
+        </div>
+        <p class="note">換畫質或地板會重新載入頁面。</p>
+        <label class="chk"><input type="checkbox" data-opt="reduceMotion"> 減少晃動（容易暈的同學請勾）</label>
+        <label class="chk"><input type="checkbox" data-opt="sound"> 打擊音效</label>
+      </section>
+    </div>
+    <details class="safety" id="mSafety">
+      <summary>⚠️ 安全規範（用鏡頭時一定要看）</summary>
+      <ul>
+        <li><b>只對空氣、或畫面裡的沙包和木樁出拳。絕對不可以對人出拳、踢腿</b>，下課後也不行。</li>
+        <li>平板<b>橫放、固定</b>在桌上或支架上；玩家離平板 <b>2.5～3 公尺</b>（要看得到全身），手腳碰不到平板。</li>
+        <li>玩家前後左右各 <b>1.5 公尺</b>內沒有人、桌椅、牆角；排隊的同學站在<b>玩家後方 2 公尺外</b>。</li>
+        <li>出拳<b>不用用力</b>、手肘<b>不要打到完全伸直</b>；穿運動鞋或赤腳，不要只穿襪子（會滑）。</li>
+        <li>膝蓋痛、頭暈、喘就停下來；可以改「坐著玩」或「輕鬆」。每人連續玩不超過 5 分鐘。</li>
+        <li>鏡頭同時看到兩個人、或看不到人，遊戲會<b>自動暫停</b>。</li>
+        <li>🔒 鏡頭畫面只在這台平板上即時分析，不錄影、不上傳。</li>
+      </ul>
+    </details>
+    <p class="note disclaimer">本遊戲是體感運動遊戲，動作經過簡化，<b>不是武術或功夫教學</b>，也不宣稱任何訓練、健身或防身效果。</p>
+    <div class="actions">
+      <button class="primary" id="mStart">開始（或雙手舉高）</button>
+      <button id="mHowto">❓ 怎麼玩</button>
+      <a class="link" href="../">回首頁</a>
+      <a class="link" href="./scene.html">道場場景預覽</a>
+      <a class="link" href="./docs.html">武術系列規劃</a>
+    </div>
+    <p class="note" id="mStatus"></p>
+  </div>
+</div>
+
+<!-- 安全確認（用鏡頭時，每次打開頁面第一次開始前） -->
+<div class="overlay" id="safety" hidden>
+  <div class="panel small left">
+    <h1>⚠️ 開始前安全確認</h1>
+    <p class="sub">請<b>老師或旁邊的同學</b>一起看，四項都打勾才能開始：</p>
+    <label class="chk big"><input type="checkbox" class="sc"> 平板放穩，玩家站在 <b>2.5～3 公尺外</b>，手腳碰不到平板。</label>
+    <label class="chk big"><input type="checkbox" class="sc"> 玩家前後左右 <b>1.5 公尺內沒有人</b>、桌椅、牆角。</label>
+    <label class="chk big"><input type="checkbox" class="sc"> 排隊的同學站在<b>後方 2 公尺外</b>，不會走進畫面。</label>
+    <label class="chk big"><input type="checkbox" class="sc"> 我知道：<b>只對沙包出拳，絕對不對人出拳、踢腿</b>。</label>
+    <div class="actions">
+      <button class="primary" id="sGo" disabled>都確認了，開始</button>
+      <button id="sBack">回選單</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="pause" hidden>
+  <div class="panel small">
+    <h1 id="pTitle">暫停</h1>
+    <p class="sub" id="pText">雙手舉高，或按「繼續」。</p>
+    <div class="actions">
+      <button class="primary" id="pResume">繼續</button>
+      <button id="pSkip">⏭ 跳過這段</button>
+      <button id="pHowto">❓ 怎麼玩</button>
+      <button id="pQuit">回選單</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="result" hidden>
+  <div class="panel small">
+    <h1 id="rTitle">完成！</h1>
+    <div class="stars" id="rStars"></div>
+    <p class="sub" id="rText"></p>
+    <table class="dj-lines" id="rLines"></table>
+    <p class="note">分數只看「有沒有跟上示範」，不代表武術程度。</p>
+    <div class="actions">
+      <button class="primary" id="rAgain">再玩一次（或雙手舉高）</button>
+      <button id="rMenu">回選單</button>
+    </div>
+  </div>
+</div>
+
+<div class="countdown" id="count" hidden></div>
+<video id="video" muted playsinline hidden></video>
+<script type="module" src="../src/dojo/main.js"></script>
+</body>
+</html>
