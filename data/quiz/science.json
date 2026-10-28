@@ -1,0 +1,19 @@
+{
+ "format": "taikan-quiz", "version": 1, "id": "sample-science", "builtin": true,
+ "title": "自然：水的三態、植物與天氣", "subject": "自然", "grade": "3～6 年級",
+ "author": "本專案原創範例", "license": "原創內容，學校可自由使用、修改、分享",
+ "questions": [
+  { "type": "image", "q": "這是水的哪一種樣子？", "image": "art:state:ice", "options": ["固體（冰）", "液體（水）", "氣體（水蒸氣）"], "answer": "A", "difficulty": 1, "tags": ["水的三態"] },
+  { "type": "tf", "q": "冰塊放在太陽下會慢慢變成水，這叫做「熔化」。", "answer": "○", "difficulty": 2, "tags": ["水的三態"] },
+  { "type": "tf", "q": "水煮滾以後冒出來的白煙，就是看不見的水蒸氣本身。", "answer": "×", "difficulty": 3, "tags": ["水的三態"], "explain": "水蒸氣是看不見的；我們看到的白煙是水蒸氣遇冷變回的小水滴。" },
+  { "type": "match", "q": "把變化和名稱配對", "pairs": [["冰 → 水", "熔化"], ["水 → 冰", "凝固"], ["水 → 水蒸氣", "蒸發"]], "difficulty": 2, "tags": ["水的三態"] },
+  { "type": "order", "q": "植物長大的順序", "items": [{ "text": "種子", "image": "art:plant:seed" }, { "text": "發芽", "image": "art:plant:sprout" }, { "text": "開花", "image": "art:plant:flower" }, { "text": "結果", "image": "art:plant:fruit" }], "difficulty": 1, "tags": ["植物"] },
+  { "type": "choice", "q": "植物的葉子主要的工作是？", "options": ["製造養分", "吸收水分", "開花結果"], "answer": "A", "difficulty": 2, "tags": ["植物"], "explain": "葉子利用陽光製造養分（光合作用）；吸水主要靠根。" },
+  { "type": "tf", "q": "植物也需要水和陽光才能長得好。", "answer": "○", "difficulty": 1, "tags": ["植物"] },
+  { "q": "下面哪一個是天氣的圖示：「下雨」？", "options": [{ "text": "", "image": "art:weather:sun" }, { "text": "", "image": "art:weather:rain" }, { "text": "", "image": "art:weather:snow" }], "answer": "B", "type": "image", "difficulty": 1, "tags": ["天氣"] },
+  { "type": "choice", "q": "打雷時，在戶外最安全的做法是？", "options": ["進到建築物裡面", "躲在大樹下", "站在空地上"], "answer": "A", "difficulty": 2, "tags": ["天氣", "安全"], "explain": "大樹和空曠的地方容易被雷打到，要盡快進到建築物裡。" },
+  { "type": "image", "q": "這是什麼月相？", "image": "art:moon:full", "options": ["滿月", "新月", "上弦月"], "answer": "滿月", "difficulty": 2, "tags": ["月亮"] },
+  { "type": "choice", "q": "磁鐵會吸住下面哪一個？", "options": ["迴紋針", "橡皮擦", "木頭尺", "塑膠杯"], "answer": "A", "difficulty": 1, "tags": ["磁鐵"], "explain": "磁鐵會吸住鐵做的東西，迴紋針是鐵做的。" },
+  { "type": "number", "q": "昆蟲有幾隻腳？", "answer": 6, "options": [4, 8, 10], "unit": "隻", "difficulty": 1, "tags": ["動物"] }
+ ]
+}

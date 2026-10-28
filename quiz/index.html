@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>體感闖關問答</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../game/game.css">
+<link rel="stylesheet" href="./quiz.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="qloading" id="qLoading">🎤 準備舞台與題庫…</div>
+
+<!-- 遊戲中 -->
+<div id="play" hidden>
+  <div class="hud-top">
+    <div class="chip"><span class="lbl">關卡</span><b id="hLevel">—</b></div>
+    <div class="chip"><span class="lbl">題目</span><b id="hStep">—</b></div>
+    <div class="chip"><span class="lbl">分數</span><b id="hScore">0</b></div>
+    <div class="chip"><span class="lbl">生命</span><b id="hHearts">❤️❤️❤️</b></div>
+    <div class="chip"><span class="lbl">連對</span><b id="hCombo">—</b></div>
+    <div class="chip" id="hTeamChip" hidden><b id="hTeam"></b></div>
+    <div class="chip" id="hWhoChip" hidden><span class="lbl">玩家</span><b id="hWho"></b></div>
+    <button class="chip btn" id="hPause" title="暫停（Esc 或 P）">⏸ 暫停</button>
+  </div>
+  <section class="qpanel" id="qPanel" aria-live="polite" hidden>
+    <img id="qImg" alt="" hidden>
+    <div class="qtexts"><div class="qtext" id="qText"></div><div class="qsub" id="qSub"></div></div>
+    <div class="qtimer"><i id="qTimer"></i></div>
+  </section>
+  <div id="qOpts" class="qopts"></div>
+  <div id="qHold" class="qhold" hidden><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="bg"/><circle cx="50" cy="50" r="44" class="fg" id="qHoldArc"/></svg><span id="qHoldTxt"></span></div>
+  <div id="qFuse" class="qfuse" hidden><i id="qFuseBar"></i><b id="qFuseTxt"></b></div>
+  <div id="qBanner" class="qbanner" hidden role="status"></div>
+  <div id="qBoard" class="qboard" hidden></div>
+  <div id="qExtra" class="qextra" hidden></div>
+  <div id="qFlash" class="qflash" hidden></div>
+  <div id="qRevive" class="overlay qrevive" hidden><div class="panel small"><h1 id="qrTitle"></h1><p class="sub" id="qrText"></p><div class="howto-grid" id="qrCard"></div><div class="qi-bar big"><i id="qrBar"></i></div><p class="note">剩下 <b id="qrTime"></b>・沒做完也沒關係，答答會送你兩顆愛心</p></div></div>
+  <div id="qSay" class="qsay" hidden></div>
+  <div id="qIntro" class="overlay qintro" hidden><div class="panel"><p class="qi-num" id="qiNum"></p><h1 id="qiTitle"></h1><p class="sub" id="qiRule"></p><div class="howto-grid" id="qiCards"></div><div class="qi-bar"><i id="qiBar"></i></div></div></div>
+  <div class="hud-bottom">
+    <div class="input-chip"><span id="hSource">⌨️ 鍵盤模擬</span><span class="dot" id="hDot"></span><span id="hAction">—</span></div>
+    <div class="perf" id="hPerf"></div>
+  </div>
+  <div class="keys-help" id="hKeys"></div>
+</div>
+<div class="camview" id="camview" hidden title="鏡頭看到的骨架（不顯示影像）"><canvas width="240" height="180"></canvas><span>鏡頭看到的你</span></div>
+
+<!-- 換人（分組、合作、接力） -->
+<div class="overlay" id="handover" hidden>
+  <div class="panel">
+    <p class="qi-num" id="hoLast"></p>
+    <h1 id="hoTitle">下一位</h1>
+    <p class="sub" id="hoLevel"></p>
+    <div id="hoBoard" class="hoboard"></div>
+    <p class="note">🙋 輪到的同學站到膠帶的位置，其他同學退到鏡頭外。準備好就<b>雙手舉高 1 秒</b>，或老師按<b>空白鍵</b>。</p>
+    <div class="actions"><button class="primary" id="hoGo">開始這一棒（空白鍵）</button><button id="hoQuit">結束比賽</button></div>
+  </div>
+</div>
+
+<!-- 怎麼玩（每次打開先出現） -->
+<div class="overlay" id="howto" hidden>
+  <div class="panel">
+    <h1>怎麼玩：體感闖關問答</h1>
+    <p class="sub">用<b>身體</b>回答問題、闖過一關又一關！每一關玩法不一樣，開始前畫面會再教一次。答錯也沒關係，會有好笑的泡泡池等著你 🫧</p>
+    <div class="howto-grid" id="hCards"></div>
+    <p class="note">👀 畫面像照鏡子：你舉左手，人偶也舉畫面左邊的手。🪑 坐在椅子上也能玩（只要上半身動）。</p>
+    <p class="note" id="hStatus"></p>
+    <div class="actions"><button class="primary" id="hOk">我懂了（或雙手舉高 1 秒）</button></div>
+  </div>
+</div>
+
+<!-- 選單 -->
+<div class="overlay" id="menu" hidden>
+  <div class="panel wide">
+    <h1>🎤 體感闖關問答</h1>
+    <p class="sub">老師選一份題庫、排好關卡，學生用身體作答。題庫可以自己做：<a class="link" href="./editor.html">✏️ 老師編輯題庫</a></p>
+    <div class="grid">
+      <section>
+        <h2>① 題庫</h2>
+        <select id="mBank" class="wide"></select>
+        <p class="note" id="mBankInfo"></p>
+        <div id="mTags" class="tags"></div>
+      </section>
+      <section class="span2">
+        <h2>② 關卡（打勾的會依序出現，可以調順序和題數）</h2>
+        <div class="seg" id="mPreset"></div>
+        <ol id="mLevels" class="levels"></ol>
+        <p class="note" id="mLen"></p>
+      </section>
+      <section class="span2">
+        <h2>⑥ 玩法</h2>
+        <div class="seg" id="mMode"><button data-v="solo">🧍 單人</button><button data-v="teams">🆚 分組對戰</button><button data-v="coop">🤝 全班合作打大 Boss</button><button data-v="relay">🏃‍♀️ 接力</button></div>
+        <div id="mModeOpts" class="row"></div>
+        <p class="note" id="mModeNote"></p>
+        <details class="room"><summary>🏫 教室怎麼擺（投影＋一台鏡頭）</summary><div id="mRoom"></div></details>
+      </section>
+      <section>
+        <h2>③ 難度</h2>
+        <div class="seg" id="mDiff"></div>
+        <p class="note" id="mDiffNote"></p>
+        <h2 style="margin-top:12px">玩家（選填）</h2>
+        <input id="mWho" class="wide" maxlength="12" placeholder="座號或暱稱，例如 5 號、小飛俠" autocomplete="off">
+        <p class="note">🔒 請<b>不要</b>填真實姓名。成績只存在這台裝置。</p>
+      </section>
+      <section>
+        <h2>④ 操作方式</h2>
+        <div class="seg" id="mInput"><button data-v="keyboard">⌨️ 鍵盤模擬</button><button data-v="camera">📷 鏡頭體感</button></div>
+        <p class="note" id="mInputNote"></p>
+        <h2 style="margin-top:12px">動作調整（做不到可以換）</h2>
+        <label class="chk"><input type="checkbox" data-opt="seated"> 🪑 坐著玩（不用蹲、不用跳）</label>
+        <label class="chk"><input type="checkbox" data-opt="simpleTF"> ○× 改成「往左傾＝○、往右傾＝×」</label>
+        <label class="chk"><input type="checkbox" data-opt="simpleBuzz"> 搶答改成「舉一隻手就算」</label>
+        <label class="chk"><input type="checkbox" data-opt="combo"> 🔥 連續答對加分（3 連對 ×1.2、5 連對 ×1.5、8 連對 ×2）</label>
+        <label class="chk"><input type="checkbox" data-opt="revive"> ❤️ 生命與復活挑戰（答錯 3 次做個小動作就復活，不會出局）</label>
+        <div class="row"><span>靈敏度</span><select id="mSens"><option value="low">低（動作要大）</option><option value="normal">中</option><option value="high">高（小動作也算）</option></select></div>
+      </section>
+      <section>
+        <h2>⑤ 畫面與聲音</h2>
+        <div class="seg" id="mQuality"><button data-v="low">低（平板）</button><button data-v="mid">中</button><button data-v="rt">高（電腦）</button></div>
+        <label class="chk"><input type="checkbox" data-opt="sound"> 🔊 音效</label>
+        <label class="chk"><input type="checkbox" data-opt="music"> 🎵 背景節奏</label>
+        <label class="chk"><input type="checkbox" data-opt="voice"> 🗣️ 唸出題目（<span id="mVoiceNote">用裝置內建語音</span>）</label>
+        <label class="chk"><input type="checkbox" data-opt="reduceMotion"> 減少閃爍與晃動</label>
+        <label class="chk"><input type="checkbox" data-opt="big"> 📽️ 投影大字（題目、選項放大，隱藏小字資訊）</label>
+        <label class="chk"><input type="checkbox" data-opt="contrast"> ◐ 高對比（深色底白字、不透明面板）</label>
+      </section>
+    </div>
+    <details class="safety" id="mSafety">
+      <summary>⚠️ 開始前安全檢查（用鏡頭時必看）</summary>
+      <ul>
+        <li>平板或電腦<b>橫放</b>、放穩，鏡頭大約在胸口高度；投影到大螢幕時，鏡頭放在螢幕正下方。</li>
+        <li>玩家離鏡頭 <b>1.5～2.5 公尺</b>，張開雙臂轉一圈碰不到人、桌角、牆。</li>
+        <li>鏡頭前只站（坐）<b>一個人</b>；排隊的同學站在鏡頭照不到的兩側。</li>
+        <li>動作<b>不用大</b>：身體歪一下、手舉過頭就夠了。可以<b>坐在椅子上</b>，只動上半身。</li>
+        <li>選路靠<b>身體傾斜</b>，不要真的往旁邊跑；「原地衝刺」只要<b>擺手臂</b>，腳不用動。</li>
+        <li>「閃避障礙」的低欄只要<b>小跳一下</b>（雙腳離地一點點）；不想跳請勾「坐著玩」，會改成舉手和傾斜。</li>
+        <li>一輪約 3～6 分鐘；頭暈、手痠就停下來，每人連續玩不超過 5 分鐘。</li>
+        <li>看不到人時遊戲會自動暫停。🔒 鏡頭畫面只在這台裝置即時分析，不錄影、不上傳。</li>
+      </ul>
+    </details>
+    <div class="actions">
+      <button class="primary" id="mStart">開始（或雙手舉高 1 秒）</button>
+      <button id="mHowto">❓ 怎麼玩</button>
+      <button id="mRecords">📊 成績紀錄</button>
+      <a class="link" href="./editor.html">✏️ 編輯題庫</a>
+      <a class="link" href="../">回首頁</a>
+    </div>
+    <p class="note" id="mStatus"></p>
+  </div>
+</div>
+
+<div class="overlay" id="pause" hidden>
+  <div class="panel small">
+    <h1 id="pTitle">暫停</h1>
+    <p class="sub" id="pText">按「繼續」或雙手舉高 1 秒。</p>
+    <div class="actions"><button class="primary" id="pResume">繼續</button><button id="pSkip">跳過這一關</button><button id="pQuit">回選單</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="result" hidden>
+  <div class="panel">
+    <h1 id="rTitle">闖關完成！</h1>
+    <div class="stars" id="rStars"></div>
+    <p class="sub" id="rText"></p>
+    <div id="rLevels" class="rlevels"></div>
+    <details class="review" open><summary>📖 每一題的答案與解說</summary><ol id="rReview"></ol></details>
+    <div class="actions"><button class="primary" id="rAgain">再玩一次（或雙手舉高 1 秒）</button><button id="rMenu">回選單</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="records" hidden>
+  <div class="panel">
+    <h1>📊 成績紀錄（這台裝置）</h1>
+    <p class="sub">只存在這台裝置的瀏覽器裡，不會上傳。紀錄只有座號或暱稱。</p>
+    <div id="recBody"></div>
+    <div class="actions"><button class="primary" id="recClose">關閉</button><button id="recCSV">下載成 CSV</button><button id="recClear">清除全部紀錄</button></div>
+  </div>
+</div>
+
+<div class="countdown" id="count" hidden></div>
+<video id="video" muted playsinline hidden></video>
+<script type="module" src="../src/quiz/game.js"></script>
+</body>
+</html>

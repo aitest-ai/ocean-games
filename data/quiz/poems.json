@@ -1,0 +1,19 @@
+{
+ "format": "taikan-quiz", "version": 1, "id": "sample-poems", "builtin": true,
+ "title": "唐詩：靜夜思、春曉、登鸛雀樓", "subject": "國語", "grade": "2～6 年級",
+ "author": "本專案原創範例（詩作為唐代作品，屬公共領域；題目為原創）", "license": "原創內容，學校可自由使用、修改、分享",
+ "questions": [
+  { "type": "order", "q": "把李白〈靜夜思〉排成正確順序", "items": ["床前明月光", "疑是地上霜", "舉頭望明月", "低頭思故鄉"], "difficulty": 2, "tags": ["靜夜思"] },
+  { "type": "choice", "q": "「床前明月光，疑是地上___」", "options": ["霜", "雪", "水"], "answer": "霜", "difficulty": 1, "tags": ["靜夜思"] },
+  { "type": "choice", "q": "〈靜夜思〉的作者是誰？", "options": ["李白", "孟浩然", "王之渙"], "answer": "A", "difficulty": 1, "tags": ["靜夜思"] },
+  { "type": "tf", "q": "〈靜夜思〉寫的是詩人在夜裡想念家鄉。", "answer": "○", "difficulty": 2, "tags": ["靜夜思"], "explain": "「低頭思故鄉」：低下頭想念故鄉。" },
+  { "type": "order", "q": "把孟浩然〈春曉〉排成正確順序", "items": ["春眠不覺曉", "處處聞啼鳥", "夜來風雨聲", "花落知多少"], "difficulty": 2, "tags": ["春曉"] },
+  { "type": "choice", "q": "「春眠不覺曉，處處聞___鳥」", "options": ["啼", "飛", "小"], "answer": "啼", "difficulty": 1, "tags": ["春曉"] },
+  { "type": "tf", "q": "〈春曉〉裡，詩人早上被鳥叫聲吵醒，想到昨晚的風雨。", "answer": "○", "difficulty": 3, "tags": ["春曉"] },
+  { "type": "choice", "q": "「欲窮千里目，更上一層___」", "options": ["樓", "山", "天"], "answer": "樓", "difficulty": 1, "tags": ["登鸛雀樓"], "explain": "想看到更遠的地方，就要再爬上一層樓。" },
+  { "type": "order", "q": "把王之渙〈登鸛雀樓〉排成正確順序", "items": ["白日依山盡", "黃河入海流", "欲窮千里目", "更上一層樓"], "difficulty": 2, "tags": ["登鸛雀樓"] },
+  { "type": "match", "q": "把詩和作者配對", "pairs": [["靜夜思", "李白"], ["春曉", "孟浩然"], ["登鸛雀樓", "王之渙"]], "difficulty": 2, "tags": ["作者"] },
+  { "type": "number", "q": "〈靜夜思〉一句有幾個字？", "answer": 5, "options": [4, 7, 6], "unit": "個字", "difficulty": 2, "tags": ["詩的形式"], "explain": "每句五個字、共四句，叫做「五言絕句」。" },
+  { "type": "choice", "q": "「更上一層樓」現在常用來比喻什麼？", "options": ["再進步一些", "去爬樓梯", "住在高樓"], "answer": "A", "difficulty": 3, "tags": ["登鸛雀樓"] }
+ ]
+}

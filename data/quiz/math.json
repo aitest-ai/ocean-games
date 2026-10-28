@@ -1,0 +1,21 @@
+{
+ "format": "taikan-quiz", "version": 1, "id": "sample-math", "builtin": true,
+ "title": "數學：九九乘法、分數與時間", "subject": "數學", "grade": "2～5 年級",
+ "author": "本專案原創範例", "license": "原創內容，學校可自由使用、修改、分享",
+ "questions": [
+  { "type": "number", "q": "7 × 8 = ？", "answer": 56, "difficulty": 1, "tags": ["乘法"] },
+  { "type": "number", "q": "6 × 9 = ？", "answer": 54, "difficulty": 1, "tags": ["乘法"] },
+  { "type": "number", "q": "48 ÷ 6 = ？", "answer": 8, "difficulty": 2, "tags": ["除法"] },
+  { "type": "tf", "q": "9 × 0 = 9", "answer": "×", "difficulty": 1, "tags": ["乘法"], "explain": "任何數乘以 0 都是 0。" },
+  { "type": "image", "q": "塗色的部分是幾分之幾？", "image": "art:pie:3/4", "options": ["1/4", "3/4", "3/8", "4/3"], "answer": "3/4", "difficulty": 2, "tags": ["分數"], "explain": "分成 4 等份，塗了 3 份，就是四分之三。" },
+  { "type": "image", "q": "塗色的部分是幾分之幾？", "image": "art:pie:1/3", "options": ["1/3", "1/2", "2/3"], "answer": "A", "difficulty": 2, "tags": ["分數"] },
+  { "type": "order", "q": "由小排到大", "items": ["1/4", "1/3", "1/2", "3/4"], "difficulty": 3, "tags": ["分數"], "hint": "分子都是 1 時，分母越大越小" },
+  { "type": "tf", "q": "1/2 和 2/4 一樣大。", "answer": "○", "difficulty": 2, "tags": ["分數"], "explain": "2/4 約分以後就是 1/2。" },
+  { "type": "image", "q": "時鐘上是幾點幾分？", "image": "art:clock:6:30", "options": ["6 點 30 分", "12 點 30 分", "6 點 6 分"], "answer": "A", "difficulty": 1, "tags": ["時間"], "explain": "短針在 6 和 7 中間，長針指著 6，是 6 點 30 分。" },
+  { "type": "image", "q": "時鐘上是幾點幾分？", "image": "art:clock:9:15", "options": ["3 點 45 分", "9 點 15 分", "9 點 3 分", "3 點 9 分"], "answer": "B", "difficulty": 2, "tags": ["時間"] },
+  { "type": "image", "q": "這個形狀有幾個邊？", "image": "art:shape:hexagon", "options": ["5", "6", "8"], "answer": "6", "difficulty": 1, "tags": ["圖形"], "explain": "六邊形有 6 個邊。" },
+  { "type": "match", "q": "把形狀和它的邊數配對", "pairs": [["三角形", "3 個邊"], ["正方形", "4 個邊"], ["五邊形", "5 個邊"]], "difficulty": 1, "tags": ["圖形"] },
+  { "type": "number", "q": "1 公尺 = 幾公分？", "answer": 100, "options": [10, 1000, 50], "unit": "公分", "difficulty": 2, "tags": ["單位"] },
+  { "type": "number", "q": "長 5 公分、寬 3 公分的長方形，面積是幾平方公分？", "answer": 15, "options": [16, 8, 30], "unit": "平方公分", "difficulty": 3, "tags": ["面積"], "explain": "長方形面積 = 長 × 寬 = 5 × 3 = 15。" }
+ ]
+}

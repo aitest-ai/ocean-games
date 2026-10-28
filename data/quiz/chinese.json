@@ -1,0 +1,19 @@
+{
+ "format": "taikan-quiz", "version": 1, "id": "sample-chinese", "builtin": true,
+ "title": "國語：成語、部首與量詞", "subject": "國語", "grade": "3～6 年級",
+ "author": "本專案原創範例", "license": "原創內容，學校可自由使用、修改、分享",
+ "questions": [
+  { "type": "choice", "q": "「一石二鳥」是什麼意思？", "options": ["做一件事得到兩種好處", "用石頭丟鳥", "一顆石頭很重"], "answer": "A", "difficulty": 2, "tags": ["成語"] },
+  { "type": "choice", "q": "形容非常著急，像熱鍋上的___。", "options": ["螞蟻", "小貓", "魚"], "answer": "螞蟻", "difficulty": 1, "tags": ["俗語"] },
+  { "type": "match", "q": "把成語和意思配對", "pairs": [["井底之蛙", "見識很少"], ["半途而廢", "事情做到一半就放棄"], ["畫蛇添足", "做多餘的事反而不好"]], "difficulty": 3, "tags": ["成語"] },
+  { "type": "tf", "q": "「守株待兔」是稱讚人很有耐心。", "answer": "×", "difficulty": 2, "tags": ["成語"], "explain": "守株待兔是說人不努力、只想靠運氣。" },
+  { "type": "choice", "q": "「河、海、湖」的部首是？", "options": ["氵（水）", "木", "口", "土"], "answer": "A", "difficulty": 1, "tags": ["部首"], "explain": "跟水有關的字常常是三點水。" },
+  { "type": "choice", "q": "「林、松、桃」的部首是？", "options": ["艹", "木", "竹"], "answer": "木", "difficulty": 1, "tags": ["部首"] },
+  { "type": "tf", "q": "「媽、姐、妹」的部首都是「女」。", "answer": "○", "difficulty": 1, "tags": ["部首"] },
+  { "type": "choice", "q": "一___大象", "options": ["頭", "條", "張"], "answer": "頭", "difficulty": 1, "tags": ["量詞"] },
+  { "type": "choice", "q": "一___紙", "options": ["張", "隻", "顆", "匹"], "answer": "張", "difficulty": 1, "tags": ["量詞"] },
+  { "type": "match", "q": "把量詞配對", "pairs": [["一匹", "馬"], ["一條", "魚"], ["一顆", "星星"], ["一本", "書"]], "difficulty": 2, "tags": ["量詞"] },
+  { "type": "choice", "q": "「高興」的相反詞是？", "options": ["難過", "快樂", "開心"], "answer": "難過", "difficulty": 1, "tags": ["詞語"] },
+  { "type": "order", "q": "排成通順的句子", "items": ["我們", "一起", "去操場", "跑步"], "difficulty": 2, "tags": ["句子"] }
+ ]
+}
