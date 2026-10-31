@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ChoiceGate,TeeDrill,validateScenario,grade,canUseCameraAction,nextIndex } from '../src/teeball/logic.js';
 import { SCENARIOS,CONTENT } from '../src/teeball/scenarios.js';
-test('all 17 scenarios have one valid answer and explanatory provenance',()=>{
-  assert.equal(SCENARIOS.length,17);assert.equal(new Set(SCENARIOS.map(s=>s.id)).size,17);
+test('all 30 scenarios have one valid answer and explanatory provenance',()=>{
+  assert.equal(SCENARIOS.length,30);assert.equal(new Set(SCENARIOS.map(s=>s.id)).size,30);
   for(const s of SCENARIOS){assert.ok(validateScenario(s),s.id);assert.equal(s.options.filter(o=>o.id===s.correct).length,1);assert.ok(s.answerBasis);assert.ok(s.explanation.length>15);}
 });
 test('grading accepts only listed choices and never mutates source',()=>{
@@ -67,7 +67,7 @@ test('3D base IDs and trajectory endpoints stay in original world coordinates',(
  assert.deepEqual(lerpPoint([0,0],[4,8],2),[4,8]);assert.deepEqual(lerpPoint([0,0],[4,8],-1),[0,0]);
  assert.deepEqual(flight([0,1,0],[2,1,8],0),[0,1,0]);assert.ok(Math.abs(flight([0,1,0],[2,1,8],1)[1]-1)<1e-9);assert.ok(flight([0,1,0],[2,1,8],.5)[1]>1);
 });
-test('all 17 situations have safe, deterministic 3D decisions without mutating rules',()=>{
+test('all 30 situations have safe, deterministic 3D decisions without mutating rules',()=>{
  for(const s of SCENARIOS){const before=JSON.stringify(s);for(const o of s.options){const m=decisionMotion(s,o.id);assert.ok(['blocked','run','throw','hold','bat'].includes(m.kind));if(o.id!==s.correct)assert.equal(m.kind,'blocked');if(m.target!=null)assert.ok(m.target>=0&&m.target<=4);}assert.equal(JSON.stringify(s),before);}
 });
 test('dead ball does not animate another throw or tag-up',()=>{

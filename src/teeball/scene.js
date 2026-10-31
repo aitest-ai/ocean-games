@@ -77,12 +77,13 @@ export class TeeWorld {
  // Action rounds use an externally paused simulation clock; camera changes never change base IDs.
  setAction(s){
   const batting=s.kind==='batting';
-  const id=batting?'action-batting':'action-fielding';
+  const context=s.fieldingContext;
+  const id=batting?'action-batting':`action-fielding-${context?.id||'default'}`;
   if(this.key!==id){
    this.reset();
-   this.setScenario(batting?null:{id,mode:'fielding',ball:{state:'held'},runners:[{base:1,status:'forced',destination:2}],receiverReady:[1,2,3,4],options:[{id:'second'}]},batting,0);
+   this.setScenario(batting?null:{id,mode:'fielding',ball:{state:'held'},runners:context?.runners||[{base:1,status:'forced',destination:2,target:true}],receiverReady:[1,2,3,4],options:[{id:'second'}]},batting,0);
    this.key=id;
-   if(!batting){this.runners[0].start=[...BASE_POINTS[1]];this.runners[0].figure.root.position.set(BASE_POINTS[1][0],0,BASE_POINTS[1][1]);}
+   if(!batting){this.runners.forEach(x=>{x.start=[...BASE_POINTS[x.spec.base]];x.figure.root.position.set(x.start[0],0,x.start[1]);});this.focusRunner=this.runners.find(x=>x.spec.target)||this.runners[0];}
    this.actionPathKey='';
   }
   this.action=s;
@@ -120,8 +121,7 @@ export class TeeWorld {
    const step=caught?Math.min(1,(age-flightSeconds)/catchSeconds):0;
    const end=[base[0]+.3*(1-step),1.05,base[1]+.3*(1-step)];
    this.ball.position.set(...(released?(caught?end:flight(from,end,age/flightSeconds,2.2)):from));
-   const runnerElapsed=r?.outcome==='correct-fast'?Math.min(elapsed,r.arrival??elapsed):elapsed;
-   this.runners.forEach(x=>{x.figure.root.visible=true;const p=lerpPoint(BASE_POINTS[1],BASE_POINTS[2],runnerElapsed/runnerSeconds);x.figure.root.position.set(p[0],0,p[1]);x.figure.root.rotation.y=Math.atan2(BASE_POINTS[2][0]-BASE_POINTS[1][0],BASE_POINTS[2][1]-BASE_POINTS[1][1]);const w=runnerElapsed>0&&runnerElapsed<runnerSeconds&&runnerElapsed===elapsed?Math.sin(elapsed*10):0;x.figure.set({...REST,lFoot:[.15,w*.25],rFoot:[-.15,-w*.25],lHand:[.25,.15,-w*.2],rHand:[-.25,.15,w*.2]});});
+   this.runners.forEach(x=>{const runnerElapsed=r?.outcome==='correct-fast'&&x.spec.target?Math.min(elapsed,r.arrival??elapsed):elapsed;const a=BASE_POINTS[x.spec.base],b=BASE_POINTS[x.spec.destination];x.figure.root.visible=true;const p=lerpPoint(a,b,runnerElapsed/runnerSeconds);x.figure.root.position.set(p[0],0,p[1]);x.figure.root.rotation.y=Math.atan2(b[0]-a[0],b[1]-a[1]);const w=runnerElapsed>0&&runnerElapsed<runnerSeconds&&runnerElapsed===elapsed?Math.sin(elapsed*10):0;x.figure.set({...REST,lFoot:[.15,w*.25],rFoot:[-.15,-w*.25],lHand:[.25,.15,-w*.2],rHand:[-.25,.15,w*.2]});});
    this.fielders.forEach((f,i)=>{const b=BASE_POINTS[i+1],selected=i+1===target;f.root.position.set(b[0]+.3*(selected?1-step:1),0,b[1]+.3*(selected?1-step:1));f.set({...REST,lHand:[.2,.4,.25],rHand:[-.2,.4,.25]});});
    this.rings.forEach((ring,i)=>{ring.material.color.set(i+1===target?(released&&r?.outcome==='wrong'?0xff8268:0xffbd55):0x61d6cf);});
    const key=String(target);if(key!==this.actionPathKey){this.actionPathKey=key;this.path.geometry.dispose();this.path.geometry=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...from),new THREE.Vector3(base[0],1.05,base[1])]);this.path.computeLineDistances();}

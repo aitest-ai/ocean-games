@@ -6,3 +6,81 @@ body{background:#e9eee7}.hero{padding:20px 0 18px}.hero h1{font-size:32px}.hero 
 @media(max-height:600px) and (orientation:landscape){.hero{display:none}.workspace{grid-template-columns:minmax(0,1fr) 280px}.world-viewport{height:78svh;min-height:300px}.question-panel h2{font-size:17px}.field-note{display:none}.modes button span{display:none}.modes{margin:8px 0}.modes button{padding:6px 12px;min-height:40px}.choices{grid-template-columns:1fr}.choices button{font-size:12px;min-height:42px}.hero+.modes{margin-top:8px}}
 
 [hidden]{display:none!important}.play-selector{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin:1rem 0}.play-selector span{font-size:.85rem;color:var(--muted,#b6caca)}.action-rounds,.action-buttons{display:flex;gap:.5rem;flex-wrap:wrap;margin:.7rem 0}.action-rounds button,.action-buttons>button{flex:1;min-width:120px}.direction-pad{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;width:100%}.action-diagram{display:flex;align-items:center;gap:1rem;font-size:.8rem}.action-diagram svg{width:130px;height:130px;flex-shrink:0;background:#132a31;border-radius:12px}.simulation-note{font-size:.8rem;opacity:.8}#actionHint,#actionTimeline{font-size:.9rem;line-height:1.65}#actionPanel button[aria-pressed=true]{outline:2px solid #ffd080;background:#27545b}#actionResult{min-height:70px}
+
+/* Field-first classroom layout. No panel, camera button, or title overlays play. */
+body.field-first main{max-width:1440px}
+body.field-first .workspace{grid-template-columns:minmax(0,1fr);align-items:start}
+body.field-first .workspace>*{min-width:0;max-width:100%;grid-column:1}
+body.field-first .field-panel{isolation:isolate}
+body.field-first .world-title{display:none}
+body.field-first .play-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 12px;background:#e7eee5}
+body.field-first .safety-controls,body.field-first .view-controls{display:flex;gap:6px;flex-wrap:wrap;position:static;min-width:0}
+body.field-first .play-toolbar button{min-height:44px;padding:7px 12px;font-size:13px;white-space:normal}
+body.field-first #pause{background:#153d35;color:#fff}
+body.field-first #stopCamera{border:2px solid #9d4b31}
+body.field-first .world-viewport{height:clamp(300px,58svh,680px);min-width:0}
+body.field-first .question-panel{position:static;width:auto;max-width:none}
+body.field-first #actionPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px;padding:14px 18px}
+body.field-first #actionPanel>.question-meta,body.field-first #actionTitle,body.field-first #actionStage,body.field-first #actionResult,body.field-first #actionTimeline{grid-column:1/-1;margin:0}
+body.field-first #actionTitle{font-size:19px}
+body.field-first #actionStage{font-size:16px;padding:8px 12px}
+body.field-first #actionResult{min-height:0;padding:9px 12px}
+body.field-first #actionPanel .action-buttons,body.field-first #actionPanel .action-rounds{margin:0;align-content:start}
+body.field-first #actionPanel button[aria-pressed=true]{background:#27545b;color:#fff;outline-color:#b38331}
+body.field-first .teacher-drawer{margin:12px 0 18px;border:1px solid #bdcbbd;border-radius:14px;background:var(--white)}
+body.field-first .teacher-drawer>summary{cursor:pointer;min-height:48px;padding:11px 16px;font-weight:700}
+body.field-first .teacher-drawer>summary:focus-visible{outline:3px solid #d4822e;outline-offset:3px}
+body.field-first .teacher-drawer-content{padding:0 16px 16px}
+body.field-first .teacher-drawer .controls{padding:10px 0}
+body.field-first .teacher-drawer .action-instructions{font-size:14px}
+body.field-first .teacher-drawer .action-instructions p{margin:8px 0}
+body.field-first .teacher-drawer .modes{margin:12px 0}
+body.field-first .hero{padding:10px 0}
+body.field-first .hero h1{font-size:24px}
+body.field-first .scene-facts{overflow-wrap:anywhere}
+@media(max-width:650px){
+ body.field-first main{padding:0 8px}
+ body.field-first header{padding:8px;flex-wrap:wrap}
+ body.field-first .hero h1{font-size:20px}
+ body.field-first .hero .eyebrow,body.field-first .scoreboard{display:none}
+ body.field-first .play-toolbar{padding:6px;gap:6px}
+ body.field-first .safety-controls{flex:1 1 100%}
+ body.field-first .play-toolbar button{padding:7px 9px;font-size:12px}
+ body.field-first .view-controls{flex:1}
+ body.field-first .view-controls button{flex:1}
+ body.field-first .world-viewport{height:45svh;min-height:260px}
+ body.field-first #actionPanel{grid-template-columns:minmax(0,1fr);padding:10px}
+ body.field-first .choices{grid-template-columns:minmax(0,1fr)}
+ body.field-first .choices button{text-align:left}
+ body.field-first .teacher-drawer-content{padding:0 10px 10px}
+ body.field-first .teacher-drawer .modes{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-height:600px) and (orientation:landscape){
+ body.field-first .hero,body.field-first .field-top{display:none}
+ body.field-first .workspace{grid-template-columns:minmax(0,1fr)}
+ body.field-first .world-viewport{height:66svh;min-height:200px}
+ body.field-first .play-toolbar{padding:4px 8px}
+ body.field-first .safety-controls{flex:0 1 auto}
+ body.field-first #actionPanel{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* Anonymous classroom queue is normal document flow, never a field overlay. */
+body.field-first .classroom-bar{position:static;display:flex;align-items:center;gap:7px 12px;flex-wrap:wrap;margin:10px 0;padding:10px 12px;border:1px solid #becfbe;border-radius:14px;background:#f7fbf1;font-size:14px}
+body.field-first .classroom-bar strong{font-size:16px}
+body.field-first .classroom-bar #classTask{color:#476351}
+body.field-first .classroom-bar button{font-size:13px;min-height:44px;padding:7px 12px}
+body.field-first .classroom-bar #classNext{background:#176653;color:white}
+body.field-first .classroom-bar small{flex:1 1 100%;font-size:11px;color:#586b5e}
+.class-settings{display:grid;gap:12px;background:#edf1e8;padding:14px;border-radius:12px}
+.class-settings label{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:14px}
+.class-settings input[type=number],.class-settings select{font:inherit;min-height:44px;max-width:100%;border:1px solid #9caf9f;border-radius:7px;padding:6px 9px;background:white;color:#153d35}
+.class-settings input[type=number]{width:100px}
+.class-settings select{flex:1 1 190px}
+.class-settings input:focus-visible,.class-settings select:focus-visible{outline:3px solid #d4822e;outline-offset:2px}
+.class-settings p{margin:0}
+@media(max-width:650px){
+ body.field-first .classroom-bar{gap:6px;padding:8px}
+ body.field-first .classroom-bar strong,body.field-first .classroom-bar #classTask{flex:1 1 100%}
+ body.field-first .classroom-bar button{flex:1;min-width:120px}
+ .class-settings{padding:10px}
+}

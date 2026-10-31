@@ -1,3 +1,4 @@
+import { validateForceContext } from './force-contexts.js';
 // Classroom interaction estimates only: kit coordinates are already mirrored.
 // No depth, force, finger release or true rear-facing measurement is inferred.
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
@@ -15,14 +16,18 @@ export function segmentContact(a,b,box=CONTACT_REGION){
  return {x:a.x+lo*dx,y:a.y+lo*dy};
 }
 export class ActionRound {
- constructor(options={}){this.runnerTime=options.runnerTime??ACTION_TIMING.runner;this.catchTime=options.catchTime??ACTION_TIMING.catch;this.start('batting');}
+ constructor(options={}){this.runnerTime=options.runnerTime??ACTION_TIMING.runner;this.catchTime=options.catchTime??ACTION_TIMING.catch;this.fieldingContext=null;this.requiredTarget=2;this.start('batting');}
+ configureFielding(context=null,decisionBudget=null){
+  this.fieldingContext=context?validateForceContext(context):null;this.requiredTarget=this.fieldingContext?.requiredTarget??2;
+  if(decisionBudget!==null){if(!Number.isFinite(decisionBudget)||decisionBudget<=0||decisionBudget>10)throw new Error('Invalid decision budget');this.runnerTime=decisionBudget+ACTION_TIMING.flight[this.requiredTarget]+this.catchTime;}
+ }
  start(kind='batting'){
   if(!['batting','fielding'].includes(kind))throw new Error('Unknown action round');
   Object.assign(this,{kind,stage:'calibrating',elapsed:0,paused:false,direction:2,source:'camera',result:null,contactAt:null,releaseAt:null,runnerStarted:false,trajectory:[],events:[],baseline:null,last:null,stable:0,candidate:null,candidateTime:0,collectedTime:0,loadSign:0,collectArmed:false});
   return this.snapshot;
  }
  get flightTime(){return ACTION_TIMING.flight[this.direction];}
- get snapshot(){return {kind:this.kind,stage:this.stage,elapsed:this.elapsed,paused:this.paused,direction:this.direction,source:this.source,result:this.result?{...this.result}:null,contactAt:this.contactAt,releaseAt:this.releaseAt,runnerStarted:this.runnerStarted,runnerTime:this.runnerTime,flightTime:this.flightTime,catchTime:this.catchTime,trajectory:this.trajectory.map(p=>({...p}))};}
+ get snapshot(){return {fieldingContext:this.fieldingContext,requiredTarget:this.requiredTarget,kind:this.kind,stage:this.stage,elapsed:this.elapsed,paused:this.paused,direction:this.direction,source:this.source,result:this.result?{...this.result}:null,contactAt:this.contactAt,releaseAt:this.releaseAt,runnerStarted:this.runnerStarted,runnerTime:this.runnerTime,flightTime:this.flightTime,catchTime:this.catchTime,trajectory:this.trajectory.map(p=>({...p}))};}
  emit(type,extra={}){this.events.push({type,...extra});}
  drainEvents(){const result=this.events;this.events=[];return result;}
  setPaused(value){
@@ -95,7 +100,7 @@ export class ActionRound {
  }
  finishThrow(){
   this.releaseAt=this.elapsed;const arrival=this.elapsed+this.flightTime+this.catchTime;
-  this.result={outcome:this.direction!==2?'wrong':arrival<this.runnerTime?'correct-fast':'correct-late',target:this.direction,throwElapsed:this.elapsed,arrival,runnerTime:this.runnerTime,simulated:this.source==='simulated'};
+  this.result={outcome:this.direction!==this.requiredTarget?'wrong':arrival<this.runnerTime?'correct-fast':'correct-late',target:this.direction,throwElapsed:this.elapsed,arrival,runnerTime:this.runnerTime,simulated:this.source==='simulated'};
   this.stage='flight';this.emit('throw',{result:this.result});
  }
  simulate(action,value){
