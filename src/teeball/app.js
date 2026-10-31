@@ -2,6 +2,8 @@ import { createTaikan, CameraSource } from '../../packages/taikan-kit/src/index.
 import { SCENARIOS } from './scenarios.js';
 import { ChoiceGate, TeeDrill, grade, canUseCameraAction } from './logic.js';
 import { CameraSession } from './camera-session.js';
+import { TeeWorld } from './scene.js';
+import { targetBase } from './world-logic.js';
 const $ = id => document.getElementById(id);
 const gate = new ChoiceGate(), tee = new TeeDrill();
 const kit = createTaikan({ sensitivity:'normal', disabled:['jump','swing','paddle','crouch'], sideOk:true });
@@ -16,24 +18,20 @@ const list=()=>SCENARIOS.filter(s=>s.mode===mode&&(!coreOnly||!s.requiresProfile
 const current=()=>list()[index%list().length];
 const isDrill=()=>mode==='batting'&&!quiz;
 function feedback(text){$('feedback').textContent=text;}
+let world;
+try { world=new TeeWorld($('world'),base=>{if(paused||answered||isDrill())return;const i=current().options.findIndex(o=>targetBase(o.id)===base);if(i>=0){selected=i;render();}}); }
+catch(error){$('worldError').hidden=false;$('worldError').textContent='這台裝置無法啟動 WebGL 3D 球場。可先用下方文字／按鈕練習；請換支援 WebGL 的裝置檢查完整 3D 畫面。';console.warn('3D field unavailable',error);}
+$('world').addEventListener('webglcontextlost',e=>{e.preventDefault();setPaused(true,'3D 繪圖中斷，請重新載入；鏡頭已關閉。');stopCamera();$('worldError').hidden=false;$('worldError').textContent='3D 繪圖中斷。請重新載入頁面，或改用支援 WebGL 的裝置。';});
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{world?.setView(b.dataset.view);document.querySelectorAll('[data-view]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
 function drawScene(s){
-  const positions=[[300,413],[474,239],[300,65],[126,239],[300,413]];
-  $('runners').replaceChildren();
-  for(const [i,r] of (s?.runners||[]).entries()){
-    const [x,y]=positions[r.base]; const node=document.createElementNS('http://www.w3.org/2000/svg','g');
-    node.innerHTML=`<circle cx="${x-17}" cy="${y-26-i*3}" r="14" fill="#f5a453" stroke="#fff8df" stroke-width="2"/><text x="${x-17}" y="${y-21-i*3}" fill="#243d32" text-anchor="middle" font-size="12" font-weight="900">${r.base===0?'打':r.base}</text>`;
-    $('runners').append(node);
-  }
-  $('tee').style.display=isDrill()||s?.ball.state==='onTee'?'':'none';
-  $('fieldCaption').textContent=isDrill()?'球在打擊座上，不是投手投來的球':ballNames[s.ball.state]||'請看題目球況';
-  $('ball').setAttribute('transform',s?.ball.holderBase?`translate(${positions[s.ball.holderBase][0]-300} ${positions[s.ball.holderBase][1]-330})`:'');
-  $('facts').textContent=isDrill()?'打擊準備與安全口令練習。綠燈不是投球；只做空手小幅動作。':[
+  world?.setScenario(s,isDrill(),selected);
+  $('facts').textContent=isDrill()?'球固定在球座上；綠燈後按揮擊，觀察球與揮棒動畫。空手小幅動作即可。':[
     `球況：${ballNames[s.ball.state]||'依題目敘述'}`,
     `跑者：${s.runners.length?s.runners.map(r=>`${baseNames[r.base]}${statusNames[r.status]||''}${r.destination&&r.destination!==r.base?' → '+baseNames[r.destination]:''}`).join('、'):'壘上無人'}`,
-    `出局數：${s.outs}（本版不模擬完整局數）`,
-    s.receiverReady?`已就位的接球隊友：${s.receiverReady.map(b=>baseNames[b]).join('、')}`:''
-  ].filter(Boolean).join('\n');
+    s.receiverReady?`綠色壘圈＝接球隊友已就位：${s.receiverReady.map(b=>baseNames[b]).join('、')}`:''
+  ].filter(Boolean).join(' ｜ ');
 }
+
 function render(){
   $('score').textContent=`${correct} / ${total}`;
   $('sceneTag').textContent=names[mode]; $('station').textContent=names[mode];
@@ -41,7 +39,7 @@ function render(){
   const drill=isDrill(), s=current();
   $('teeCue').hidden=!drill; $('batButtons').hidden=!drill; $('batQuiz').hidden=mode!=='batting';
   $('batQuiz').textContent=quiz?'切換：空手打擊準備':'切換：打擊觀念題';
-  $('confirm').hidden=drill||answered; $('next').hidden=drill||!answered;
+  $('replay').hidden=drill||!answered; $('confirm').hidden=drill||answered; $('next').hidden=drill||!answered;
   $('choices').replaceChildren();
   if(drill){
     $('questionCount').textContent=`第 ${attempt} 次練習`;
@@ -72,16 +70,16 @@ function setPaused(value,message){
   gate.reset();tee.cancel();
   if(message)feedback(message);renderCue();
 }
-function switchMode(next){mode=next;quiz=false;index=0;selected=0;answered=false;tee.cancel();gate.reset();feedback('先讀題目，不用搶快。');render();}
+function switchMode(next){world?.reset();mode=next;quiz=false;index=0;selected=0;answered=false;tee.cancel();gate.reset();feedback('先讀題目，不用搶快。');render();}
 function submit(){
   if(paused||answered||isDrill())return;
   const result=grade(current(),current().options[selected].id);if(!result)return;
-  answered=true;total++;if(result.correct)correct++;
+  answered=true;total++;if(result.correct)correct++;world?.act(current().options[selected].id);
   feedback(`${result.correct?'判斷正確！':'再想想：'} ${result.explanation}`);render();
 }
 function hit(){
   if(paused||!isDrill())return; const result=tee.hit(performance.now()); if(!result)return;
-  total++;if(result==='safe')correct++;
+  total++;if(result==='safe'){correct++;world?.hit();}
   feedback(result==='safe'?'做得好！先確認安全才揮擊。正式擊出有效球後，要安全放棒並依序跑壘。':'剛才還在確認活動區。先等準備好再開始，這不是正式比賽的好壞球判定。');
   attempt++;render();
 }
@@ -115,7 +113,8 @@ kit.on('action',event=>{
 });
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>switchMode(b.dataset.mode)));
 $('batQuiz').onclick=()=>{quiz=!quiz;index=0;selected=0;answered=false;tee.cancel();gate.reset();feedback('先讀題目，不用搶快。');render();};
-$('arm').onclick=()=>{if(paused)return;tee.arm(performance.now());feedback('等待練習區準備好。綠燈不是投球，只是安全提示。');renderCue();};
+$('arm').onclick=()=>{if(paused)return;world?.reset();world?.setScenario(null,true,0);tee.arm(performance.now());feedback('等待練習區準備好。綠燈不是投球，只是安全提示。');renderCue();};
+$('replay').onclick=()=>{if(paused)return;const s=current();selected=s.options.findIndex(o=>o.id===s.correct);world?.reset();world?.setScenario(s,false,selected);world?.act(s.correct);feedback('正確動作示範：'+s.explanation);};
 $('hit').onclick=hit;$('confirm').onclick=submit;$('next').onclick=next;
 $('camera').onclick=startCamera;$('stopCamera').onclick=stopCamera;
 $('calibrate').onclick=()=>{kit.calibrate();tracking='lost';setPaused(true,'換人或換姿勢後重新校準；穩定後按「繼續」。');};
@@ -133,5 +132,6 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('blur',()=>setPaused(true,'視窗失去焦點，已暫停。回來後按「繼續」。'));
 document.addEventListener('visibilitychange',()=>{if(document.hidden){setPaused(true,'切換分頁，已暫停。');stopCamera();}});
 window.addEventListener('pagehide',stopCamera);
-function frame(){if(!paused&&isDrill()){const before=tee.stage;tee.tick(performance.now());if(tee.stage!==before){if(tee.result==='waited')feedback('沒有揮擊也沒關係；準備好再試，不扣分。');renderCue();}}requestAnimationFrame(frame);}
+let lastFrame=performance.now();
+function frame(now){const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;world?.update(dt,paused);if(!paused&&isDrill()){const before=tee.stage;tee.tick(performance.now());if(tee.stage!==before){if(tee.result==='waited')feedback('沒有揮擊也沒關係；準備好再試，不扣分。');renderCue();}}requestAnimationFrame(frame);}
 render();requestAnimationFrame(frame);
