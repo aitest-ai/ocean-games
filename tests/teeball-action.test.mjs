@@ -27,4 +27,11 @@ test('foreground simulation keeps real seconds at 10 FPS; stalled frames pause r
  assert.deepEqual(simulationStep(.1),{dt:.1,stalled:false});
  assert.deepEqual(simulationStep(.3),{dt:0,stalled:true});
  assert.deepEqual(simulationStep(NaN),{dt:0,stalled:false});
+ for(const fps of [10,20,60]){
+  const round=new ActionRound();round.start('fielding');round.simulate('ready');
+  for(let i=0;i<fps;i++)round.tick(simulationStep(1/fps).dt);
+  assert.ok(Math.abs(round.elapsed-1)<1e-10,`${fps} FPS must count one real second`);
+  const stalled=simulationStep(.5);if(stalled.stalled)round.setPaused(true);round.tick(stalled.dt);
+  assert.ok(Math.abs(round.elapsed-1)<1e-10);assert.equal(round.paused,true);
+ }
 });
