@@ -3,6 +3,7 @@ import { SCENARIOS } from './scenarios.js';
 import { ChoiceGate, TeeDrill, grade, canUseCameraAction } from './logic.js';
 import { CameraSession } from './camera-session.js';
 import { TeeWorld } from './scene.js';
+import { simulationStep } from './action-logic.js';
 import { ActionUI } from './action-ui.js';
 import { targetBase } from './world-logic.js';
 const $ = id => document.getElementById(id);
@@ -147,5 +148,5 @@ window.addEventListener('pagehide',stopCamera);
 let frameId;
 window.addEventListener('pagehide',event=>{if(!event.persisted){cancelAnimationFrame(frameId);world?.dispose();}});
 let lastFrame=performance.now();
-function frame(now){const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;if(actionActive&&camera&&!paused&&now-lastPoseAt>750)setPaused(true,'姿態訊號中斷，球與跑者已暫停。確認鏡頭恢復後按繼續。');if(actionActive)actionUI.tick(dt);world?.update(dt,paused);if(!actionActive&&!paused&&isDrill()){const before=tee.stage;tee.tick(performance.now());if(tee.stage!==before){if(tee.result==='waited')feedback('沒有揮擊也沒關係；準備好再試，不扣分。');renderCue();}}frameId=requestAnimationFrame(frame);}
+function frame(now){const step=simulationStep((now-lastFrame)/1000),dt=Math.min(.05,step.dt);lastFrame=now;if(actionActive&&!paused&&step.stalled)setPaused(true,'畫面更新暫時中斷，球與跑者已一起暫停。按繼續重新準備，不扣分。');if(actionActive&&camera&&!paused&&now-lastPoseAt>750)setPaused(true,'姿態訊號中斷，球與跑者已暫停。確認鏡頭恢復後按繼續。');if(actionActive)actionUI.tick(step.dt);world?.update(dt,paused);if(!actionActive&&!paused&&isDrill()){const before=tee.stage;tee.tick(performance.now());if(tee.stage!==before){if(tee.result==='waited')feedback('沒有揮擊也沒關係；準備好再試，不扣分。');renderCue();}}frameId=requestAnimationFrame(frame);}
 render();frameId=requestAnimationFrame(frame);

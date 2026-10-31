@@ -113,3 +113,10 @@ export class ActionRound {
   return false;
  }
 }
+
+// Reaction time follows foreground wall time, not the renderer's FPS clamp.
+// A long stalled frame pauses safely rather than silently awarding extra time.
+export function simulationStep(seconds){
+ const valid=Number.isFinite(seconds)&&seconds>=0;
+ return {dt:valid&&seconds<=.25?seconds:0,stalled:valid&&seconds>.25};
+}

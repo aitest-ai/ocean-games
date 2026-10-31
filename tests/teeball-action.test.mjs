@@ -21,3 +21,10 @@ test('waiting at chest never auto-collects; preview can return to front before c
 test('speed uses calibrated scale even with foreshortened shoulders',()=>{const r=new ActionRound();ready(r);r.pose(pose(650,.8,.55,{width:.08}));r.pose(pose(850,.45,.55,{width:.08}));r.pose(pose(1050,.1,.55,{width:.08}));assert.ok(Math.abs(r.result.speed-.35)<1e-8);});
 test('arrival tie is not an out; configurable runner duration is used',()=>{const r=new ActionRound({runnerTime:2.35});r.start('fielding');r.simulate('ready');r.tick(1);r.simulate('collect');r.simulate('throw');assert.equal(r.result.arrival,2.35);assert.equal(r.result.outcome,'correct-late');});
 test('separated hands cannot generate a midpoint-only swing hit',()=>{const r=new ActionRound();ready(r);r.pose(pose(650,.8,.55));const p=pose(700,-.4,.55);p.kp.leftWrist.x-=.2;p.kp.rightWrist.x+=.2;r.pose(p);assert.equal(r.result,null);assert.equal(r.stage,'ready');});
+
+test('foreground simulation keeps real seconds at 10 FPS; stalled frames pause rather than catch up',async()=>{
+ const {simulationStep}=await import('../src/teeball/action-logic.js');
+ assert.deepEqual(simulationStep(.1),{dt:.1,stalled:false});
+ assert.deepEqual(simulationStep(.3),{dt:0,stalled:true});
+ assert.deepEqual(simulationStep(NaN),{dt:0,stalled:false});
+});
