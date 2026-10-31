@@ -3,12 +3,15 @@ import { SCENARIOS } from './scenarios.js';
 import { ChoiceGate, TeeDrill, grade, canUseCameraAction } from './logic.js';
 import { CameraSession } from './camera-session.js';
 import { TeeWorld } from './scene.js';
+import { ActionUI } from './action-ui.js';
 import { targetBase } from './world-logic.js';
 const $ = id => document.getElementById(id);
 const gate = new ChoiceGate(), tee = new TeeDrill();
 const kit = createTaikan({ sensitivity:'normal', disabled:['jump','swing','paddle','crouch'], sideOk:true });
+let actionActive=true, actionUI;
 let mode='batting', quiz=false, index=0, selected=0, answered=false, correct=0, total=0, paused=false;
 const cameraSession = new CameraSession(()=>new CameraSource({video:$('video'),numPoses:2}), source=>kit.use(source), ()=>kit.stop());
+let lastPoseAt=0;
 let camera=false, tracking='lost', coreOnly=true, attempt=1;
 const names={batting:'打擊準備站',running:'跑壘與停壘',fielding:'守備傳球站'};
 const baseNames=['本壘（打者）','一壘','二壘','三壘','本壘'];
@@ -19,7 +22,7 @@ const current=()=>list()[index%list().length];
 const isDrill=()=>mode==='batting'&&!quiz;
 function feedback(text){$('feedback').textContent=text;}
 let world;
-try { world=new TeeWorld($('world'),base=>{if(paused||answered||isDrill())return;const i=current().options.findIndex(o=>targetBase(o.id)===base);if(i>=0){selected=i;render();}}); }
+try { world=new TeeWorld($('world'),base=>{if(actionActive){actionUI?.simulate('direction',base);return;}if(paused||answered||isDrill())return;const i=current().options.findIndex(o=>targetBase(o.id)===base);if(i>=0){selected=i;render();}}); }
 catch(error){$('worldError').hidden=false;$('worldError').textContent='這台裝置無法啟動 WebGL 3D 球場。可先用下方文字／按鈕練習；請換支援 WebGL 的裝置檢查完整 3D 畫面。';console.warn('3D field unavailable',error);}
 $('world').addEventListener('webglcontextlost',e=>{e.preventDefault();setPaused(true,'3D 繪圖中斷，請重新載入；鏡頭已關閉。');stopCamera();$('worldError').hidden=false;$('worldError').textContent='3D 繪圖中斷。請重新載入頁面，或改用支援 WebGL 的裝置。';});
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{world?.setView(b.dataset.view);document.querySelectorAll('[data-view]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
@@ -33,6 +36,9 @@ function drawScene(s){
 }
 
 function render(){
+  $('actionPanel').hidden=!actionActive;$('choices').closest('article').hidden=actionActive;
+  $('actionMode').setAttribute('aria-pressed',String(actionActive));
+  if(actionActive){$('sceneTag').textContent='動作實戰・兩回合';$('facts').textContent='空手小幅動作即可。中央接觸區與投球路徑是教學近似，不是精準運動測量。';actionUI.render();return;}
   $('score').textContent=`${correct} / ${total}`;
   $('sceneTag').textContent=names[mode]; $('station').textContent=names[mode];
   document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
@@ -67,10 +73,10 @@ function renderCue(){
 }
 function setPaused(value,message){
   paused=value; document.body.classList.toggle('paused',paused); $('pause').textContent=paused?'繼續':'暫停';
-  gate.reset();tee.cancel();
+  gate.reset();tee.cancel();actionUI?.setPaused(value,message);
   if(message)feedback(message);renderCue();
 }
-function switchMode(next){world?.reset();mode=next;quiz=false;index=0;selected=0;answered=false;tee.cancel();gate.reset();feedback('先讀題目，不用搶快。');render();}
+function switchMode(next){actionActive=false;world?.reset();mode=next;quiz=false;index=0;selected=0;answered=false;tee.cancel();gate.reset();feedback('先讀題目，不用搶快。');render();}
 function submit(){
   if(paused||answered||isDrill())return;
   const result=grade(current(),current().options[selected].id);if(!result)return;
@@ -89,42 +95,48 @@ async function startCamera(){
   $('camera').disabled=true;$('cameraStatus').textContent='正在載入姿態模型並要求鏡頭權限…';
   try{
     if(!await cameraSession.start())return;
-    camera=true;tracking=kit.state.tracking || 'lost';$('cameraDot').classList.add('on');$('stopCamera').hidden=false;$('calibrate').hidden=false;
-    $('inputHelp').textContent='鏡頭：左右微傾選答案，回正再選下一格；雙手舉起確認。打擊站空手小幅揮擊。也可直接按按鈕。';
+    camera=true;lastPoseAt=performance.now();tracking=kit.state.tracking || 'lost';$('cameraDot').classList.add('on');$('stopCamera').hidden=false;$('calibrate').hidden=false;
+    if(actionActive)actionUI.start(actionUI.kind);
+    $('inputHelp').textContent='主要動作模式依畫面提示：穩定準備、引棒穿過中央；守備預覽方向、胸前收手後小幅送手。次要教學模式才用微傾選答案、舉手確認。';
     setPaused(true,'等身體與雙手進入畫面，按「繼續」。');$('cameraStatus').textContent='鏡頭已開啟。請保持坐／站姿，讓軀幹和雙手入鏡。';
   }catch(error){camera=false;$('cameraStatus').textContent='鏡頭無法啟動：請確認 HTTPS／權限。可直接用觸控或鍵盤繼續。';}
   finally{$('camera').disabled=camera;}
 }
 function stopCamera(){
   cameraSession.stop();camera=false;tracking='lost';$('camera').disabled=cameraSession.pending;$('stopCamera').hidden=true;$('calibrate').hidden=true;$('cameraDot').classList.remove('on');
-  $('cameraStatus').textContent='鏡頭已關閉。可用觸控或鍵盤繼續。';$('inputHelp').textContent='觸控按答案；鍵盤 ← → 選擇、Enter 確認。打擊站用空白鍵。';gate.reset();tee.cancel();renderCue();
+  $('cameraStatus').textContent='鏡頭已關閉。可用觸控或鍵盤繼續。';$('inputHelp').textContent='動作模擬：R 準備、L 引棒、空白鍵揮擊；守備方向鍵選壘、C 收手、空白鍵送出。教學模式：方向鍵選答案、Enter 確認。';gate.reset();tee.cancel();renderCue();
 }
 kit.on('status',event=>{
   if(!camera)return;
-  if(event.tracking){tracking=event.tracking;$('cameraStatus').textContent=event.tracking==='ok'?'辨識正常；左右微傾選答案，雙手舉起確認。':event.hint||'請回到鏡頭中央。';
+  if(event.tracking){tracking=event.tracking;$('cameraStatus').textContent=event.tracking==='ok'?'辨識正常；依目前動作提示操作。空手小幅動作即可。':event.hint||'請回到鏡頭中央。';
     if(event.tracking!=='ok')setPaused(true,'鏡頭辨識暫停，不扣分。調整後按「繼續」，或關閉鏡頭改用按鈕。');}
 });
 kit.on('action',event=>{
   if(!canUseCameraAction({camera,active:!$('help').open,paused,tracking}))return;
+  if(actionActive)return; // The new engine consumes raw pose trajectories, never bat events.
   if(isDrill()){if(event.type==='bat')hit();return;}
   if(answered)return;
   const action=gate.action(event,performance.now(),current().options.length,selected);
   if(action?.type==='select'){selected=action.index;render();} else if(action?.type==='confirm')submit();
 });
+kit.on('pose',pose=>{lastPoseAt=performance.now();if(actionActive&&canUseCameraAction({camera,active:!$('help').open,paused,tracking}))actionUI.pose(pose);});
+actionUI=new ActionUI({world,stopCamera,isCamera:()=>camera,isPaused:()=>paused,feedback,requestPause:message=>setPaused(true,message)});
+$('actionMode').onclick=()=>{actionActive=true;actionUI.start(actionUI.kind);render();};
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>switchMode(b.dataset.mode)));
 $('batQuiz').onclick=()=>{quiz=!quiz;index=0;selected=0;answered=false;tee.cancel();gate.reset();feedback('先讀題目，不用搶快。');render();};
 $('arm').onclick=()=>{if(paused)return;world?.reset();world?.setScenario(null,true,0);tee.arm(performance.now());feedback('等待練習區準備好。綠燈不是投球，只是安全提示。');renderCue();};
 $('replay').onclick=()=>{if(paused)return;const s=current();selected=s.options.findIndex(o=>o.id===s.correct);world?.reset();world?.setScenario(s,false,selected);world?.act(s.correct);feedback('正確動作示範：'+s.explanation);};
 $('hit').onclick=hit;$('confirm').onclick=submit;$('next').onclick=next;
 $('camera').onclick=startCamera;$('stopCamera').onclick=stopCamera;
-$('calibrate').onclick=()=>{kit.calibrate();tracking='lost';setPaused(true,'換人或換姿勢後重新校準；穩定後按「繼續」。');};
-$('pause').onclick=()=>{if(paused&&camera&&tracking!=='ok'){feedback('請先讓鏡頭正常辨識，或關閉鏡頭改用按鈕。');return;}setPaused(!paused,paused?'繼續練習，打擊站請重新按「開始準備」。':'已暫停，可以休息。');};
-$('reset').onclick=()=>{correct=0;total=0;attempt=1;switchMode(mode);setPaused(true,'已清空本輪。換人後請重新校準或按「繼續」。');if(camera)kit.calibrate();};
+$('calibrate').onclick=()=>{if(actionActive)actionUI.start(actionUI.kind);kit.calibrate();tracking='lost';setPaused(true,'換人或換姿勢後重新校準；穩定後按「繼續」。');};
+$('pause').onclick=()=>{if(paused&&camera&&tracking!=='ok'){feedback('請先讓鏡頭正常辨識，或關閉鏡頭改用按鈕。');return;}setPaused(!paused,paused?'繼續練習；請重新穩定準備，避免暫停前的動作誤觸。':'已暫停，可以休息。');};
+$('reset').onclick=()=>{if(actionActive){actionUI.start('batting');setPaused(true,'換組後重新準備。');if(camera)kit.calibrate();return;}correct=0;total=0;attempt=1;switchMode(mode);setPaused(true,'已清空本輪。換人後請重新校準或按「繼續」。');if(camera)kit.calibrate();};
 $('helpOpen').onclick=()=>{setPaused(true,'規則與說明開啟中。關閉後請按「繼續」。');$('help').showModal();};
 $('helpClose').onclick=()=>$('help').close();
 $('coreOnly').onchange=()=>{coreOnly=$('coreOnly').checked;index=0;selected=0;answered=false;render();};
 window.addEventListener('keydown',e=>{
   if(e.target.matches('input,select,textarea')||$('help').open||paused||e.repeat)return;
+  if(actionActive){actionUI.key(e);return;}
   if(e.code==='Space'&&isDrill()){e.preventDefault();hit();return;}
   if(!isDrill()&&['ArrowLeft','ArrowRight'].includes(e.code)&&!answered){e.preventDefault();selected=(selected+(e.code==='ArrowLeft'?-1:1)+current().options.length)%current().options.length;render();}
   if(e.code==='Enter'&&!e.target.closest('button')){e.preventDefault();answered?next():submit();}
@@ -132,6 +144,8 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('blur',()=>setPaused(true,'視窗失去焦點，已暫停。回來後按「繼續」。'));
 document.addEventListener('visibilitychange',()=>{if(document.hidden){setPaused(true,'切換分頁，已暫停。');stopCamera();}});
 window.addEventListener('pagehide',stopCamera);
+let frameId;
+window.addEventListener('pagehide',event=>{if(!event.persisted){cancelAnimationFrame(frameId);world?.dispose();}});
 let lastFrame=performance.now();
-function frame(now){const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;world?.update(dt,paused);if(!paused&&isDrill()){const before=tee.stage;tee.tick(performance.now());if(tee.stage!==before){if(tee.result==='waited')feedback('沒有揮擊也沒關係；準備好再試，不扣分。');renderCue();}}requestAnimationFrame(frame);}
-render();requestAnimationFrame(frame);
+function frame(now){const dt=Math.min(.05,Math.max(0,(now-lastFrame)/1000));lastFrame=now;if(actionActive&&camera&&!paused&&now-lastPoseAt>750)setPaused(true,'姿態訊號中斷，球與跑者已暫停。確認鏡頭恢復後按繼續。');if(actionActive)actionUI.tick(dt);world?.update(dt,paused);if(!actionActive&&!paused&&isDrill()){const before=tee.stage;tee.tick(performance.now());if(tee.stage!==before){if(tee.result==='waited')feedback('沒有揮擊也沒關係；準備好再試，不扣分。');renderCue();}}frameId=requestAnimationFrame(frame);}
+render();frameId=requestAnimationFrame(frame);

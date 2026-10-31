@@ -6,7 +6,7 @@ on:
     paths:
       - 'src/teeball/**'
       - 'teeball/**'
-      - 'tests/teeball.test.mjs'
+      - 'tests/teeball*.test.mjs'
       - '.github/workflows/teeball-tests.yml'
 permissions:
   contents: read

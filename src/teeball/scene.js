@@ -7,6 +7,8 @@ const LOAD={...STANCE,torsoYaw:-.4,lHand:[-.17,.4,.08],rHand:[-.21,.46,.05],batT
 export const CONTACT={hipY:.63,bend:.25,torsoYaw:.75,headYaw:.65,lHand:[-.02,.2,.42],rHand:[-.08,.22,.38],batTip:[-.75,.3,.95],lFoot:[.42,.04,.4],rFoot:[-.28,-.04,.6]};
 const FINISH={hipY:.66,bend:.12,torsoYaw:1.45,headYaw:.2,lHand:[.12,.5,.18],rHand:[.06,.52,.2],batTip:[.5,.9,-.5],lFoot:[.42,.04,.6],rFoot:[-.22,-.02,1.2]};
 const SWING=[[0,LOAD],[.1,LOAD],[.3,CONTACT],[.55,FINISH],[1.3,FINISH],[1.8,STANCE]];
+// A missed virtual contact animates above the tee, never through the stationary ball.
+const MISS_SWING=SWING.map(([t,p])=>[t,{...p,...Object.fromEntries(['lHand','rHand','batTip'].map(k=>[k,p[k].map((v,i)=>v+(i===1?.35:0))]))}]);
 export const TEE_BALL=[0,.724,0];
 export const BATTER_POSITION=[.9,.02,-.18];
 const REST={hipY:.73,lHand:[.26,.1,.1],rHand:[-.26,.1,.1],lFoot:[.15,0],rFoot:[-.15,0]};
@@ -38,12 +40,19 @@ export class TeeWorld {
   this.trail=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffe1a0,transparent:true,opacity:.8}));this.root.add(this.trail);
   this.commitLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xff8268}));this.root.add(this.commitLine);
   this.path=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineDashedMaterial({color:0xffc679,dashSize:.5,gapSize:.3}));this.root.add(this.path);
-  this.ray=new THREE.Raycaster();canvas.addEventListener('pointerup',e=>{const r=canvas.getBoundingClientRect();this.ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2),this.world.camera);const hit=this.ray.intersectObjects(this.rings)[0];if(hit)onBase(hit.object.userData.base);});
+  this.ray=new THREE.Raycaster();this.onPointer=e=>{const r=canvas.getBoundingClientRect();this.ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2),this.world.camera);const hit=this.ray.intersectObjects(this.rings)[0];if(hit)onBase(hit.object.userData.base);};canvas.addEventListener('pointerup',this.onPointer);
   this.resize=new ResizeObserver(()=>this.fit());this.resize.observe(canvas.parentElement);this.fit();
+ }
+ dispose(){
+  this.resize?.disconnect();this.canvas?.removeEventListener('pointerup',this.onPointer);
+  const geometries=new Set(),materials=new Set(),textures=new Set();
+  this.world.scene?.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of (Array.isArray(o.material)?o.material:[o.material])){if(!m)continue;materials.add(m);for(const value of Object.values(m))if(value?.isTexture)textures.add(value);}});
+  geometries.forEach(g=>g.dispose());textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());this.world.renderer?.dispose();this.action=null;
  }
  fit(){const r=this.canvas.parentElement.getBoundingClientRect();if(!r.width||!r.height)return;this.world.renderer.setSize(r.width,r.height,false);this.world.camera.aspect=r.width/r.height;this.world.camera.updateProjectionMatrix();}
  setView(view){this.view=view;}
  setScenario(s,drill,selected){
+  this.action=null;
   const key=drill?'drill':s.id;
   if(this.key!==key){this.key=key;this.s=s;this.drill=drill;this.motion=null;this.elapsed=0;this.trail.visible=false;
    this.runners.forEach(r=>{r.figure.root.removeFromParent();r.figure.root.traverse(o=>o.geometry?.dispose());Object.values(r.figure.mats).forEach(m=>m.dispose());});this.runners=[];
@@ -64,7 +73,62 @@ export class TeeWorld {
  }
  act(id){this.elapsed=0;this.motion=decisionMotion(this.s,id);this.motion.from=this.ball.position.toArray();if(this.motion.kind==='bat')this.hit();}
  hit(){this.elapsed=0;this.motion={kind:'bat',from:TEE_BALL};this.trail.visible=true;this.trail.geometry.dispose();this.trail.geometry=new THREE.BufferGeometry().setFromPoints(Array.from({length:49},(_,i)=>new THREE.Vector3(...flight(TEE_BALL,[-8,.14,27],i/48,7))));}
- reset(){this.key='';this.motion=null;}
+ reset(){this.key='';this.motion=null;this.action=null;}
+ // Action rounds use an externally paused simulation clock; camera changes never change base IDs.
+ setAction(s){
+  const batting=s.kind==='batting';
+  const id=batting?'action-batting':'action-fielding';
+  if(this.key!==id){
+   this.reset();
+   this.setScenario(batting?null:{id,mode:'fielding',ball:{state:'held'},runners:[{base:1,status:'forced',destination:2}],receiverReady:[1,2,3,4],options:[{id:'second'}]},batting,0);
+   this.key=id;
+   if(!batting){this.runners[0].start=[...BASE_POINTS[1]];this.runners[0].figure.root.position.set(BASE_POINTS[1][0],0,BASE_POINTS[1][1]);}
+   this.actionPathKey='';
+  }
+  this.action=s;
+  this.renderAction();
+ }
+ renderAction(){
+  const s=this.action;if(!s)return;
+  const t=s.elapsed||0;this.clock=t;this.elapsed=t;this.motion=null;
+  const batting=s.kind==='batting',r=s.result;
+  this.drill=batting;this.batter.root.visible=batting;this.tee.visible=batting;this.holder.root.visible=!batting;
+  if(batting){
+   const contact=r?.contactAt??s.contactAt;
+   const hit=r?.outcome==='contact'&&t>=(contact??0);
+   const attempted=!!r&&contact!=null&&t>=contact;
+   const age=attempted?Math.max(0,t-contact):0;
+   this.batter.set(attempted?(hit?samplePose(SWING,Math.min(1.8,.3+age)):samplePose(MISS_SWING,Math.min(1.8,.3+age))):(s.stage==='loaded'||(s.replay&&contact!=null&&t<contact))?LOAD:STANCE);
+   const q=Math.max(0,Math.min(1,r?.quality??.5)),speed=Math.max(0,Math.min(1,r?.speed??.5));
+   const samples=s.trajectory||[],last=samples.at(-1),first=samples[0];
+   const slope=last&&first?Math.max(-.6,Math.min(.6,(last.y-first.y)*.4)):-.3;
+   const end=[slope*16,.14,8+q*15+speed*6];
+   this.ball.position.set(...(hit?flight(TEE_BALL,end,age/1.8,2+q*4):TEE_BALL));
+   const key=hit?JSON.stringify([end,q]):'';
+   if(key!==this.actionPathKey){this.actionPathKey=key;this.trail.geometry.dispose();this.trail.geometry=new THREE.BufferGeometry().setFromPoints(hit?Array.from({length:49},(_,i)=>new THREE.Vector3(...flight(TEE_BALL,end,i/48,2+q*4))):[]);}
+   this.trail.visible=hit;this.path.visible=false;
+   this.runners.forEach(x=>x.figure.root.visible=false);
+  }else{
+   const target=s.direction??2,base=BASE_POINTS[target]||BASE_POINTS[2];
+   const elapsed=s.runnerStarted?t:0,runnerSeconds=s.runnerTime??3.2;
+   const release=s.releaseAt;
+   const released=Number.isFinite(release)&&elapsed>=release,age=released?Math.max(0,elapsed-release):0;
+   const flightSeconds=s.flightTime??.8,catchSeconds=s.catchTime??.25;
+   const from=[4,1.05,15.25],caught=released&&age>=flightSeconds;
+   this.holder.root.position.set(4,0,15);this.holder.root.rotation.y=Math.atan2(base[0]-4,base[1]-15);
+   this.holder.set(released?{...REST,rHand:[-.25,.55,Math.min(age,.5)],torsoYaw:Math.min(age,.35)}:{...REST,lHand:[.1,.4,.25],rHand:[-.1,.4,.25]});
+   const step=caught?Math.min(1,(age-flightSeconds)/catchSeconds):0;
+   const end=[base[0]+.3*(1-step),1.05,base[1]+.3*(1-step)];
+   this.ball.position.set(...(released?(caught?end:flight(from,end,age/flightSeconds,2.2)):from));
+   const runnerElapsed=r?.outcome==='correct-fast'?Math.min(elapsed,r.arrival??elapsed):elapsed;
+   this.runners.forEach(x=>{x.figure.root.visible=true;const p=lerpPoint(BASE_POINTS[1],BASE_POINTS[2],runnerElapsed/runnerSeconds);x.figure.root.position.set(p[0],0,p[1]);x.figure.root.rotation.y=Math.atan2(BASE_POINTS[2][0]-BASE_POINTS[1][0],BASE_POINTS[2][1]-BASE_POINTS[1][1]);const w=runnerElapsed>0&&runnerElapsed<runnerSeconds&&runnerElapsed===elapsed?Math.sin(elapsed*10):0;x.figure.set({...REST,lFoot:[.15,w*.25],rFoot:[-.15,-w*.25],lHand:[.25,.15,-w*.2],rHand:[-.25,.15,w*.2]});});
+   this.fielders.forEach((f,i)=>{const b=BASE_POINTS[i+1],selected=i+1===target;f.root.position.set(b[0]+.3*(selected?1-step:1),0,b[1]+.3*(selected?1-step:1));f.set({...REST,lHand:[.2,.4,.25],rHand:[-.2,.4,.25]});});
+   this.rings.forEach((ring,i)=>{ring.material.color.set(i+1===target?(released&&r?.outcome==='wrong'?0xff8268:0xffbd55):0x61d6cf);});
+   const key=String(target);if(key!==this.actionPathKey){this.actionPathKey=key;this.path.geometry.dispose();this.path.geometry=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...from),new THREE.Vector3(base[0],1.05,base[1])]);this.path.computeLineDistances();}
+   this.path.visible=true;this.trail.visible=false;
+  }
+ }
+
  update(dt,paused){
   if(!paused){this.clock+=dt;this.elapsed+=dt;}
   const t=this.elapsed,m=this.motion;
@@ -83,11 +147,12 @@ export class TeeWorld {
    const f=r.figure;f.root.position.set(p[0],0,p[1]);
    if(moving){const end=BASE_POINTS[r.spec.drillRunner?1:m.kind==='run'?m.target:r.spec.destination];f.root.rotation.y=Math.atan2(end[0]-r.start[0],end[1]-r.start[1]);const w=Math.sin(this.clock*10);f.set({hipY:.71+Math.abs(w)*.04,bend:.1,lFoot:[.15,w*.3,0,Math.max(0,w)*.1],rFoot:[-.15,-w*.3,0,Math.max(0,-w)*.1],lHand:[.25,.15,-w*.3],rHand:[-.25,.15,w*.3]});}else f.set(REST);
   });
+  if(this.action)this.renderAction();
   this.ballHalo.position.set(this.ball.position.x,.07,this.ball.position.z);
   const camera=this.world.camera;const portrait=camera.aspect<.9;let pos,look;
   if(this.view==='overview'||(!this.drill&&this.view==='play')){pos=portrait?[0,47,-33]:[29,32,-24];look=[0,0,13];}
   else if(this.view==='follow'&&this.focusRunner?.figure.root.visible){const p=this.focusRunner.figure.root.position;pos=[p.x+5,5,p.z-8];look=[p.x,1,p.z+3];}
-  else if(this.view==='follow'&&m?.kind==='bat'&&t>.4){const p=this.ball.position;pos=[p.x+5,7,p.z-10];look=[p.x,1,p.z];}
+  else if(this.view==='follow'&&((m?.kind==='bat'&&t>.4)||(this.action?.kind==='batting'&&this.action.result?.outcome==='contact'&&this.action.elapsed>this.action.contactAt+.1))){const p=this.ball.position;pos=[p.x+5,7,p.z-10];look=[p.x,1,p.z];}
   else{pos=portrait?[3.5,3.5,-8]:[4.5,2.8,-6.5];look=[0,.9,4];}
   camera.position.lerp(new THREE.Vector3(...pos),1-Math.exp(-dt*5));this.look??=new THREE.Vector3(...look);this.look.lerp(new THREE.Vector3(...look),1-Math.exp(-dt*5));camera.lookAt(this.look);
   this.world.frame(paused?0:dt);
