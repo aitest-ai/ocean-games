@@ -22,8 +22,9 @@ function fixture(){
  return {body,main,canvas,viewport,field,workspace,ids,selectors,doc:{body,getElementById:id=>ids.get(id),querySelector:s=>selectors.get(s),createElement:()=>new Node()}};
 }
 test('field layout moves all interactive overlays outside canvas while preserving safety button identity',()=>{
- const h=fixture(), pause=h.ids.get('pause');pause.onclick=()=>17;
+ const h=fixture(), pause=h.ids.get('pause'), promptParent=h.selectors.get('#actionDescription').parentElement;pause.onclick=()=>17;
  initLayout({doc:h.doc});
+ assert.equal(h.selectors.get('#actionDescription').parentElement,promptParent,'essential scenario prompt stays visible outside teacher drawer');
  assert.equal(pause.onclick(),17);assert.equal(pause.parentElement.parentElement.id,'playToolbar');
  assert.equal(h.selectors.get('.view-controls').parentElement.id,'playToolbar');
  assert.deepEqual(h.viewport.children,[h.canvas]);

@@ -20,7 +20,7 @@ export function initLayout({requestPause, doc=document}={}) {
   const node=doc.querySelector(selector);if(node)content.append(node);
  }
  const instructions=doc.createElement('section');instructions.className='action-instructions';instructions.setAttribute('aria-label','動作詳細說明');
- for(const selector of ['#actionDescription','#actionHint','.action-diagram','.simulation-note']){
+ for(const selector of ['#actionHint','.action-diagram','.simulation-note']){
   const node=doc.querySelector(selector);if(node)instructions.append(node);
  }
  content.append(instructions);workspace.after(drawer);
